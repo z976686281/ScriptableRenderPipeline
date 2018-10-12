@@ -238,6 +238,11 @@ namespace UnityEditor.VFX.UI
             toggleComponentBoard.RegisterCallback<ChangeEvent<bool>>(ToggleComponentBoard);
             m_Toolbar.Add(toggleComponentBoard);
 
+            Toggle toggleCustomAttributesBoard = new Toggle();
+            toggleCustomAttributesBoard.text = "Custom Attributes";
+            toggleCustomAttributesBoard.AddToClassList("toolbarItem");
+            toggleCustomAttributesBoard.RegisterCallback<ChangeEvent<bool>>(ToggleCustomAttributeBoard);
+            m_Toolbar.Add(toggleCustomAttributesBoard);
 
             spacer = new VisualElement();
             spacer.style.flexGrow = 1f;
@@ -293,11 +298,16 @@ namespace UnityEditor.VFX.UI
                 Add(m_Blackboard);
             toggleBlackboard.value = blackboardVisible;
 
-            /*
-            bool componentBoardVisible = BoardPreferenceHelper.IsVisible(BoardPreferenceHelper.Board.blackboard, false);
+/*
+            bool componentBoardVisible = BoardPreferenceHelper.IsVisible(BoardPreferenceHelper.Board.componentBoard, false);
             if (componentBoardVisible)
                 ShowComponentBoard();
             toggleComponentBoard.value = componentBoardVisible;*/
+
+            bool customAttributeBoardVisible = BoardPreferenceHelper.IsVisible(BoardPreferenceHelper.Board.customAttributeBoard, false);
+            if (customAttributeBoardVisible)
+                ShowCustomAttributeBoard();
+            toggleCustomAttributesBoard.value = customAttributeBoardVisible;
 
             Add(m_Toolbar);
 
@@ -362,12 +372,36 @@ namespace UnityEditor.VFX.UI
             m_ComponentBoard.RegisterCallback<GeometryChangedEvent>(OnFirstComponentBoardGeometryChanged);
         }
 
+        void ShowCustomAttributeBoard()
+        {
+            if (m_CustomAttributeBoard == null)
+            {
+                m_CustomAttributeBoard = new VFXCustomAttributesBoard(this);
+
+                m_CustomAttributeBoard.controller = controller;
+            }
+            Insert(childCount - 1, m_CustomAttributeBoard);
+
+            BoardPreferenceHelper.SetVisible(BoardPreferenceHelper.Board.customAttributeBoard, true);
+
+            m_CustomAttributeBoard.RegisterCallback<GeometryChangedEvent>(OnCustomAttributeBoardGeometryChanged);
+        }
+
         void OnFirstComponentBoardGeometryChanged(GeometryChangedEvent e)
         {
             if (m_FirstResize)
             {
                 m_ComponentBoard.ValidatePosition();
                 m_ComponentBoard.UnregisterCallback<GeometryChangedEvent>(OnFirstComponentBoardGeometryChanged);
+            }
+        }
+
+        void OnCustomAttributeBoardGeometryChanged(GeometryChangedEvent e)
+        {
+            if (m_FirstResize)
+            {
+                m_CustomAttributeBoard.ValidatePosition();
+                m_CustomAttributeBoard.UnregisterCallback<GeometryChangedEvent>(OnCustomAttributeBoardGeometryChanged);
             }
         }
 
@@ -387,6 +421,8 @@ namespace UnityEditor.VFX.UI
             m_FirstResize = true;
             if (m_ComponentBoard != null)
                 m_ComponentBoard.ValidatePosition();
+            if (m_CustomAttributeBoard != null)
+                m_CustomAttributeBoard.ValidatePosition();
             if (m_Blackboard != null)
                 m_Blackboard.ValidatePosition();
 
@@ -403,6 +439,19 @@ namespace UnityEditor.VFX.UI
             {
                 m_ComponentBoard.RemoveFromHierarchy();
                 BoardPreferenceHelper.SetVisible(BoardPreferenceHelper.Board.componentBoard, false);
+            }
+        }
+
+        void ToggleCustomAttributeBoard(ChangeEvent<bool> e)
+        {
+            if (m_CustomAttributeBoard == null || m_CustomAttributeBoard.parent == null)
+            {
+                ShowCustomAttributeBoard();
+            }
+            else
+            {
+                m_CustomAttributeBoard.RemoveFromHierarchy();
+                BoardPreferenceHelper.SetVisible(BoardPreferenceHelper.Board.customAttributeBoard, false);
             }
         }
 
@@ -1276,6 +1325,7 @@ namespace UnityEditor.VFX.UI
 
 
         VFXComponentBoard m_ComponentBoard;
+        VFXCustomAttributesBoard m_CustomAttributeBoard;
 
         public readonly Vector2 defaultPasteOffset = new Vector2(100, 100);
         public Vector2 pasteOffset = Vector2.zero;
