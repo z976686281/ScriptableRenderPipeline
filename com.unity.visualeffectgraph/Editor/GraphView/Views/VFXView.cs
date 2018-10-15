@@ -515,6 +515,10 @@ namespace UnityEditor.VFX.UI
             if (change == VFXViewController.Change.destroy)
             {
                 m_Blackboard.controller = null;
+                if( m_CustomAttributeBoard != null)
+                {
+                    m_CustomAttributeBoard.controller = null;
+                }
                 controller = null;
                 return;
             }
@@ -568,6 +572,10 @@ namespace UnityEditor.VFX.UI
             if (m_ComponentBoard != null)
             {
                 m_ComponentBoard.controller = controller;
+            }
+            if( m_CustomAttributeBoard != null)
+            {
+                m_CustomAttributeBoard.controller = controller;
             }
             if (controller != null)
             {
