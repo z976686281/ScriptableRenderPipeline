@@ -29,6 +29,8 @@ namespace UnityEditor.VFX.UI
         bool editable { get; }
         void RetractPath();
         void ExpandPath();
+
+        VFXGraph graph { get; }
     }
 
 
@@ -37,12 +39,14 @@ namespace UnityEditor.VFX.UI
         System.Func<T> m_Getter;
         System.Action<T> m_Setter;
         string m_Name;
+        VFXGraph m_Graph;
 
-        public SimplePropertyRMProvider(string name, System.Func<T> getter, System.Action<T> setter)
+        public SimplePropertyRMProvider(string name, System.Func<T> getter, System.Action<T> setter,VFXGraph graph)
         {
             m_Getter = getter;
             m_Setter = setter;
             m_Name = name;
+            m_Graph = graph;
         }
 
         VFXCoordinateSpace IPropertyRMProvider.space { get { return VFXCoordinateSpace.Local; } set {} }
@@ -84,6 +88,8 @@ namespace UnityEditor.VFX.UI
         {}
         void IPropertyRMProvider.ExpandPath()
         {}
+
+        VFXGraph IPropertyRMProvider.graph { get { return m_Graph; } }
     }
 
     abstract class PropertyRM : VisualElement

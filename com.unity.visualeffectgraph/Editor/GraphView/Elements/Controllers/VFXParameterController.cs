@@ -124,6 +124,8 @@ namespace UnityEditor.VFX.UI
             throw new NotImplementedException();
         }
 
+        VFXGraph IPropertyRMProvider.graph { get { return m_Parameter.graph; } }
+
         public Type portType
         {
             get
@@ -233,6 +235,7 @@ namespace UnityEditor.VFX.UI
         {
             get { return true; }
         }
+        VFXGraph IPropertyRMProvider.graph { get { return m_Owner.graph; } }
 
         public VFXCoordinateSpace space
         {
@@ -531,6 +534,7 @@ namespace UnityEditor.VFX.UI
                 parameter.SetSettingValue("m_exposedName", candidateName);
             }
         }
+        public VFXGraph graph { get { return model.GetGraph(); } }
 
         public string exposedName
         {
