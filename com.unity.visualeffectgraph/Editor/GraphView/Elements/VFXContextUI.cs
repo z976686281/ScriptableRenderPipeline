@@ -201,6 +201,9 @@ namespace UnityEditor.VFX.UI
                 m_Label.RemoveFromClassList("empty");
             }
 
+            VisualElement nodeBorder = this.Q(name: "node-border");
+            nodeBorder.cacheAsBitmap = false;
+
             RefreshContext();
         }
 
