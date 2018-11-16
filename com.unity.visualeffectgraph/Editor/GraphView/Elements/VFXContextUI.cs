@@ -218,6 +218,7 @@ namespace UnityEditor.VFX.UI
             AddToClassList("selectable");
 
             this.mainContainer.style.overflow = Overflow.Visible;
+            this.cacheAsBitmap = false;
 
             m_FlowInputConnectorContainer = this.Q("flow-inputs");
 
