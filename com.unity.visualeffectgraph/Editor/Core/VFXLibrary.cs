@@ -73,7 +73,7 @@ namespace UnityEditor.VFX
             return parent.AcceptChild(m_Template, index);
         }
 
-        protected void ApplyVariant(VFXModel model)
+        public void ApplyVariant(VFXModel model)
         {
             foreach (var variant in m_Variants)
             {
