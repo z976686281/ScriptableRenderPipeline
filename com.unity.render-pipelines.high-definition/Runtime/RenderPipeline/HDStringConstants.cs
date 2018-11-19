@@ -444,6 +444,45 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         public static readonly int _OutputTexture                  = Shader.PropertyToID("_OutputTexture");
         public static readonly int _InputHistoryTexture            = Shader.PropertyToID("_InputHistoryTexture");
         public static readonly int _OutputHistoryTexture           = Shader.PropertyToID("_OutputHistoryTexture");
+        
+        public static readonly int _TargetScale                    = Shader.PropertyToID("_TargetScale");
+        public static readonly int _Params                         = Shader.PropertyToID("_Params");
+        public static readonly int _Params1                        = Shader.PropertyToID("_Params1");
+        public static readonly int _Params2                        = Shader.PropertyToID("_Params2");
+        public static readonly int _BokehKernel                    = Shader.PropertyToID("_BokehKernel");
+        public static readonly int _InputCoCTexture                = Shader.PropertyToID("_InputCoCTexture");
+        public static readonly int _InputHistoryCoCTexture         = Shader.PropertyToID("_InputHistoryCoCTexture");
+        public static readonly int _OutputCoCTexture               = Shader.PropertyToID("_OutputCoCTexture");
+        public static readonly int _OutputNearCoCTexture           = Shader.PropertyToID("_OutputNearCoCTexture");
+        public static readonly int _OutputNearTexture              = Shader.PropertyToID("_OutputNearTexture");
+        public static readonly int _OutputFarCoCTexture            = Shader.PropertyToID("_OutputFarCoCTexture");
+        public static readonly int _OutputFarTexture               = Shader.PropertyToID("_OutputFarTexture");
+        public static readonly int _OutputMip1                     = Shader.PropertyToID("_OutputMip1");
+        public static readonly int _OutputMip2                     = Shader.PropertyToID("_OutputMip2");
+        public static readonly int _OutputMip3                     = Shader.PropertyToID("_OutputMip3");
+        public static readonly int _OutputMip4                     = Shader.PropertyToID("_OutputMip4");
+        public static readonly int _IndirectBuffer                 = Shader.PropertyToID("_IndirectBuffer");
+        public static readonly int _InputNearCoCTexture            = Shader.PropertyToID("_InputNearCoCTexture");
+        public static readonly int _NearTileList                   = Shader.PropertyToID("_NearTileList");
+        public static readonly int _InputFarTexture                = Shader.PropertyToID("_InputFarTexture");
+        public static readonly int _InputNearTexture               = Shader.PropertyToID("_InputNearTexture");
+        public static readonly int _InputFarCoCTexture             = Shader.PropertyToID("_InputFarCoCTexture");
+        public static readonly int _FarTileList                    = Shader.PropertyToID("_FarTileList");
+        public static readonly int _TileList                       = Shader.PropertyToID("_TileList");
+        public static readonly int _TexelSize                      = Shader.PropertyToID("_TexelSize");
+        public static readonly int _InputDilatedCoCTexture         = Shader.PropertyToID("_InputDilatedCoCTexture");
+        public static readonly int _OutputAlphaTexture             = Shader.PropertyToID("_OutputAlphaTexture");
+        public static readonly int _InputNearAlphaTexture          = Shader.PropertyToID("_InputNearAlphaTexture");
+        public static readonly int _CoCTargetScale                 = Shader.PropertyToID("_CoCTargetScale");
+
+        public static readonly int _BloomParams                    = Shader.PropertyToID("_BloomParams");
+        public static readonly int _BloomTint                      = Shader.PropertyToID("_BloomTint");
+        public static readonly int _BloomTexture                   = Shader.PropertyToID("_BloomTexture");
+        public static readonly int _BloomDirtTexture               = Shader.PropertyToID("_BloomDirtTexture");
+        public static readonly int _BloomDirtScaleOffset           = Shader.PropertyToID("_BloomDirtScaleOffset");
+        public static readonly int _InputLowTexture                = Shader.PropertyToID("_InputLowTexture");
+        public static readonly int _InputHighTexture               = Shader.PropertyToID("_InputHighTexture");
+        public static readonly int _BloomBicubicParams             = Shader.PropertyToID("_BloomBicubicParams");
 
         public static readonly int _ChromaSpectralLut              = Shader.PropertyToID("_ChromaSpectralLut");
         public static readonly int _ChromaParams                   = Shader.PropertyToID("_ChromaParams");

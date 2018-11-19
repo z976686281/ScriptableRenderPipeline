@@ -11,8 +11,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         public Texture2DArray textureArray16L { get { return m_TextureArray16L; } }
         public Texture2DArray textureArray16RGB { get { return m_TextureArray16RGB; } }
 
-        Texture2D[] m_Textures16L;
-        Texture2D[] m_Textures16RGB;
+        readonly Texture2D[] m_Textures16L;
+        readonly Texture2D[] m_Textures16RGB;
 
         Texture2DArray m_TextureArray16L;
         Texture2DArray m_TextureArray16RGB;

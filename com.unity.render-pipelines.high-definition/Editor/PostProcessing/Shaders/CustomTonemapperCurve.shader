@@ -80,12 +80,12 @@ Shader "Hidden/HD PostProcessing/Editor/Custom Tonemapper Curve"
 
         float4 FragCurveDark(v2f_img i) : SV_Target
         {
-            return DrawCurve(i, (0.196).xxx, (0.7).xxx);
+            return DrawCurve(i, (pow(0.196, 2.2)).xxx, (pow(0.7, 2.2)).xxx);
         }
 
         float4 FragCurveLight(v2f_img i) : SV_Target
         {
-            return DrawCurve(i, (0.635).xxx, (0.2).xxx);
+            return DrawCurve(i, (pow(0.635, 2.2)).xxx, (pow(0.2, 2.2)).xxx);
         }
 
     ENDCG

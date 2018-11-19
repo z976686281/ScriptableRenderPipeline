@@ -1,3 +1,5 @@
+using static UnityEngine.Mathf;
+
 namespace UnityEngine.Experimental.Rendering
 {
     // Raw, mostly unoptimized implementation of Hable's artist-friendly tonemapping curve
@@ -21,7 +23,7 @@ namespace UnityEngine.Experimental.Rendering
                 // log(0) is undefined but our function should evaluate to 0. There are better ways
                 // to handle this, but it's doing it the slow way here for clarity.
                 if (x0 > 0)
-                    y0 = Mathf.Exp(lnA + B * Mathf.Log(x0));
+                    y0 = Exp(lnA + B * Log(x0));
 
                 return y0 * scaleY + offsetY;
             }
@@ -75,12 +77,12 @@ namespace UnityEngine.Experimental.Rendering
 
             // Constraints
             {
-                toeLength = Mathf.Pow(Mathf.Clamp01(toeLength), kPerceptualGamma);
-                toeStrength = Mathf.Clamp01(toeStrength);
-                shoulderAngle = Mathf.Clamp01(shoulderAngle);
-                shoulderStrength = Mathf.Clamp(shoulderStrength, 1e-5f, 1f - 1e-5f);
-                shoulderLength = Mathf.Max(0f, shoulderLength);
-                gamma = Mathf.Max(1e-5f, gamma);
+                toeLength = Pow(Clamp01(toeLength), kPerceptualGamma);
+                toeStrength = Clamp01(toeStrength);
+                shoulderAngle = Clamp01(shoulderAngle);
+                shoulderStrength = Clamp(shoulderStrength, 1e-5f, 1f - 1e-5f);
+                shoulderLength = Max(0f, shoulderLength);
+                gamma = Max(1e-5f, gamma);
             }
 
             // Apply base params
@@ -98,7 +100,7 @@ namespace UnityEngine.Experimental.Rendering
                 float y1 = y0 + y1_offset;
 
                 // Filmic shoulder strength is in F stops
-                float extraW = Mathf.Pow(2f, shoulderLength) - 1f;
+                float extraW = Pow(2f, shoulderLength) - 1f;
 
                 float W = initialW + extraW;
 
@@ -157,17 +159,17 @@ namespace UnityEngine.Experimental.Rendering
                 midSegment.offsetY = 0f;
                 midSegment.scaleX = 1f;
                 midSegment.scaleY = 1f;
-                midSegment.lnA = g * Mathf.Log(m);
+                midSegment.lnA = g * Log(m);
                 midSegment.B = g;
 
                 toeM = EvalDerivativeLinearGamma(m, b, g, paramsCopy.x0);
                 shoulderM = EvalDerivativeLinearGamma(m, b, g, paramsCopy.x1);
 
                 // apply gamma to endpoints
-                paramsCopy.y0 = Mathf.Max(1e-5f, Mathf.Pow(paramsCopy.y0, paramsCopy.gamma));
-                paramsCopy.y1 = Mathf.Max(1e-5f, Mathf.Pow(paramsCopy.y1, paramsCopy.gamma));
+                paramsCopy.y0 = Max(1e-5f, Pow(paramsCopy.y0, paramsCopy.gamma));
+                paramsCopy.y1 = Max(1e-5f, Pow(paramsCopy.y1, paramsCopy.gamma));
 
-                paramsCopy.overshootY = Mathf.Pow(1f + paramsCopy.overshootY, paramsCopy.gamma) - 1f;
+                paramsCopy.overshootY = Pow(1f + paramsCopy.overshootY, paramsCopy.gamma) - 1f;
             }
 
             this.x0 = paramsCopy.x0;
@@ -234,7 +236,7 @@ namespace UnityEngine.Experimental.Rendering
         void SolveAB(out float lnA, out float B, float x0, float y0, float m)
         {
             B = (m * x0) / y0;
-            lnA = Mathf.Log(y0) - B * Mathf.Log(x0);
+            lnA = Log(y0) - B * Log(x0);
         }
 
         // Convert to y=mx+b
@@ -255,7 +257,7 @@ namespace UnityEngine.Experimental.Rendering
         // f'(x) = gm(mx+b)^(g-1)
         float EvalDerivativeLinearGamma(float m, float b, float g, float x)
         {
-            float ret = g * m * Mathf.Pow(m * x + b, g - 1f);
+            float ret = g * m * Pow(m * x + b, g - 1f);
             return ret;
         }
 

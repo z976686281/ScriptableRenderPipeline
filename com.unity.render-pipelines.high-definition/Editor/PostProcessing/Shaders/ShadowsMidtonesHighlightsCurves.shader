@@ -50,12 +50,12 @@ Shader "Hidden/HD PostProcessing/Editor/Shadows Midtones Highlights Curve"
 
         float4 FragCurveDark(v2f_img i) : SV_Target
         {
-            return DrawCurve(i, (0.196).xxx, float3(0.161, 0.851, 0.761), float3(0.741, 0.949, 0.443), float3(0.9, 0.9, 0.651));
+            return DrawCurve(i, (pow(0.196, 2.2)).xxx, pow(float3(0.161, 0.851, 0.761), 2.2), pow(float3(0.741, 0.949, 0.443), 2.2), pow(float3(0.9, 0.9, 0.651), 2.2));
         }
 
         float4 FragCurveLight(v2f_img i) : SV_Target
         {
-            return DrawCurve(i, (0.635).xxx, float3(0.161, 0.851, 0.761), float3(0.741, 0.949, 0.443), float3(1.0, 1.0, 0.651));
+            return DrawCurve(i, (pow(0.635, 2.2)).xxx, pow(float3(0.161, 0.851, 0.761), 2.2), pow(float3(0.741, 0.949, 0.443), 2.2), pow(float3(1.0, 1.0, 0.651), 2.2));
         }
 
     ENDCG

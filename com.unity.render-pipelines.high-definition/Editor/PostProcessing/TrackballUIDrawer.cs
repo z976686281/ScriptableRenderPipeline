@@ -42,7 +42,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
             if (m_ResetState)
             {
-                value = Vector4.zero;
+                value = new Vector4(1f, 1f, 1f, 0f);
                 m_ResetState = false;
             }
 

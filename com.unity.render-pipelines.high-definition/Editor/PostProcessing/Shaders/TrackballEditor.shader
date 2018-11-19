@@ -79,12 +79,12 @@ Shader "Hidden/HD PostProcessing/Editor/Trackball"
 
         float4 FragTrackballDark(v2f_img i) : SV_Target
         {
-            return CreateWheel(i, 1.0, 0.15);
+            return CreateWheel(i, 1.0, pow(0.15, 2.2));
         }
 
         float4 FragTrackballLight(v2f_img i) : SV_Target
         {
-            return CreateWheel(i, 0.0, 0.3);
+            return CreateWheel(i, 0.0, pow(0.3, 2.2));
         }
 
     ENDCG

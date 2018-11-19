@@ -107,6 +107,27 @@ MonoBehaviour:
     lutBuilder3DCS: {fileID: 7200000, guid: 37f2b1b0ecd6f1c439e4c1b4f2fdb524, type: 3}
     temporalAntialiasingCS: {fileID: 7200000, guid: 457b902d2d5b3d9489afae9117c867c1,
       type: 3}
+    depthOfFieldKernelCS: {fileID: 7200000, guid: 7869415cc3e4eaa4d82ac21a752a2780,
+      type: 3}
+    depthOfFieldCoCCS: {fileID: 7200000, guid: 048b235b54fbfaa4d80ec85ea847d4f8, type: 3}
+    depthOfFieldCoCReprojectCS: {fileID: 7200000, guid: 4980decaa3878d6448569489f5fc7931,
+      type: 3}
+    depthOfFieldDilateCS: {fileID: 7200000, guid: 1c93af4338c0c1b42b92464992eebc10,
+      type: 3}
+    depthOfFieldMipCS: {fileID: 7200000, guid: d3ef53de069ded64e8377cba6eb951fa, type: 3}
+    depthOfFieldPrefilterCS: {fileID: 7200000, guid: f2b89d19910854346b792fe7177ce634,
+      type: 3}
+    depthOfFieldTileMaxCS: {fileID: 7200000, guid: 84f84585ea8a7a849bea4a581adb93a7,
+      type: 3}
+    depthOfFieldGatherCS: {fileID: 7200000, guid: 486be52dddc4e054fb10a7b9b78788c2,
+      type: 3}
+    depthOfFieldCombineCS: {fileID: 7200000, guid: c8049ca85c4c7d047ba28f34d800c663,
+      type: 3}
+    paniniProjectionCS: {fileID: 7200000, guid: 0ddbf72c8fbb6e44b983f470c8384ef6,
+      type: 3}
+    bloomPrefilterCS: {fileID: 7200000, guid: 243b24008041aaa4a91800690f63c684, type: 3}
+    bloomBlurCS: {fileID: 7200000, guid: 133a68380d324de4ea8d3ff8657b02d8, type: 3}
+    bloomUpsampleCS: {fileID: 7200000, guid: 5dbb0ac12cb11f84084b7e5633481bd1, type: 3}
     finalPassPS: {fileID: 4800000, guid: 5ac9ef0c50282754b93c7692488e7ee7, type: 3}
   materials:
     defaultDiffuseMat: {fileID: 2100000, guid: 73c176f402d2c2f4d929aa5da7585d17, type: 2}

@@ -7,12 +7,13 @@
 #pragma kernel KTAA_Ortho     MAIN=KTAA_Ortho       ORTHOGRAPHIC
 #pragma kernel KCopyHistory
 
-#define HDR_MAPUNMAP        0
+#define HDR_MAPUNMAP        1
 #define CLIP_AABB           1
+#define RADIUS              0.75
 #define FEEDBACK_MIN        0.96
 #define FEEDBACK_MAX        0.91
 #define SHARPEN             0
-#define SHARPEN_STRENGTH    1.0
+#define SHARPEN_STRENGTH    0.35
 
 #define CLAMP_MAX       65472.0 // HALF_MAX minus one (2 - 2^-9) * 2^15
 
@@ -114,15 +115,15 @@ void MAIN(uint2 dispatchThreadId : SV_DispatchThreadID)
     float3 color = Fetch(_InputTexture, uv, 0.0, _ScreenToTargetScale.xy);
     float3 history = Fetch(_InputHistoryTexture, posInputs.positionNDC - velocity, 0.0, _ScreenToTargetScaleHistory.xy);
 
-    float3 topLeft = Fetch(_InputTexture, uv, -0.5, _ScreenToTargetScale.xy);
-    float3 bottomRight = Fetch(_InputTexture, uv, 0.5, _ScreenToTargetScale.xy);
+    float3 topLeft = Fetch(_InputTexture, uv, -RADIUS, _ScreenToTargetScale.xy);
+    float3 bottomRight = Fetch(_InputTexture, uv, RADIUS, _ScreenToTargetScale.xy);
 
     float3 corners = 4.0 * (topLeft + bottomRight) - 2.0 * color;
 
     // Sharpen output
     #if SHARPEN
-    float3 topRight = Fetch(_InputTexture, uv, float2(0.5, -0.5), _ScreenToTargetScale.xy);
-    float3 bottomLeft = Fetch(_InputTexture, uv, float2(-0.5, 0.5), _ScreenToTargetScale.xy);
+    float3 topRight = Fetch(_InputTexture, uv, float2(RADIUS, -RADIUS), _ScreenToTargetScale.xy);
+    float3 bottomLeft = Fetch(_InputTexture, uv, float2(-RADIUS, RADIUS), _ScreenToTargetScale.xy);
     float3 blur = (topLeft + topRight + bottomLeft + bottomRight) * 0.25;
     color += (color - blur) * SHARPEN_STRENGTH;
     #endif

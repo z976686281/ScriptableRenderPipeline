@@ -27,6 +27,12 @@ namespace UnityEditor.Experimental.Rendering
         public SerializedProperty baseProperty { get; internal set; }
         public SerializedProperty activeProperty { get; internal set; }
 
+        SerializedProperty m_AdvancedMode;
+
+        public virtual bool hasAdvancedMode => false;
+
+        public bool isInAdvancedMode => m_AdvancedMode != null && m_AdvancedMode.boolValue;
+
         Editor m_Inspector;
         List<SerializedDataParameter> m_Parameters;
 
@@ -76,6 +82,7 @@ namespace UnityEditor.Experimental.Rendering
             m_Inspector = inspector;
             serializedObject = new SerializedObject(target);
             activeProperty = serializedObject.FindProperty("active");
+            m_AdvancedMode = serializedObject.FindProperty("m_AdvancedMode");
             OnEnable();
         }
 
@@ -140,6 +147,9 @@ namespace UnityEditor.Experimental.Rendering
                     SetAllOverridesTo(false);
 
                 GUILayout.FlexibleSpace();
+
+                if (hasAdvancedMode)
+                    m_AdvancedMode.boolValue = GUILayout.Toggle(m_AdvancedMode.boolValue, "Advanced", EditorStyles.miniButton, GUILayout.ExpandWidth(false), GUILayout.Width(70f));
             }
         }
 

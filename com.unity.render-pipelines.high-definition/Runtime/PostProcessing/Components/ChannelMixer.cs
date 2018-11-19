@@ -31,7 +31,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
         [Tooltip("Modify influence of the blue channel in the overall mix.")]
         public ClampedFloatParameter blueOutBlueIn = new ClampedFloatParameter(100f, -200f, 200f);
-        
+
 #pragma warning disable 414
         [SerializeField]
         int m_SelectedChannel = 0; // Only used to track the currently selected channel in the UI

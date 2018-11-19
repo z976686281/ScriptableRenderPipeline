@@ -1,15 +1,11 @@
-
-namespace UnityEngine.Experimental.Rendering
+namespace UnityEngine.Rendering
 {
     public static class ColorUtils
     {
         // An analytical model of chromaticity of the standard illuminant, by Judd et al.
         // http://en.wikipedia.org/wiki/Standard_illuminant#Illuminant_series_D
         // Slightly modifed to adjust it with the D65 white point (x=0.31271, y=0.32902).
-        public static float StandardIlluminantY(float x)
-        {
-            return 2.87f * x - 3f * x * x - 0.27509507f;
-        }
+        public static float StandardIlluminantY(float x) => 2.87f * x - 3f * x * x - 0.27509507f;
 
         // CIE xy chromaticity to CAT02 LMS.
         // http://en.wikipedia.org/wiki/LMS_color_space#CAT02
@@ -25,5 +21,40 @@ namespace UnityEngine.Experimental.Rendering
 
             return new Vector3(L, M, S);
         }
+
+        // RGB in linear space with sRGB primaries and D65 white point
+        public static float Luminance(in Color color) => color.r * 0.2126729f + color.g * 0.7151522f + color.b * 0.072175f;
+
+        // References:
+        // "Moving Frostbite to PBR" (Sébastien Lagarde & Charles de Rousiers)
+        //   https://seblagarde.files.wordpress.com/2015/07/course_notes_moving_frostbite_to_pbr_v32.pdf
+        // "Implementing a Physically Based Camera" (Padraic Hennessy)
+        //   https://placeholderart.wordpress.com/2014/11/16/implementing-a-physically-based-camera-understanding-exposure/
+        public static float ComputeEV100(float aperture, float shutterSpeed, float ISO)
+        {
+            // EV number is defined as:
+            //   2^ EV_s = N^2 / t and EV_s = EV_100 + log2 (S /100)
+            // This gives
+            //   EV_s = log2 (N^2 / t)
+            //   EV_100 + log2 (S /100) = log2 (N^2 / t)
+            //   EV_100 = log2 (N^2 / t) - log2 (S /100)
+            //   EV_100 = log2 (N^2 / t . 100 / S)
+            return Mathf.Log((aperture * aperture) / shutterSpeed * 100f / ISO, 2f);
+        }
+
+        public static float ConvertEV100ToExposure(float EV100)
+        {
+            // Compute the maximum luminance possible with H_sbs sensitivity
+            // maxLum = 78 / ( S * q ) * N^2 / t
+            //        = 78 / ( S * q ) * 2^ EV_100
+            //        = 78 / (100 * 0.65) * 2^ EV_100
+            //        = 1.2 * 2^ EV
+            // Reference: http://en.wikipedia.org/wiki/Film_speed
+            float maxLuminance = 1.2f * Mathf.Pow(2f, EV100);
+            return 1f / maxLuminance;
+        }
+
+        // Compute the required ISO to reach the target EV100
+        public static float ComputeISO(float aperture, float shutterSpeed, float targetEV100) => ((aperture * aperture) * 100f) / (shutterSpeed * Mathf.Pow(2f, targetEV100));
     }
 }

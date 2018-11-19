@@ -33,9 +33,6 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             }
         }
 
-        Vector3 GetLiftValue(Vector4 x)
-        {
-            return new Vector3(x.x + x.w, x.y + x.w, x.z + x.w);
-        }
+        Vector3 GetLiftValue(Vector4 x) => new Vector3(x.x + x.w, x.y + x.w, x.z + x.w);
     }
 }

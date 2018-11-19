@@ -348,7 +348,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             cmd.DispatchCompute(cs, kernel, m_Widths[(int)MipLevel.L6], m_Heights[(int)MipLevel.L6], 1);
         }
 
-        void PushRenderCommands(CommandBuffer cmd, Vector4 viewport, RTHandle source, RTHandle destination, AmbientOcclusion settings, Vector3 sourceSize, float tanHalfFovH)
+        void PushRenderCommands(CommandBuffer cmd, in Vector4 viewport, RTHandle source, RTHandle destination, AmbientOcclusion settings, in Vector3 sourceSize, float tanHalfFovH)
         {
             // Here we compute multipliers that convert the center depth value into (the reciprocal
             // of) sphere thicknesses at each sample location. This assumes a maximum sample radius
@@ -435,7 +435,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             );
         }
 
-        void PushUpsampleCommands(CommandBuffer cmd, Vector4 viewport, RTHandle lowResDepth, RTHandle interleavedAO, RTHandle highResDepth, RTHandle highResAO, RTHandle dest, AmbientOcclusion settings, Vector3 lowResDepthSize, Vector2 highResDepthSize)
+        void PushUpsampleCommands(CommandBuffer cmd, in Vector4 viewport, RTHandle lowResDepth, RTHandle interleavedAO, RTHandle highResDepth, RTHandle highResAO, RTHandle dest, AmbientOcclusion settings, in Vector3 lowResDepthSize, in Vector2 highResDepthSize)
         {
             var cs = m_Resources.shaders.aoUpsampleCS;
             int kernel = m_IsMSAA

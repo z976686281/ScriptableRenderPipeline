@@ -73,7 +73,7 @@ Shader "Hidden/HDRenderPipeline/FinalPass"
                 float2 dir;
                 dir.x = -((lumaNW + lumaNE) - (lumaSW + lumaSE));
                 dir.y =  ((lumaNW + lumaSW) - (lumaNE + lumaSE));
-    
+
                 float lumaSum   = lumaNW + lumaNE + lumaSW + lumaSE;
                 float dirReduce = max(lumaSum * (0.25 * FXAA_REDUCE_MUL), FXAA_REDUCE_MIN);
                 float rcpDirMin = rcp(min(abs(dir.x), abs(dir.y)) + dirReduce);
@@ -97,7 +97,7 @@ Shader "Hidden/HDRenderPipeline/FinalPass"
                 float3 rgbB = rgbA * 0.5 + 0.25 * (rgb03 + rgb33);
 
                 float lumaB = Luminance(rgbB);
-    
+
                 float lumaMin = Min3(lumaM, lumaNW, Min3(lumaNE, lumaSW, lumaSE));
                 float lumaMax = Max3(lumaM, lumaNW, Max3(lumaNE, lumaSW, lumaSE));
 
