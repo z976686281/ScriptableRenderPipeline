@@ -64,5 +64,17 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
             expandedState = state;
         }
+
+        /// <summary> Utility to set all states to true </summary>
+        public void ExpandAll()
+        {
+            expandedState = ~(-1);
+        }
+
+        /// <summary> Utility to set all states to false </summary>
+        public void CollapseAll()
+        {
+            expandedState = 0;
+        }
     }
 }
