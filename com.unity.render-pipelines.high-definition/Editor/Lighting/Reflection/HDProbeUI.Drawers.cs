@@ -96,7 +96,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             if (k_ExpandedState[Expandable.CaptureSettings])
             {
                 if (s.isFrameSettingsOverriden.target)
-                    FrameSettingsUI.Inspector(withOverride: true).Draw(s.frameSettings, d.frameSettings, o);
+                    FrameSettingsUI.Inspector(withOverride: true).Draw(d.frameSettings, o);
                 else
                     EditorGUILayout.Space();
             }

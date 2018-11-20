@@ -68,7 +68,6 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
         public override void Reset(SerializedHDProbe data, UnityAction repaint)
         {
-            frameSettings.Reset(data.frameSettings, repaint);
             captureSettings.Reset(data.captureSettings, repaint);
             influenceVolume.Reset(data.influenceVolume, repaint);
             base.Reset(data, repaint);
@@ -85,8 +84,6 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             captureSettings.Update();
             bool frameSettingsOverriden = data.captureSettings.renderingPath.enumValueIndex == (int)HDAdditionalCameraData.RenderingPath.Custom;
             isFrameSettingsOverriden.value = frameSettingsOverriden;
-            if (frameSettingsOverriden)
-                frameSettings.Update();
             influenceVolume.Update();
             base.Update();
         }
