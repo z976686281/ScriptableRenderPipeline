@@ -11,7 +11,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
     {
         enum Expandable
         {
-            LightLoop,
+            LightLoop = 1 << 0,
         }
 
         readonly static ExpandedState<Expandable, LightLoopSettings> k_ExpandedState = new ExpandedState<Expandable, LightLoopSettings>(Expandable.LightLoop, "HDRP");
