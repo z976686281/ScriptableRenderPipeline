@@ -47,7 +47,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                 CED.Action(Drawer_CameraWarnings),
                 CED.Action(Drawer_FieldRenderingPath),
                 CED.Action(Drawer_Antialiasing),
-                CED.Action(Drawer_Dithering),
+                CED.Action(Drawer_Dithering)
                 //no space as FrameSettings is drawn just under
                 );
 
