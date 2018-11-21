@@ -362,6 +362,9 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 isFirstFrame = false;
             }
 
+            // In stereo, this corresponds to the center eye position	
+            worldSpaceCameraPos = camera.transform.position;
+
             taaFrameRotation = new Vector2(Mathf.Sin(taaFrameIndex * (0.5f * Mathf.PI)),
                     Mathf.Cos(taaFrameIndex * (0.5f * Mathf.PI)));
 
