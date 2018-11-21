@@ -1111,9 +1111,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                         StartStereoRendering(cmd, renderContext, camera);
 
                         if (!hdCamera.frameSettings.SSAORunsAsync())
-                        {
                             m_AmbientOcclusionSystem.Render(cmd, hdCamera, m_SharedRTManager);
-                        }
 
                         // Clear and copy the stencil texture needs to be moved to before we invoke the async light list build,
                         // otherwise the async compute queue can end up using that texture before the graphics queue is done with it.
@@ -1189,11 +1187,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
                         if (hdCamera.frameSettings.SSAORunsAsync())
                         {
-                            SSAOTask.Start(cmd, renderContext, (CommandBuffer asyncCmd) =>
-                            {
-                                SSAODispatch(asyncCmd, hdCamera, renderContext, postProcessLayer);
-                            }, !haveAsyncTaskWithShadows);
-
+                            void AsyncSSAODispatch(CommandBuffer asyncCmd) => m_AmbientOcclusionSystem.Dispatch(asyncCmd, hdCamera, m_SharedRTManager);
+                            SSAOTask.Start(cmd, renderContext, AsyncSSAODispatch, !haveAsyncTaskWithShadows);
                             haveAsyncTaskWithShadows = true;
                         }
 
@@ -1261,10 +1256,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
                         if (hdCamera.frameSettings.SSAORunsAsync())
                         {
-                            SSAOTask.EndWithPostWork(cmd, () =>
-                            {
-                                SSAOPostDispatchWork(cmd, hdCamera, renderContext, postProcessLayer);
-                            });
+                            SSAOTask.EndWithPostWork(cmd, () => m_AmbientOcclusionSystem.PostDispatchWork(cmd, hdCamera, m_SharedRTManager));
                         }
 
                         if (hdCamera.frameSettings.SSRRunsAsync())
