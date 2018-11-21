@@ -1,14 +1,15 @@
 using System;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.LWRP;
 
-namespace UnityEngine.Experimental.Rendering.LightweightPipeline
+namespace UnityEngine.Experimental.Rendering.LWRP
 {
     /// <summary>
     /// Draw the skybox into the given color buffer using the given depth buffer for depth testing.
     ///
     /// This pass renders the standard Unity skybox.
     /// </summary>
-    public class DrawSkyboxPass : ScriptableRenderPass
+    internal class DrawSkyboxPass : ScriptableRenderPass
     {
         private RenderTargetHandle colorAttachmentHandle { get; set; }
         private RenderTargetHandle depthAttachmentHandle { get; set; }
@@ -31,7 +32,7 @@ namespace UnityEngine.Experimental.Rendering.LightweightPipeline
                 throw new ArgumentNullException("renderer");
             
             CommandBuffer cmd = CommandBufferPool.Get("Draw Skybox (Set RT's)");
-            if (renderingData.cameraData.isStereoEnabled && XRGraphicsConfig.eyeTextureDesc.dimension == TextureDimension.Tex2DArray)
+            if (renderingData.cameraData.isStereoEnabled && XRGraphics.eyeTextureDesc.dimension == TextureDimension.Tex2DArray)
             {
                 cmd.SetRenderTarget(colorAttachmentHandle.Identifier(), depthAttachmentHandle.Identifier(), 0, CubemapFace.Unknown, -1);
             }

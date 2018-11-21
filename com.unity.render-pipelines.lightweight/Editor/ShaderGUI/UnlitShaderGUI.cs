@@ -1,8 +1,8 @@
 using System;
 using UnityEngine;
-using UnityEngine.Experimental.Rendering;
+using UnityEngine.Rendering;
 
-namespace UnityEditor.Experimental.Rendering.LightweightPipeline
+namespace UnityEditor.Rendering.LWRP
 {
     internal class UnlitShaderGUI : BaseShaderGUI
     {
@@ -74,8 +74,10 @@ namespace UnityEditor.Experimental.Rendering.LightweightPipeline
         static void SetMaterialKeywords(Material material)
         {
             bool sampleGI = material.GetFloat("_SampleGI") >= 1.0f;
-            CoreUtils.SetKeyword(material, "_SAMPLE_GI", sampleGI);
-            CoreUtils.SetKeyword(material, "_NORMAL_MAP", sampleGI && material.GetTexture("_BumpMap"));
+            bool normalMap = material.GetTexture("_BumpMap");
+
+            CoreUtils.SetKeyword(material, "_SAMPLE_GI", sampleGI && !normalMap);
+            CoreUtils.SetKeyword(material, "_SAMPLE_GI_NORMALMAP", sampleGI && normalMap);
         }
     }
 }

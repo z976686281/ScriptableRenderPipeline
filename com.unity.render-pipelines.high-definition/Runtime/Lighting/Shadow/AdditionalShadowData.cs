@@ -24,6 +24,7 @@ namespace UnityEngine.Experimental.Rendering
 
         [Range(0.0f, 1.0f)]
         public float shadowDimmer = 1.0f;
+        public float volumetricShadowDimmer = 1.0f;
         public float shadowFadeDistance = 10000.0f;
         public bool contactShadows = false;
         // bias control
@@ -37,7 +38,7 @@ namespace UnityEngine.Experimental.Rendering
         public float normalBiasScale = 1.0f;
         public bool sampleBiasScale = true;
         public bool edgeLeakFixup = false; // Causes large banding artifacts
-        public bool edgeToleranceNormal = true;
+        public bool edgeToleranceNormal = false;
         [Range(0.0F, 1.0F)]
         public float edgeTolerance = 1.0f;
 
@@ -131,6 +132,7 @@ namespace UnityEngine.Experimental.Rendering
         {
             data.shadowResolution = shadowResolution;
             data.shadowDimmer = shadowDimmer;
+            data.volumetricShadowDimmer = volumetricShadowDimmer;
             data.shadowFadeDistance = shadowFadeDistance;
             data.contactShadows = contactShadows;
             data.viewBiasMin = viewBiasMin;
