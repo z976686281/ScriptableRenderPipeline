@@ -678,14 +678,14 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 }
                 else
                 {
-                    cmd.SetGlobalTexture(HDShaderIDs._CameraMotionVectorsTexture, RuntimeUtilities.blackTexture);
+                    cmd.SetGlobalTexture(HDShaderIDs._CameraMotionVectorsTexture, Texture2D.blackTexture);
                 }
 
                 // Light loop stuff...
                 if (hdCamera.frameSettings.enableSSR)
                     cmd.SetGlobalTexture(HDShaderIDs._SsrLightingTexture, m_SsrLightingTexture);
                 else
-                    cmd.SetGlobalTexture(HDShaderIDs._SsrLightingTexture, RuntimeUtilities.transparentTexture);
+                    cmd.SetGlobalTexture(HDShaderIDs._SsrLightingTexture, HDUtils.clearTexture);
             }
         }
 
@@ -1264,8 +1264,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                             SSAOTask.EndWithPostWork(cmd, () =>
                             {
                                 SSAOPostDispatchWork(cmd, hdCamera, renderContext, postProcessLayer);
-                            }
-                            );
+                            });
                         }
 
                         if (hdCamera.frameSettings.SSRRunsAsync())
@@ -1342,7 +1341,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                         using (new ProfilingSample(cmd, "Blit to final RT", CustomSamplerId.BlitToFinalRT.GetSampler()))
                         {
                             // This Blit will flip the screen on anything other than openGL
-                            if (srcFrameSettings.enableStereo && (XRGraphicsConfig.eyeTextureDesc.vrUsage == VRTextureUsage.TwoEyes))
+                            if (camera.stereoEnabled && (XRGraphics.eyeTextureDesc.dimension == TextureDimension.Tex2D))
                             {
                                 Material finalDoubleWideBlit = GetBlitMaterial();
                                 finalDoubleWideBlit.SetTexture(HDShaderIDs._BlitTexture, m_CameraColorBuffer);
@@ -2055,7 +2054,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
             if (!hdCamera.colorPyramidHistoryIsValid)
             {
-                cmd.SetGlobalTexture(HDShaderIDs._SsrLightingTexture, RuntimeUtilities.transparentTexture);
+                cmd.SetGlobalTexture(HDShaderIDs._SsrLightingTexture, HDUtils.clearTexture);
                 hdCamera.colorPyramidHistoryIsValid = true; // For the next frame...
             }
 

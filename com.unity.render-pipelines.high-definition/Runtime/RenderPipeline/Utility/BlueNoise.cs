@@ -1,4 +1,5 @@
 using UnityEngine.Assertions;
+using UnityEngine.Rendering;
 
 namespace UnityEngine.Experimental.Rendering.HDPipeline
 {

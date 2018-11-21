@@ -435,7 +435,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             // at the beginning of the frame and exposure is applied with a one-frame delay it means
             // that 'current' and 'previous' are swapped
             next = camera.GetCurrentFrameRT((int)HDCameraFrameHistoryType.Exposure)
-                ?? camera.AllocHistoryFrameRT((int)HDCameraFrameHistoryType.Exposure, ExposureHistoryAllocator);
+                ?? camera.AllocHistoryFrameRT((int)HDCameraFrameHistoryType.Exposure, ExposureHistoryAllocator, 2);
             previous = camera.GetPreviousFrameRT((int)HDCameraFrameHistoryType.Exposure);
         }
 
@@ -566,7 +566,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         static void GrabTemporalAntialiasingHistoryTextures(HDCamera camera, out RTHandle previous, out RTHandle next)
         {
             next = camera.GetCurrentFrameRT((int)HDCameraFrameHistoryType.TemporalAntialiasing)
-                ?? camera.AllocHistoryFrameRT((int)HDCameraFrameHistoryType.TemporalAntialiasing, TemporalAntialiasingHistoryAllocator);
+                ?? camera.AllocHistoryFrameRT((int)HDCameraFrameHistoryType.TemporalAntialiasing, TemporalAntialiasingHistoryAllocator, 2);
             previous = camera.GetPreviousFrameRT((int)HDCameraFrameHistoryType.TemporalAntialiasing);
         }
 
@@ -1078,7 +1078,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         static void GrabCoCHistory(HDCamera camera, out RTHandle previous, out RTHandle next)
         {
             next = camera.GetCurrentFrameRT((int)HDCameraFrameHistoryType.DepthOfFieldCoC)
-                ?? camera.AllocHistoryFrameRT((int)HDCameraFrameHistoryType.DepthOfFieldCoC, CoCHistoryAllocator);
+                ?? camera.AllocHistoryFrameRT((int)HDCameraFrameHistoryType.DepthOfFieldCoC, CoCHistoryAllocator, 2);
             previous = camera.GetPreviousFrameRT((int)HDCameraFrameHistoryType.DepthOfFieldCoC);
         }
 

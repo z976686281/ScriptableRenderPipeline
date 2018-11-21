@@ -814,9 +814,9 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         // Set up UnityPerView CBuffer.
         public void SetupGlobalParams(CommandBuffer cmd, float time, float lastTime, uint frameCount)
         {
-            var postProcessLayer = camera.GetComponent<PostProcessLayer>();
-            bool taaEnabled = camera.cameraType == CameraType.Game &&
-                              HDUtils.IsTemporalAntialiasingActive(postProcessLayer);
+            bool taaEnabled = m_frameSettings.enablePostprocess
+                && antialiasing == HDAdditionalCameraData.AntialiasingMode.TemporalAntialiasing
+                && camera.cameraType == CameraType.Game;
 
             cmd.SetGlobalMatrix(HDShaderIDs._ViewMatrix,                viewMatrix);
             cmd.SetGlobalMatrix(HDShaderIDs._InvViewMatrix,             viewMatrix.inverse);

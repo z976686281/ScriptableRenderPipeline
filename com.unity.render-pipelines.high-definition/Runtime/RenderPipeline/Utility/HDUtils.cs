@@ -15,6 +15,22 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         static public HDAdditionalCameraData s_DefaultHDAdditionalCameraData { get { return ComponentSingleton<HDAdditionalCameraData>.instance; } }
         static public AdditionalShadowData s_DefaultAdditionalShadowData { get { return ComponentSingleton<AdditionalShadowData>.instance; } }
 
+        static Texture2D m_ClearTexture;
+        public static Texture2D clearTexture
+        {
+            get
+            {
+                if (m_ClearTexture == null)
+                {
+                    m_ClearTexture = new Texture2D(1, 1, TextureFormat.ARGB32, false) { name = "Clear Texture" };
+                    m_ClearTexture.SetPixel(0, 0, Color.clear);
+                    m_ClearTexture.Apply();
+                }
+
+                return m_ClearTexture;
+            }
+        }
+
 
         public static Material GetBlitMaterial()
         {
