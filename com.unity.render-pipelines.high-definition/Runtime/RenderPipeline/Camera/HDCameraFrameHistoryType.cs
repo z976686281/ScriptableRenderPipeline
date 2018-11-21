@@ -7,7 +7,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         Exposure,
         TemporalAntialiasing,
         DepthOfFieldCoC,
-        Bloom,
         Count
     }
 }
