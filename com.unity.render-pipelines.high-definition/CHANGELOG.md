@@ -4,6 +4,16 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [5.2.0-preview] - 2018-11-xx
+
+### Added
+
+### Fixed
+- Fixed Debug.DrawLine and Debug.Ray call to work in game view
+
+### Changed
+- Rename "Regular" in Diffusion profile UI "Thick Object"
+
 ## [5.1.0-preview] - 2018-11-19
 
 ### Added
@@ -20,6 +30,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Exposed the option to run SSR and SSAO on async compute.
 - Added support for the _GlossMapScale parameter in the Legacy to HDRP Material converter.
 - Added wave intrinsic instructions for use in Shaders (for AMD GCN).
+- Added option to run Contact Shadows and Volumetrics Voxelization stage in Async Compute.
 
 ### Fixed
 - Fixed sphere shaped influence handles clamping in Reflection Probes.
@@ -54,6 +65,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fixed a crash that occurred whenever you set a viewport size to 0.
 - Fixed the Camera physic parameter that the UI previously did not display.
 - Fixed issue in pyramid shaped spotlight handles manipulation
+- Fixed disable rough refraction support
 
 ### Changed
 

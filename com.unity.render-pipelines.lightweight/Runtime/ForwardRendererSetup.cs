@@ -29,6 +29,8 @@ namespace UnityEngine.Experimental.Rendering.LWRP
         private EndXRRenderingPass m_EndXrRenderingPass;
 
 #if UNITY_EDITOR
+        private GizmoRenderingPass m_LitGizmoRenderingPass;
+        private GizmoRenderingPass m_UnlitGizmoRenderingPass;
         private SceneViewDepthCopyPass m_SceneViewDepthCopyPass;
 #endif
 
@@ -73,6 +75,8 @@ namespace UnityEngine.Experimental.Rendering.LWRP
 
 #if UNITY_EDITOR
             m_SceneViewDepthCopyPass = new SceneViewDepthCopyPass();
+            m_LitGizmoRenderingPass = new GizmoRenderingPass();
+            m_UnlitGizmoRenderingPass = new GizmoRenderingPass();
 #endif
 
             // RenderTexture format depends on camera and pipeline (HDR, non HDR, etc)
@@ -189,12 +193,12 @@ namespace UnityEngine.Experimental.Rendering.LWRP
             if (renderingData.cameraData.isStereoEnabled)
                 renderer.EnqueuePass(m_BeginXrRenderingPass);
 
-            var rendererConfiguration = ScriptableRenderer.GetRendererConfiguration(renderingData.lightData.additionalLightsCount);
+            var perObjectFlags = ScriptableRenderer.GetPerObjectLightFlags(renderingData.lightData.mainLightIndex, renderingData.lightData.additionalLightsCount);
 
             m_SetupLightweightConstants.Setup(renderer.maxVisibleAdditionalLights, renderer.perObjectLightIndices);
             renderer.EnqueuePass(m_SetupLightweightConstants);
 
-            m_RenderOpaqueForwardPass.Setup(baseDescriptor, colorHandle, depthHandle, ScriptableRenderer.GetCameraClearFlag(camera), camera.backgroundColor, rendererConfiguration);
+            m_RenderOpaqueForwardPass.Setup(baseDescriptor, colorHandle, depthHandle, ScriptableRenderer.GetCameraClearFlag(camera), camera.backgroundColor, perObjectFlags);
             renderer.EnqueuePass(m_RenderOpaqueForwardPass);
             foreach (var pass in m_AfterOpaquePasses)
                 renderer.EnqueuePass(pass.GetPassToEnqueue(baseDescriptor, colorHandle, depthHandle));
@@ -234,11 +238,16 @@ namespace UnityEngine.Experimental.Rendering.LWRP
                 renderer.EnqueuePass(m_CopyColorPass);
             }
 
-            m_RenderTransparentForwardPass.Setup(baseDescriptor, colorHandle, depthHandle, rendererConfiguration);
+            m_RenderTransparentForwardPass.Setup(baseDescriptor, colorHandle, depthHandle, perObjectFlags);
             renderer.EnqueuePass(m_RenderTransparentForwardPass);
 
             foreach (var pass in m_AfterTransparentPasses)
                 renderer.EnqueuePass(pass.GetPassToEnqueue(baseDescriptor, colorHandle, depthHandle));
+
+#if UNITY_EDITOR
+            m_LitGizmoRenderingPass.Setup(true);
+            renderer.EnqueuePass(m_LitGizmoRenderingPass);
+#endif
 
             bool afterRenderExists = m_AfterRenderPasses.Count != 0;
 
@@ -289,6 +298,9 @@ namespace UnityEngine.Experimental.Rendering.LWRP
             }
 
 #if UNITY_EDITOR
+            m_UnlitGizmoRenderingPass.Setup(false);
+            renderer.EnqueuePass(m_UnlitGizmoRenderingPass);
+
             if (renderingData.cameraData.isSceneViewCamera)
             {
                 m_SceneViewDepthCopyPass.Setup(m_DepthTexture);

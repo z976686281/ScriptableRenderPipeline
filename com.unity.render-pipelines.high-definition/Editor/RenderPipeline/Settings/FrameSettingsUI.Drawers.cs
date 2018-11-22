@@ -179,11 +179,13 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             {
                 OverridableSettingsArea area = new OverridableSettingsArea(4);
                 FrameSettings defaultFrameSettings = GetDefaultFrameSettingsFor(owner);
-
+              
                 area.Add(serialized.enableAsyncCompute, asyncComputeContent, () => serialized.overridesAsyncCompute, a => serialized.overridesAsyncCompute = a, defaultValue: defaultFrameSettings.enableAsyncCompute);
                 area.Add(serialized.runBuildLightListAsync, lightListAsyncContent, () => serialized.overrideLightListInAsync, a => serialized.overrideLightListInAsync = a, () => serialized.enableAsyncCompute.boolValue, defaultValue: defaultFrameSettings.runLightListAsync, indent: 1);
                 area.Add(serialized.runSSRAsync, SSRAsyncContent, () => serialized.overrideSSRInAsync, a => serialized.overrideSSRInAsync = a, () => serialized.enableAsyncCompute.boolValue, defaultValue: defaultFrameSettings.runSSRAsync, indent: 1);
                 area.Add(serialized.runSSAOAsync, SSAOAsyncContent, () => serialized.overrideSSAOInAsync, a => serialized.overrideSSAOInAsync = a, () => serialized.enableAsyncCompute.boolValue, defaultValue: defaultFrameSettings.runSSAOAsync, indent: 1);
+                area.Add(serialized.runContactShadowsAsync, contactShadowsAsyncContent, () => serialized.overrideContactShadowsInAsync, a => serialized.overrideContactShadowsInAsync = a, () => serialized.enableAsyncCompute.boolValue, defaultValue: defaultFrameSettings.runContactShadowsAsync, indent: 1);
+                area.Add(serialized.runVolumeVoxelizationAsync, volumeVoxelizationAsyncContent, () => serialized.overrideVolumeVoxelizationInAsync, a => serialized.overrideVolumeVoxelizationInAsync = a, () => serialized.enableAsyncCompute.boolValue, defaultValue: defaultFrameSettings.runVolumeVoxelizationAsync, indent: 1);
                 area.Draw(withOverride);
             }
         }
