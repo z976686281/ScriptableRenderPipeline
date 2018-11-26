@@ -306,6 +306,8 @@ CBUFFER_START(UnityGlobal)
     #define DEFAULT_LIGHT_LAYERS 0xFF
     uint _EnableLightLayers;
 
+    uint _EnableSSRefraction;
+
 CBUFFER_END
 
 // Exposure texture - 1x1 R16F (EV100)

@@ -53,6 +53,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         CullResultsCull,
         CopyDepth,
         UpdateStencilCopyForSSRExclusion,
+        GizmosPrePostprocess,
+        Gizmos,
 
         // Profile sampler for tile pass
         TPPrepareLightsForGPU,
