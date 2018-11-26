@@ -603,7 +603,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                 }
                 else
                 {
-                    CoreEditorUtils.DrawSplitter();
+                    CoreEditorUtils.DrawSplitter(isBoxed);
                     newExpended = CoreEditorUtils.DrawHeaderFoldout(title, expended, isBoxed,
                         isAdvanced == null ? (Func<bool>)null : () => isAdvanced(data, owner),
                         switchAdvanced == null ? (Action)null : () => switchAdvanced(data, owner));
