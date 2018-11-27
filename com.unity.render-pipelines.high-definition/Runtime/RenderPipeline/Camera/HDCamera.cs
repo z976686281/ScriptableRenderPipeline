@@ -163,20 +163,13 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             }
         }
 
-        public HDAdditionalCameraData.AntialiasingMode antialiasing
-        {
-            get
-            {
-                return m_AdditionalCameraData != null
-                    ? m_AdditionalCameraData.antialiasing
-                    : HDAdditionalCameraData.AntialiasingMode.None;
-            }
-        }
+        public HDAdditionalCameraData.AntialiasingMode antialiasing => m_AdditionalCameraData != null
+            ? m_AdditionalCameraData.antialiasing
+            : HDAdditionalCameraData.AntialiasingMode.None;
 
-        public bool dithering
-        {
-            get { return m_AdditionalCameraData != null && m_AdditionalCameraData.dithering; }
-        }
+        public bool dithering => m_AdditionalCameraData != null && m_AdditionalCameraData.dithering;
+
+        public HDPhysicalCamera physicalParameters => m_AdditionalCameraData?.physicalParameters;
 
         static Dictionary<Camera, HDCamera> s_Cameras = new Dictionary<Camera, HDCamera>();
         static List<Camera> s_Cleanup = new List<Camera>(); // Recycled to reduce GC pressure
