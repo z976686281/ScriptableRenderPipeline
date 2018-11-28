@@ -264,7 +264,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
             var nonJitteredCameraProj = camera.projectionMatrix;
             var cameraProj = taaEnabled
-                ? GetJitteredProjectionMatrix()
+                ? GetJitteredProjectionMatrix(nonJitteredCameraProj)
                 : nonJitteredCameraProj;
 
             // The actual projection matrix used in shaders is actually massaged a bit to work across all platforms
@@ -586,7 +586,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             }
         }
 
-        Matrix4x4 GetJitteredProjectionMatrix()
+        Matrix4x4 GetJitteredProjectionMatrix(Matrix4x4 origProj)
         {
             // The variance between 0 and the actual halton sequence values reveals noticeable
             // instability in Unity's shadow maps, so we avoid index 0.
@@ -618,40 +618,20 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             }
             else
             {
-                float vertical = Mathf.Tan(0.5f * Mathf.Deg2Rad * camera.fieldOfView);
-                float horizontal = vertical * camera.aspect;
-                float near = camera.nearClipPlane;
-                float far = camera.farClipPlane;
-                
-                var offset = taaJitter;
-                offset.x *= horizontal / (0.5f * camera.pixelWidth);
-                offset.y *= vertical / (0.5f * camera.pixelHeight);
+                var planes = origProj.decomposeProjection;
 
-                float left = (offset.x - horizontal) * near;
-                float right = (offset.x + horizontal) * near;
-                float top = (offset.y + vertical) * near;
-                float bottom = (offset.y - vertical) * near;
+                float vertFov = Math.Abs(planes.top) + Math.Abs(planes.bottom);
+                float horizFov = Math.Abs(planes.left) + Math.Abs(planes.right);
 
-                proj = new Matrix4x4();
-                proj[0, 0] = (2f * near) / (right - left);
-                proj[0, 1] = 0f;
-                proj[0, 2] = (right + left) / (right - left);
-                proj[0, 3] = 0f;
+                var planeJitter = new Vector2(jitterX * horizFov / camera.pixelWidth,
+                    jitterY * vertFov / camera.pixelHeight);
 
-                proj[1, 0] = 0f;
-                proj[1, 1] = (2f * near) / (top - bottom);
-                proj[1, 2] = (top + bottom) / (top - bottom);
-                proj[1, 3] = 0f;
+                planes.left += planeJitter.x;
+                planes.right += planeJitter.x;
+                planes.top += planeJitter.y;
+                planes.bottom += planeJitter.y;
 
-                proj[2, 0] = 0f;
-                proj[2, 1] = 0f;
-                proj[2, 2] = -(far + near) / (far - near);
-                proj[2, 3] = -(2f * far * near) / (far - near);
-
-                proj[3, 0] = 0f;
-                proj[3, 1] = 0f;
-                proj[3, 2] = -1f;
-                proj[3, 3] = 0f;
+                proj = Matrix4x4.Frustum(planes);
             }
 
             return proj;
