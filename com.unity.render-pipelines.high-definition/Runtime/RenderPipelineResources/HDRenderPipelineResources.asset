@@ -117,6 +117,8 @@ MonoBehaviour:
     depthOfFieldDilateCS: {fileID: 7200000, guid: 1c93af4338c0c1b42b92464992eebc10,
       type: 3}
     depthOfFieldMipCS: {fileID: 7200000, guid: d3ef53de069ded64e8377cba6eb951fa, type: 3}
+    depthOfFieldMipSafeCS: {fileID: 7200000, guid: 2d24ee7b2c804d947a5c371c12ed46bd,
+      type: 3}
     depthOfFieldPrefilterCS: {fileID: 7200000, guid: f2b89d19910854346b792fe7177ce634,
       type: 3}
     depthOfFieldTileMaxCS: {fileID: 7200000, guid: 84f84585ea8a7a849bea4a581adb93a7,
@@ -138,7 +140,7 @@ MonoBehaviour:
     defaultTerrainMat: {fileID: 2100000, guid: 22ff8771d87ef27429e670136399094b, type: 2}
   textures:
     debugFontTex: {fileID: 2800000, guid: a3ad2df0e49aaa341a3b3a80f93b3f66, type: 3}
-    colorGradient: {fileID: 0}
+    colorGradient: {fileID: 2800000, guid: 4ea52e665573c1644bf05dd9b11fd2a4, type: 3}
     blueNoise16LTex:
     - {fileID: 2800000, guid: efa2ea5416a18da46b64f1266464ffc7, type: 3}
     - {fileID: 2800000, guid: 0330b95d1d741fc4281eac4aec9d2eae, type: 3}

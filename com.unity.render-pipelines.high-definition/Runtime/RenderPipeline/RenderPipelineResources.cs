@@ -107,6 +107,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             public ComputeShader depthOfFieldCoCReprojectCS;
             public ComputeShader depthOfFieldDilateCS;
             public ComputeShader depthOfFieldMipCS;
+            public ComputeShader depthOfFieldMipSafeCS;
             public ComputeShader depthOfFieldPrefilterCS;
             public ComputeShader depthOfFieldTileMaxCS;
             public ComputeShader depthOfFieldGatherCS;
@@ -266,6 +267,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 depthOfFieldCoCReprojectCS = Load<ComputeShader>(HDRenderPipelinePath + "PostProcessing/Shaders/DepthOfFieldCoCReproject.compute"),
                 depthOfFieldDilateCS = Load<ComputeShader>(HDRenderPipelinePath + "PostProcessing/Shaders/DepthOfFieldCoCDilate.compute"),
                 depthOfFieldMipCS = Load<ComputeShader>(HDRenderPipelinePath + "PostProcessing/Shaders/DepthOfFieldMip.compute"),
+                depthOfFieldMipSafeCS = Load<ComputeShader>(HDRenderPipelinePath + "PostProcessing/Shaders/DepthOfFieldMipSafe.compute"),
                 depthOfFieldPrefilterCS = Load<ComputeShader>(HDRenderPipelinePath + "PostProcessing/Shaders/DepthOfFieldPrefilter.compute"),
                 depthOfFieldTileMaxCS = Load<ComputeShader>(HDRenderPipelinePath + "PostProcessing/Shaders/DepthOfFieldTileMax.compute"),
                 depthOfFieldGatherCS = Load<ComputeShader>(HDRenderPipelinePath + "PostProcessing/Shaders/DepthOfFieldGather.compute"),
@@ -304,8 +306,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     Load<Texture2D>(HDRenderPipelinePath + "RenderPipelineResources/Texture/FilmGrain/Large02.png")
                 },
 
-                blueNoise16LTex = new Texture2D[64],
-                blueNoise16RGBTex = new Texture2D[64]
+                blueNoise16LTex = new Texture2D[32],
+                blueNoise16RGBTex = new Texture2D[32]
             };
 
             // ShaderGraphs

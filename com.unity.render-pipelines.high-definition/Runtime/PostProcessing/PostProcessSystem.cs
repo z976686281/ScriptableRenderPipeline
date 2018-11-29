@@ -71,6 +71,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
         readonly TargetPool m_Pool;
 
+        readonly bool useSafePath;
+
         // Uber feature map to workaround the lack of multi_compile in compute shaders
         readonly Dictionary<int, string> m_UberPostFeatureMap = new Dictionary<int, string>();
 
@@ -80,6 +82,11 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         {
             m_Resources = hdAsset.renderPipelineResources;
             m_FinalPassMaterial = CoreUtils.CreateEngineMaterial(m_Resources.shaders.finalPassPS);
+
+            // Some compute shaders fail on specific hardware or vendors so we'll have to use a
+            // safer but slower code path for them
+            useSafePath = SystemInfo.graphicsDeviceVendor
+                .ToLowerInvariant().Contains("intel");
 
             // Feature maps
             // Must be kept in sync with variants defined in UberPost.compute
@@ -825,15 +832,49 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     int tx = ((targetWidth >> 1) + 7) / 8;
                     int ty = ((targetHeight >> 1) + 7) / 8;
 
-                    cs = m_Resources.shaders.depthOfFieldMipCS;
-                    kernel = cs.FindKernel("KMainColor");
-                    cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._InputTexture, pingFarRGB, 0);
-                    cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._OutputMip1, pingFarRGB, 1);
-                    cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._OutputMip2, pingFarRGB, 2);
-                    cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._OutputMip3, pingFarRGB, 3);
-                    cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._OutputMip4, pingFarRGB, 4);
-                    cmd.DispatchCompute(cs, kernel, tx, ty, 1);
+                    if (useSafePath)
+                    {
+                        // The other compute fails hard on Intel because of texture format issues
+                        cs = m_Resources.shaders.depthOfFieldMipSafeCS;
+                        kernel = cs.FindKernel("KMain");
+                        var mipScale = scale;
 
+                        for (int i = 0; i < 4; i++)
+                        {
+                            mipScale *= 0.5f;
+                            var size = new Vector2Int(Mathf.RoundToInt(camera.actualWidth * mipScale), Mathf.RoundToInt(camera.actualHeight * mipScale));
+                            var mip = m_Pool.Get(new Vector2(mipScale, mipScale), k_ColorFormat);
+
+                            cmd.SetComputeVectorParam(cs, HDShaderIDs._TexelSize, new Vector4(size.x, size.y, 1f / size.x, 1f / size.y));
+                            int gx = (size.x + 7) / 8;
+                            int gy = (size.y + 7) / 8;
+
+                            // Downsample
+                            cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._InputTexture, pingFarRGB);
+                            cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._OutputTexture, mip);
+                            cmd.DispatchCompute(cs, kernel, gx, gy, 1);
+
+                            // Copy to mip
+                            cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._InputTexture, mip);
+                            cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._OutputTexture, pingFarRGB, i + 1);
+                            cmd.DispatchCompute(cs, kernel, gx, gy, 1);
+
+                            m_Pool.Recycle(mip);
+                        }
+                    }
+                    else
+                    {
+                        cs = m_Resources.shaders.depthOfFieldMipCS;
+                        kernel = cs.FindKernel("KMainColor");
+                        cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._InputTexture, pingFarRGB, 0);
+                        cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._OutputMip1, pingFarRGB, 1);
+                        cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._OutputMip2, pingFarRGB, 2);
+                        cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._OutputMip3, pingFarRGB, 3);
+                        cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._OutputMip4, pingFarRGB, 4);
+                        cmd.DispatchCompute(cs, kernel, tx, ty, 1);
+                    }
+
+                    cs = m_Resources.shaders.depthOfFieldMipCS;
                     kernel = cs.FindKernel("KMainCoC");
                     cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._InputTexture, farCoC, 0);
                     cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._OutputMip1, farCoC, 1);
