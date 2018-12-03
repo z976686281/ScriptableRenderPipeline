@@ -1392,9 +1392,9 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
                         StartStereoRendering(cmd, renderContext, camera);
 
-                        //>>> -- TEMP
                         if (currentFrameSettings.enablePostprocess)
                         {
+                            // Post-processes output straight to the backbuffer
                             m_PostProcessSystem.Render(
                                 cmd: cmd,
                                 camera: hdCamera,
@@ -1403,24 +1403,25 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                                 lightingBuffer: null
                             );
                         }
-                        //<<<
-                        // Final blit
-                        // TODO: Should be handled by PostProcessSystem
-                        using (new ProfilingSample(cmd, "Blit to final RT", CustomSamplerId.BlitToFinalRT.GetSampler()))
+                        else
                         {
-                            // This Blit will flip the screen on anything other than openGL
-                            if (camera.stereoEnabled && (XRGraphics.eyeTextureDesc.dimension == TextureDimension.Tex2D))
+                            // No post-process, do a final blit
+                            using (new ProfilingSample(cmd, "Blit to final RT", CustomSamplerId.BlitToFinalRT.GetSampler()))
                             {
-                                Material finalDoubleWideBlit = GetBlitMaterial();
-                                finalDoubleWideBlit.SetTexture(HDShaderIDs._BlitTexture, m_CameraColorBuffer);
-                                finalDoubleWideBlit.SetFloat(HDShaderIDs._BlitMipLevel, 0.0f);
-                                finalDoubleWideBlit.SetVector(HDShaderIDs._BlitScaleBiasRt, new Vector4(1.0f, 1.0f, 0.0f, 0.0f));
-                                finalDoubleWideBlit.SetVector(HDShaderIDs._BlitScaleBias, new Vector4(1.0f, 1.0f, 0.0f, 0.0f));
-                                cmd.Blit(m_CameraColorBuffer, BuiltinRenderTextureType.CameraTarget, finalDoubleWideBlit);
-                            }
-                            else
-                            {
-                                HDUtils.BlitCameraTexture(cmd, hdCamera, m_CameraColorBuffer, BuiltinRenderTextureType.CameraTarget);
+                                // This Blit will flip the screen on anything other than openGL
+                                if (camera.stereoEnabled && (XRGraphics.eyeTextureDesc.dimension == TextureDimension.Tex2D))
+                                {
+                                    var mat = GetBlitMaterial();
+                                    mat.SetTexture(HDShaderIDs._BlitTexture, m_CameraColorBuffer);
+                                    mat.SetFloat(HDShaderIDs._BlitMipLevel, 0f);
+                                    mat.SetVector(HDShaderIDs._BlitScaleBiasRt, new Vector4(1f, 1f, 0f, 0f));
+                                    mat.SetVector(HDShaderIDs._BlitScaleBias, new Vector4(1f, 1f, 0f, 0f));
+                                    cmd.Blit(m_CameraColorBuffer, BuiltinRenderTextureType.CameraTarget, mat);
+                                }
+                                else
+                                {
+                                    HDUtils.BlitCameraTexture(cmd, hdCamera, m_CameraColorBuffer, BuiltinRenderTextureType.CameraTarget);
+                                }
                             }
                         }
 

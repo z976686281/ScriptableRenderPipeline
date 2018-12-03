@@ -59,6 +59,18 @@ Shader "Hidden/HDRenderPipeline/FinalPass"
         float3 GetColor(Varyings input, out PositionInputs posInputs)
         {
             posInputs = GetPositionInput(input.positionCS.xy, _ScreenSize.zw);
+
+        #if UNITY_SINGLE_PASS_STEREO
+            // TODO: This is wrong, fix me
+            posInputs.positionNDC.x = posInputs.positionNDC.x / 2.0 + unity_StereoEyeIndex * 0.5;
+            posInputs.positionSS.x = posInputs.positionSS.x / 2;
+        #endif
+
+        #if UNITY_UV_STARTS_AT_TOP
+            posInputs.positionSS.y = _ScreenSize.y - posInputs.positionSS.y;
+            posInputs.positionNDC.y = 1.0 - posInputs.positionNDC.y;
+        #endif
+
             float3 outColor = Load(posInputs.positionSS, 0, 0);
 
             #if FXAA
