@@ -392,7 +392,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         #region Exposure
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        bool IsExposureFixed() => m_Exposure.mode == ExposureMode.Fixed || m_Exposure.mode == ExposureMode.UsePhysicalCamera;
+        bool IsExposureFixed() => m_Exposure.mode.value == ExposureMode.Fixed || m_Exposure.mode.value == ExposureMode.UsePhysicalCamera;
 
         public RTHandle GetExposureTexture(HDCamera camera)
         {
@@ -741,7 +741,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
                 cs = m_Resources.shaders.depthOfFieldCoCCS;
 
-                if (m_DepthOfField.focusMode == DepthOfFieldMode.UsePhysicalCamera)
+                if (m_DepthOfField.focusMode.value == DepthOfFieldMode.UsePhysicalCamera)
                 {
                     // "A Lens and Aperture Camera Model for Synthetic Image Generation" [Potmesil81]
                     float F = camera.camera.focalLength / 1000f;
