@@ -700,7 +700,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             // -----------------------------------------------------------------------------
             // Render logic
 
-            using (new ProfilingSample(cmd, "Generate Kernels", CustomSamplerId.DepthOfFieldKernel))
+            using (new ProfilingSample(cmd, "Generate Kernels", CustomSamplerId.DepthOfFieldKernel.GetSampler()))
             {
                 // -----------------------------------------------------------------------------
                 // Pass: generate bokeh kernels
@@ -731,7 +731,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 }
             }
 
-            using (new ProfilingSample(cmd, "CoC", CustomSamplerId.DepthOfFieldCoC))
+            using (new ProfilingSample(cmd, "CoC", CustomSamplerId.DepthOfFieldCoC.GetSampler()))
             {
                 // -----------------------------------------------------------------------------
                 // Pass: compute CoC in full-screen (needed for temporal re-projection & combine)
@@ -789,7 +789,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 }
             }
 
-            using (new ProfilingSample(cmd, "Pre-Filter", CustomSamplerId.DepthOfFieldPrefilter))
+            using (new ProfilingSample(cmd, "Pre-Filter", CustomSamplerId.DepthOfFieldPrefilter.GetSampler()))
             {
                 // -----------------------------------------------------------------------------
                 // Pass: downsample & prefilter CoC and layers
@@ -824,7 +824,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
             if (farLayerActive)
             {
-                using (new ProfilingSample(cmd, "Pyramid", CustomSamplerId.DepthOfFieldPyramid))
+                using (new ProfilingSample(cmd, "Pyramid", CustomSamplerId.DepthOfFieldPyramid.GetSampler()))
                 {
                     // -----------------------------------------------------------------------------
                     // Pass: mip generation
@@ -889,7 +889,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
             if (nearLayerActive)
             {
-                using (new ProfilingSample(cmd, "Dilate", CustomSamplerId.DepthOfFieldDilate))
+                using (new ProfilingSample(cmd, "Dilate", CustomSamplerId.DepthOfFieldDilate.GetSampler()))
                 {
                     // -----------------------------------------------------------------------------
                     // Pass: dilate the near CoC
@@ -926,7 +926,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
             if (useTiles)
             {
-                using (new ProfilingSample(cmd, "Tile Max", CustomSamplerId.DepthOfFieldTileMax))
+                using (new ProfilingSample(cmd, "Tile Max", CustomSamplerId.DepthOfFieldTileMax.GetSampler()))
                 {
                     // -----------------------------------------------------------------------------
                     // Pass: tile-max classification
@@ -967,7 +967,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
             if (farLayerActive)
             {
-                using (new ProfilingSample(cmd, "Gather Far", CustomSamplerId.DepthOfFieldGatherFar))
+                using (new ProfilingSample(cmd, "Gather Far", CustomSamplerId.DepthOfFieldGatherFar.GetSampler()))
                 {
                     // -----------------------------------------------------------------------------
                     // Pass: bokeh blur the far layer
@@ -1003,7 +1003,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
             if (nearLayerActive)
             {
-                using (new ProfilingSample(cmd, "Pre-Combine", CustomSamplerId.DepthOfFieldPreCombine))
+                using (new ProfilingSample(cmd, "Pre-Combine", CustomSamplerId.DepthOfFieldPreCombine.GetSampler()))
                 {
                     // -----------------------------------------------------------------------------
                     // Pass: if the far layer was active, use it as a source for the near blur to
@@ -1023,7 +1023,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     }
                 }
 
-                using (new ProfilingSample(cmd, "Gather Near", CustomSamplerId.DepthOfFieldGatherNear))
+                using (new ProfilingSample(cmd, "Gather Near", CustomSamplerId.DepthOfFieldGatherNear.GetSampler()))
                 {
                     // -----------------------------------------------------------------------------
                     // Pass: bokeh blur the near layer
@@ -1064,7 +1064,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 }
             }
 
-            using (new ProfilingSample(cmd, "Combine", CustomSamplerId.DepthOfFieldCombine))
+            using (new ProfilingSample(cmd, "Combine", CustomSamplerId.DepthOfFieldCombine.GetSampler()))
             {
                 // -----------------------------------------------------------------------------
                 // Pass: combine blurred layers with source color
