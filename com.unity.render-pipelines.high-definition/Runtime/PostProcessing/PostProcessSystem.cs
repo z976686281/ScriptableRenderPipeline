@@ -338,7 +338,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 // TODO: User effects go here
 
                 // Final pass
-                // TODO: this pass should be the one writing to the backbuffer and do all the remaining stuff
                 using (new ProfilingSample(cmd, "Final Pass", CustomSamplerId.FinalPost.GetSampler()))
                 {
                     DoFinalPass(cmd, camera, blueNoise, source);
@@ -623,7 +622,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             Assert.IsTrue(nearLayerActive || farLayerActive);
 
             bool bothLayersActive = nearLayerActive && farLayerActive;
-            bool useTiles = true; // TODO: debug panel entry
+            bool useTiles = true;
             bool hqFiltering = m_DepthOfField.highQualityFiltering.value;
 
             const uint kIndirectNearOffset = 0u * sizeof(uint);
