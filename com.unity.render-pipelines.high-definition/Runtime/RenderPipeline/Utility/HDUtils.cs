@@ -31,6 +31,21 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             }
         }
 
+        static Texture3D m_ClearTexture3D;
+        public static Texture3D clearTexture3D
+        {
+            get
+            {
+                if (m_ClearTexture3D == null)
+                {
+                    m_ClearTexture3D = new Texture3D(1, 1, 1, TextureFormat.ARGB32, false) { name = "Transparent Texture 3D" };
+                    m_ClearTexture3D.SetPixel(0, 0, 0, Color.clear);
+                    m_ClearTexture3D.Apply();
+                }
+
+                return m_ClearTexture3D;
+            }
+        }
 
         public static Material GetBlitMaterial()
         {
