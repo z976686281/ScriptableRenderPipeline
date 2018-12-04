@@ -144,7 +144,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         public bool dithering = false;
 
         // Physical parameters
-        public HDPhysicalCamera physicalParameters;
+        public HDPhysicalCamera physicalParameters = new HDPhysicalCamera();
 
         // Event used to override HDRP rendering for this particular camera.
         public event Action<ScriptableRenderContext, HDCamera> customRender;

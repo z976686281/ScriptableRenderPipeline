@@ -66,9 +66,9 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         ColorCurves m_Curves;
         FilmGrain m_FilmGrain;
 
+        // Physical camera ref
         HDPhysicalCamera m_PhysicalCamera;
-
-        readonly HDPhysicalCamera m_DefaultPhysicalCamera = new HDPhysicalCamera();
+        static readonly HDPhysicalCamera m_DefaultPhysicalCamera = new HDPhysicalCamera();
 
         // Misc (re-usable)
         RTHandle m_TempTexture1024; // RGHalf
@@ -180,6 +180,10 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
         public void BeginFrame(CommandBuffer cmd, HDCamera camera)
         {
+            // Grab physical camera settings or a default instance if it's null (should only happen
+            // in rare occasions due to how HDAdditionalCameraData is added to the camera)
+            m_PhysicalCamera = camera.physicalParameters ?? m_DefaultPhysicalCamera;
+
             // Prefetch all the volume components we need to save some cycles as most of these will
             // be needed in multiple places
             var stack = VolumeManager.instance.stack;
@@ -199,13 +203,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             m_ShadowsMidtonesHighlights = stack.GetComponent<ShadowsMidtonesHighlights>();
             m_Curves                    = stack.GetComponent<ColorCurves>();
             m_FilmGrain                 = stack.GetComponent<FilmGrain>();
-
-            // Grab physical camera settings or a default instance if it's null (should only happen
-            // in rare occasions due to how HDAdditionalCameraData is added to the camera)
-            m_PhysicalCamera = camera.physicalParameters;
-
-            if (m_PhysicalCamera == null)
-                m_PhysicalCamera = m_DefaultPhysicalCamera;
 
             // Check if motion vectors are needed, if so we need to enable a flag on the camera so
             // that Unity properly generate motion vectors (internal engine dependency)
