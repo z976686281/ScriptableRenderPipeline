@@ -27,6 +27,7 @@ Shader "Hidden/HDRenderPipeline/FinalPass"
         float2 _GrainParams;            // x: intensity, y: response
         float4 _GrainTextureParams;     // x: width, y: height, zw: random offset
         float3 _DitherParams;           // x: width, y: height, z: texture_id
+        float4 _UVTransform;
 
         struct Attributes
         {
@@ -66,10 +67,9 @@ Shader "Hidden/HDRenderPipeline/FinalPass"
             posInputs.positionSS.x = posInputs.positionSS.x / 2;
         #endif
 
-        #if UNITY_UV_STARTS_AT_TOP
-            posInputs.positionSS.y = _ScreenSize.y - posInputs.positionSS.y;
-            posInputs.positionNDC.y = 1.0 - posInputs.positionNDC.y;
-        #endif
+            // Flip logic
+            posInputs.positionSS = posInputs.positionSS * _UVTransform.xy + _UVTransform.zw * _ScreenSize.xy;
+            posInputs.positionNDC = posInputs.positionNDC * _UVTransform.xy + _UVTransform.zw;
 
             float3 outColor = Load(posInputs.positionSS, 0, 0);
 
