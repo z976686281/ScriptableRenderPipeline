@@ -8,8 +8,8 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 {
     using _ = CoreEditorUtils;
     using CED = CoreEditorDrawer<SerializedGlobalLightLoopSettings>;
-
-    static partial class GlobalLightLoopSettingsUI //: BaseUI<SerializedGlobalLightLoopSettings>
+    
+    static partial class GlobalLightLoopSettingsUI
     {
         enum Expandable
         {

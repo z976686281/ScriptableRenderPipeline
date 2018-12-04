@@ -253,7 +253,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             EncodeBC6H.DefaultInstance = EncodeBC6H.DefaultInstance ?? new EncodeBC6H(asset.renderPipelineResources.shaders.encodeBC6HCS);
 
             m_ReflectionProbeCullResults = new ReflectionProbeCullResults(asset.reflectionSystemParameters);
-            ReflectionSystem.SetParameters(asset.reflectionSystemParameters);
 
             // Scan material list and assign it
             m_MaterialList = HDUtils.GetRenderPipelineMaterialList();
@@ -810,9 +809,14 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             var isAnyCamerasAReflectionCamera = false;
             for (int i = 0; i < cameras.Length && !isAnyCamerasAReflectionCamera; ++i)
                 isAnyCamerasAReflectionCamera |= cameras[i].cameraType == CameraType.Reflection;
-            if(!isAnyCamerasAReflectionCamera)  //only pass here when rendering normal camera (prevent infinite loop)
+
+            if (!isAnyCamerasAReflectionCamera)
             {
-                ReflectionSystem.RenderAllRealtimeProbes();
+            // TODO: Render only visible probes
+                var realtimeViewIndependentProbes = HDProbeSystem.realtimeViewIndependentProbes;
+                HDProbeSystem.RenderAndUpdateRealtimeRenderDataIfRequired(
+                    realtimeViewIndependentProbes, null
+                );
             }
 
             // We first update the state of asset frame settings as they can be use by various camera
@@ -843,11 +847,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 FrameSettings srcFrameSettings;
                 if (additionalCameraData)
                 {
-                    if (camera.cameraType != CameraType.Reflection)
-                    {
-                        //reflection camera must already have their framesettings correctly set at this point
-                        additionalCameraData.UpdateDirtyFrameSettings(assetFrameSettingsIsDirty, m_Asset.GetFrameSettings());
-                    }
+                    //reflection camera must already have their framesettings correctly set at this point
+                    additionalCameraData.UpdateDirtyFrameSettings(assetFrameSettingsIsDirty, m_Asset.GetFrameSettings());
                     srcFrameSettings = additionalCameraData.GetFrameSettings();
                 }
                 else
@@ -876,8 +877,13 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     // Planar probes rendering is not currently supported for orthographic camera
                     // Avoid rendering to prevent error log spamming
                     && !camera.orthographic)
+                {
                     // TODO: Render only visible probes
-                    ReflectionSystem.RenderAllRealtimeViewerDependentProbesFor(ReflectionProbeType.PlanarReflection, camera);
+                    var realtimeViewDependentProbes = HDProbeSystem.realtimeViewDependentProbes;
+                    HDProbeSystem.RenderAndUpdateRealtimeRenderDataIfRequired(
+                        realtimeViewDependentProbes, camera.transform
+                    );
+                }
 
                 // Init material if needed
                 // TODO: this should be move outside of the camera loop but we have no command buffer, ask details to Tim or Julien to do this
@@ -1006,7 +1012,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                         DecalSystem.instance.BeginCull();
                     }
 
-                    ReflectionSystem.PrepareCull(camera, m_ReflectionProbeCullResults);
+                    HDProbeSystem.PrepareCull(camera, m_ReflectionProbeCullResults);
 
 
                     CullingResults cullingResults;
@@ -1430,7 +1436,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                                 }
                                 else
                                 {
-                                    HDUtils.BlitCameraTexture(cmd, hdCamera, m_CameraColorBuffer, BuiltinRenderTextureType.CameraTarget);
+                                    HDUtils.BlitCameraTexture(cmd, hdCamera, m_CameraColorBuffer, BuiltinRenderTextureType.CameraTarget, hdCamera.flipYMode == HDAdditionalCameraData.FlipYMode.ForceFlipY);
                                 }
                             }
                         }
