@@ -100,7 +100,7 @@ namespace UnityEditor.Rendering
         {
             DrawMultipleFields(GetContent(label), ppts, lbls);
         }
-        
+
         public static void DrawMultipleFields(GUIContent label, SerializedProperty[] ppts, GUIContent[] lbls)
         {
             var labelWidth = EditorGUIUtility.labelWidth;

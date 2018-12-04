@@ -257,8 +257,7 @@ namespace UnityEngine.Experimental.Rendering
         // f'(x) = gm(mx+b)^(g-1)
         float EvalDerivativeLinearGamma(float m, float b, float g, float x)
         {
-            float ret = g * m * Pow(m * x + b, g - 1f);
-            return ret;
+            return g * m * Pow(m * x + b, g - 1f);
         }
 
         //
@@ -273,64 +272,16 @@ namespace UnityEngine.Experimental.Rendering
                 this.parent = parent;
             }
 
-            public Vector4 curve
-            {
-                get { return new Vector4(parent.inverseWhitePoint, parent.x0, parent.x1, 0f); }
-            }
+            public Vector4 curve => new Vector4(parent.inverseWhitePoint, parent.x0, parent.x1, 0f);
 
-            public Vector4 toeSegmentA
-            {
-                get
-                {
-                    var toe = parent.segments[0];
-                    return new Vector4(toe.offsetX, toe.offsetY, toe.scaleX, toe.scaleY);
-                }
-            }
+            public Vector4 toeSegmentA => new Vector4(parent.segments[0].offsetX, parent.segments[0].offsetY, parent.segments[0].scaleX, parent.segments[0].scaleY);
+            public Vector4 toeSegmentB => new Vector4(parent.segments[0].lnA, parent.segments[0].B, 0f, 0f);
 
-            public Vector4 toeSegmentB
-            {
-                get
-                {
-                    var toe = parent.segments[0];
-                    return new Vector4(toe.lnA, toe.B, 0f, 0f);
-                }
-            }
+            public Vector4 midSegmentA => new Vector4(parent.segments[1].offsetX, parent.segments[1].offsetY, parent.segments[1].scaleX, parent.segments[1].scaleY);
+            public Vector4 midSegmentB => new Vector4(parent.segments[1].lnA, parent.segments[1].B, 0f, 0f);
 
-            public Vector4 midSegmentA
-            {
-                get
-                {
-                    var mid = parent.segments[1];
-                    return new Vector4(mid.offsetX, mid.offsetY, mid.scaleX, mid.scaleY);
-                }
-            }
-
-            public Vector4 midSegmentB
-            {
-                get
-                {
-                    var mid = parent.segments[1];
-                    return new Vector4(mid.lnA, mid.B, 0f, 0f);
-                }
-            }
-
-            public Vector4 shoSegmentA
-            {
-                get
-                {
-                    var sho = parent.segments[2];
-                    return new Vector4(sho.offsetX, sho.offsetY, sho.scaleX, sho.scaleY);
-                }
-            }
-
-            public Vector4 shoSegmentB
-            {
-                get
-                {
-                    var sho = parent.segments[2];
-                    return new Vector4(sho.lnA, sho.B, 0f, 0f);
-                }
-            }
+            public Vector4 shoSegmentA => new Vector4(parent.segments[2].offsetX, parent.segments[2].offsetY, parent.segments[2].scaleX, parent.segments[2].scaleY);
+            public Vector4 shoSegmentB => new Vector4(parent.segments[2].lnA, parent.segments[2].B, 0f, 0f);
         }
 
         public readonly Uniforms uniforms;

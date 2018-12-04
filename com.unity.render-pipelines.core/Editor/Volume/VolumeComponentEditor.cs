@@ -148,6 +148,7 @@ namespace UnityEditor.Rendering
 
                 GUILayout.FlexibleSpace();
 
+                // TODO: Rework the UI to match the 'advanced mode' in regular HDRP components
                 if (hasAdvancedMode)
                     m_AdvancedMode.boolValue = GUILayout.Toggle(m_AdvancedMode.boolValue, "Advanced", EditorStyles.miniButton, GUILayout.ExpandWidth(false), GUILayout.Width(70f));
             }
