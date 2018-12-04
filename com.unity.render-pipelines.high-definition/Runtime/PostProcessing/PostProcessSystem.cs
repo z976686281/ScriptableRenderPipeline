@@ -66,6 +66,10 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         ColorCurves m_Curves;
         FilmGrain m_FilmGrain;
 
+        HDPhysicalCamera m_PhysicalCamera;
+
+        readonly HDPhysicalCamera m_DefaultPhysicalCamera = new HDPhysicalCamera();
+
         // Misc (re-usable)
         RTHandle m_TempTexture1024; // RGHalf
         RTHandle m_TempTexture32;   // RGHalf
@@ -195,6 +199,13 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             m_ShadowsMidtonesHighlights = stack.GetComponent<ShadowsMidtonesHighlights>();
             m_Curves                    = stack.GetComponent<ColorCurves>();
             m_FilmGrain                 = stack.GetComponent<FilmGrain>();
+
+            // Grab physical camera settings or a default instance if it's null (should only happen
+            // in rare occasions due to how HDAdditionalCameraData is added to the camera)
+            m_PhysicalCamera = camera.physicalParameters;
+
+            if (m_PhysicalCamera == null)
+                m_PhysicalCamera = m_DefaultPhysicalCamera;
 
             // Check if motion vectors are needed, if so we need to enable a flag on the camera so
             // that Unity properly generate motion vectors (internal engine dependency)
@@ -419,7 +430,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             else if (m_Exposure.mode == ExposureMode.UsePhysicalCamera)
             {
                 kernel = cs.FindKernel("KManualCameraExposure");
-                cmd.SetComputeVectorParam(cs, HDShaderIDs._ExposureParams, new Vector4(m_Exposure.compensation, camera.physicalParameters.aperture, camera.physicalParameters.shutterSpeed, camera.physicalParameters.iso));
+                cmd.SetComputeVectorParam(cs, HDShaderIDs._ExposureParams, new Vector4(m_Exposure.compensation, m_PhysicalCamera.aperture, m_PhysicalCamera.shutterSpeed, m_PhysicalCamera.iso));
             }
 
             cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._PreviousExposureTexture, prevExposure);
@@ -633,22 +644,20 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             // The number of samples & max blur sizes are scaled according to the resolution, with a
             // base scale of 1.0 for 1080p output
 
-            var physCam = camera.physicalParameters;
+            int bladeCount = m_PhysicalCamera.bladeCount;
 
-            int bladeCount = physCam.bladeCount;
-
-            float rotation = (physCam.aperture - HDPhysicalCamera.kMinAperture) / (HDPhysicalCamera.kMaxAperture - HDPhysicalCamera.kMinAperture);
+            float rotation = (m_PhysicalCamera.aperture - HDPhysicalCamera.kMinAperture) / (HDPhysicalCamera.kMaxAperture - HDPhysicalCamera.kMinAperture);
             rotation *= (360f / bladeCount) * Mathf.Deg2Rad; // TODO: Crude approximation, make it correct
 
             float ngonFactor = 1f;
-            if (physCam.curvature.y - physCam.curvature.x > 0f)
-                ngonFactor = (physCam.aperture - physCam.curvature.x) / (physCam.curvature.y - physCam.curvature.x);
+            if (m_PhysicalCamera.curvature.y - m_PhysicalCamera.curvature.x > 0f)
+                ngonFactor = (m_PhysicalCamera.aperture - m_PhysicalCamera.curvature.x) / (m_PhysicalCamera.curvature.y - m_PhysicalCamera.curvature.x);
 
             ngonFactor = Mathf.Clamp01(ngonFactor);
-            ngonFactor = Mathf.Lerp(ngonFactor, 0f, Mathf.Abs(physCam.anamorphism));
+            ngonFactor = Mathf.Lerp(ngonFactor, 0f, Mathf.Abs(m_PhysicalCamera.anamorphism));
 
-            float anamorphism = physCam.anamorphism / 4f;
-            float barrelClipping = physCam.barrelClipping / 3f;
+            float anamorphism = m_PhysicalCamera.anamorphism / 4f;
+            float barrelClipping = m_PhysicalCamera.barrelClipping / 3f;
 
             float scale = 1f / (float)m_DepthOfField.resolution.value;
             var screenScale = new Vector2(scale, scale);
@@ -745,7 +754,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 {
                     // "A Lens and Aperture Camera Model for Synthetic Image Generation" [Potmesil81]
                     float F = camera.camera.focalLength / 1000f;
-                    float A = camera.camera.focalLength / physCam.aperture;
+                    float A = camera.camera.focalLength / m_PhysicalCamera.aperture;
                     float P = m_DepthOfField.focusDistance.value;
                     float maxCoC = (A * F) / (P - F);
 
@@ -1231,7 +1240,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             if (m_Bloom.anamorphic.value)
             {
                 // Positive anamorphic ratio values distort vertically - negative is horizontal
-                float anamorphism = camera.physicalParameters.anamorphism * 0.5f;
+                float anamorphism = m_PhysicalCamera.anamorphism * 0.5f;
                 scaleW *= anamorphism < 0 ? 1f + anamorphism : 1f;
                 scaleH *= anamorphism > 0 ? 1f - anamorphism : 1f;
             }
