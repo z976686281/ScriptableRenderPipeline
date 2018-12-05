@@ -3695,8 +3695,9 @@ void PostEvaluateBSDF(  LightLoopContext lightLoopContext,
     // We also add emissive since it is not merged with bakeDiffuseLighting in ModifyBakedDiffuseLighting.
     // (also cf lit deferred EncodeToGBuffer function).
     diffuseLighting = (modifiedDiffuseColor * lighting.direct.diffuse) + (builtinData.bakeDiffuseLighting * diffuseOcclusion) + builtinData.emissiveColor;
+    diffuseLighting *= lightLoopContext.exposure;
 
-    specularLighting = lighting.direct.specular + lighting.indirect.specularReflected;
+    specularLighting = (lighting.direct.specular + lighting.indirect.specularReflected) * lightLoopContext.exposure;
 
 #ifdef DEBUG_DISPLAY
     // For specularOcclusion we display red to indicate there's not one value possible here.

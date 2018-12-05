@@ -1777,8 +1777,8 @@ void PostEvaluateBSDF(  LightLoopContext lightLoopContext,
                                                 1.0, 1.0, bsdfData.diffuseColor, bsdfData.fresnelF0, aoFactor);
     ApplyAmbientOcclusionFactor(aoFactor, builtinData, lighting);
 
-    diffuseLighting = bsdfData.diffuseColor * lighting.direct.diffuse + builtinData.bakeDiffuseLighting;
-    specularLighting = lighting.direct.specular + lighting.indirect.specularReflected;
+    diffuseLighting = (bsdfData.diffuseColor * lighting.direct.diffuse + builtinData.bakeDiffuseLighting) * lightLoopContext.exposure;
+    specularLighting = (lighting.direct.specular + lighting.indirect.specularReflected) * lightLoopContext.exposure;
 
 #if !defined(_AXF_BRDF_TYPE_SVBRDF) && !defined(_AXF_BRDF_TYPE_CAR_PAINT)
     // Not supported: Display a flashy color instead

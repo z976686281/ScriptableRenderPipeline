@@ -577,8 +577,8 @@ void PostEvaluateBSDF(  LightLoopContext lightLoopContext,
 
     // Apply the albedo to the direct diffuse lighting (only once). The indirect (baked)
     // diffuse lighting has already multiply the albedo in ModifyBakedDiffuseLighting().
-    diffuseLighting = modifiedDiffuseColor * lighting.direct.diffuse + builtinData.bakeDiffuseLighting + builtinData.emissiveColor;
-    specularLighting = lighting.direct.specular + lighting.indirect.specularReflected;
+    diffuseLighting = (modifiedDiffuseColor * lighting.direct.diffuse + builtinData.bakeDiffuseLighting + builtinData.emissiveColor) * lightLoopContext.exposure;
+    specularLighting = (lighting.direct.specular + lighting.indirect.specularReflected) * lightLoopContext.exposure;
 
     // TODO: Multiscattering for cloth?
 
