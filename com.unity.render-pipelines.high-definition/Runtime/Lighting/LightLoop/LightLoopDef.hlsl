@@ -12,7 +12,6 @@ struct LightLoopContext
     
     float contactShadow; // Currently we support only one contact shadow per view
     float shadowValue; // Stores the value of the cascade shadow map
-    float exposure;
 };
 
 //-----------------------------------------------------------------------------

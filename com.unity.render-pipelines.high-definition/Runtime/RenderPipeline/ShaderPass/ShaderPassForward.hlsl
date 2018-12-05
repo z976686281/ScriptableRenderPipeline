@@ -106,6 +106,12 @@ void Frag(PackedVaryingsToPS packedInput,
 
         LightLoop(V, posInput, preLightData, bsdfData, builtinData, featureFlags, diffuseLighting, specularLighting);
 
+#ifndef DEBUG_DISPLAY
+        float exposure = ConvertEV100ToExposure(LOAD_TEXTURE2D(_ExposureTexture, int2(0, 0)).x);
+        diffuseLighting *= exposure;
+        specularLighting *= exposure;
+#endif
+
 #ifdef OUTPUT_SPLIT_LIGHTING
         if (_EnableSubsurfaceScattering != 0 && ShouldOutputSplitLighting(bsdfData))
         {

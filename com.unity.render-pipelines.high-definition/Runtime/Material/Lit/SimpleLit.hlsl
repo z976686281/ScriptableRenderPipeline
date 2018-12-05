@@ -700,9 +700,7 @@ void PostEvaluateBSDF(  LightLoopContext lightLoopContext,
     #ifdef HDRP_ENABLE_ENV_LIGHT
     diffuseLighting += builtinData.bakeDiffuseLighting;
     #endif
-    diffuseLighting *= lightLoopContext.exposure;
-
-    specularLighting = (lighting.direct.specular + lighting.indirect.specularReflected) * lightLoopContext.exposure;
+    specularLighting = lighting.direct.specular + lighting.indirect.specularReflected;
 
 #ifdef DEBUG_DISPLAY
     PostEvaluateBSDFDebugDisplay(aoFactor, builtinData, lighting, bsdfData.diffuseColor, diffuseLighting, specularLighting);
