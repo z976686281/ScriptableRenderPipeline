@@ -47,9 +47,10 @@ namespace UnityEngine.Rendering
             // As this is a struct, it could have been initialized using an empty constructor so we
             // need to make sure `cmd` isn't null to avoid a crash. Switching to a class would fix
             // this but will generate garbage on every frame (and this struct is used quite a lot).
-            if (disposing && m_Cmd != null)
+            if (disposing)
             {
-                m_Cmd.EndSample(m_Name);
+                if (m_Cmd != null)
+                    m_Cmd.EndSample(m_Name);
                 if (m_Sampler != null)
                     m_Sampler.End();
             }
