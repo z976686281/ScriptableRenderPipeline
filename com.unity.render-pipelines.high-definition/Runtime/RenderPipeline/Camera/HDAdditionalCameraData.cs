@@ -87,7 +87,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
     [DisallowMultipleComponent, ExecuteAlways]
     [RequireComponent(typeof(Camera))]
-    public class HDAdditionalCameraData : MonoBehaviour, ISerializationCallbackReceiver
+    public class HDAdditionalCameraData : MonoBehaviour, ISerializationCallbackReceiver, IDebugData
     {
         public enum FlipYMode
         {
@@ -220,6 +220,12 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             return m_FrameSettingsRuntime;
         }
 
+        // This allows to read serialized value in readonly mode
+        internal T ReadSerializedFrameSettings<T>(Func<FrameSettings, T> reader) where T : struct => reader(m_FrameSettings);
+
+        // IDebugData interface required to reset DebugMenu's FrameSettings
+        Action IDebugData.GetReset() => () => m_FrameSettings.CopyTo(m_FrameSettingsRuntime);
+
         // This function is call at the beginning of camera loop in HDRenderPipeline.Render()
         // It allow to correctly init the m_FrameSettingsRuntime to use.
         // If the camera use defaultFrameSettings it must be copied in m_FrameSettingsRuntime
@@ -260,8 +266,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 // doesn't affect the serialized version
                 if (m_camera.cameraType != CameraType.Preview && m_camera.cameraType != CameraType.Reflection)
                 {
-                    FrameSettings.RegisterDebug(m_camera.name, GetFrameSettings());
-                    DebugDisplaySettings.RegisterCamera(m_camera.name);
+                    DebugDisplaySettings.RegisterCamera(m_camera, this);
                 }
                 m_CameraRegisterName = m_camera.name;
                 m_IsDebugRegistered = true;
@@ -277,8 +282,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             {
                 if (m_camera.cameraType != CameraType.Preview && m_camera.cameraType != CameraType.Reflection)
                 {
-                    FrameSettings.UnRegisterDebug(m_CameraRegisterName);
-                    DebugDisplaySettings.UnRegisterCamera(m_CameraRegisterName);
+                    DebugDisplaySettings.UnRegisterCamera(m_camera, this);
                 }
                 m_IsDebugRegistered = false;
             }
