@@ -440,22 +440,21 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             cmd.DispatchCompute(cs, kernel, 1, 1, 1);
         }
 
-        RTHandle ExposureHistoryAllocator(string id, int frameIndex, RTHandleSystem rtHandleSystem)
+        static void GrabExposureHistoryTextures(HDCamera camera, out RTHandle previous, out RTHandle next)
         {
-            // R: Exposure in EV100
-            // G: Discard
-            return rtHandleSystem.Alloc(1, 1, colorFormat: k_ExposureFormat,
-                sRGB: false, enableRandomWrite: true, name: $"EV100 Exposure ({id}) {frameIndex}"
-            );
-        }
+            RTHandle Allocator(string id, int frameIndex, RTHandleSystem rtHandleSystem)
+            {
+                // r: multiplier, g: EV100
+                return rtHandleSystem.Alloc(1, 1, colorFormat: k_ExposureFormat,
+                    sRGB: false, enableRandomWrite: true, name: $"EV100 Exposure ({id}) {frameIndex}"
+                );
+            }
 
-        void GrabExposureHistoryTextures(HDCamera camera, out RTHandle previous, out RTHandle next)
-        {
             // We rely on the RT history system that comes with HDCamera, but because it is swapped
             // at the beginning of the frame and exposure is applied with a one-frame delay it means
             // that 'current' and 'previous' are swapped
             next = camera.GetCurrentFrameRT((int)HDCameraFrameHistoryType.Exposure)
-                ?? camera.AllocHistoryFrameRT((int)HDCameraFrameHistoryType.Exposure, ExposureHistoryAllocator, 2);
+                ?? camera.AllocHistoryFrameRT((int)HDCameraFrameHistoryType.Exposure, Allocator, 2);
             previous = camera.GetPreviousFrameRT((int)HDCameraFrameHistoryType.Exposure);
         }
 
@@ -593,18 +592,18 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
         static void GrabTemporalAntialiasingHistoryTextures(HDCamera camera, out RTHandle previous, out RTHandle next)
         {
-            next = camera.GetCurrentFrameRT((int)HDCameraFrameHistoryType.TemporalAntialiasing)
-                ?? camera.AllocHistoryFrameRT((int)HDCameraFrameHistoryType.TemporalAntialiasing, TemporalAntialiasingHistoryAllocator, 2);
-            previous = camera.GetPreviousFrameRT((int)HDCameraFrameHistoryType.TemporalAntialiasing);
-        }
+            RTHandle Allocator(string id, int frameIndex, RTHandleSystem rtHandleSystem)
+            {
+                return rtHandleSystem.Alloc(
+                    Vector2.one, depthBufferBits: DepthBits.None,
+                    filterMode: FilterMode.Bilinear, colorFormat: k_ColorFormat,
+                    enableRandomWrite: true, name: "TAA History"
+                );
+            }
 
-        static RTHandle TemporalAntialiasingHistoryAllocator(string id, int frameIndex, RTHandleSystem rtHandleSystem)
-        {
-            return rtHandleSystem.Alloc(
-                Vector2.one, depthBufferBits: DepthBits.None,
-                filterMode: FilterMode.Bilinear, colorFormat: k_ColorFormat,
-                enableRandomWrite: true, name: "TAA History"
-            );
+            next = camera.GetCurrentFrameRT((int)HDCameraFrameHistoryType.TemporalAntialiasing)
+                ?? camera.AllocHistoryFrameRT((int)HDCameraFrameHistoryType.TemporalAntialiasing, Allocator, 2);
+            previous = camera.GetPreviousFrameRT((int)HDCameraFrameHistoryType.TemporalAntialiasing);
         }
 
         void CopyTemporalAntialiasingHistory(CommandBuffer cmd, HDCamera camera, RTHandle source, RTHandle history)
@@ -1139,17 +1138,17 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
         static void GrabCoCHistory(HDCamera camera, out RTHandle previous, out RTHandle next)
         {
-            next = camera.GetCurrentFrameRT((int)HDCameraFrameHistoryType.DepthOfFieldCoC)
-                ?? camera.AllocHistoryFrameRT((int)HDCameraFrameHistoryType.DepthOfFieldCoC, CoCHistoryAllocator, 2);
-            previous = camera.GetPreviousFrameRT((int)HDCameraFrameHistoryType.DepthOfFieldCoC);
-        }
+            RTHandle Allocator(string id, int frameIndex, RTHandleSystem rtHandleSystem)
+            {
+                return rtHandleSystem.Alloc(
+                    Vector2.one, depthBufferBits: DepthBits.None, filterMode: FilterMode.Point, sRGB: false,
+                    colorFormat: RenderTextureFormat.RHalf, enableRandomWrite: true, name: "CoC History"
+                );
+            }
 
-        static RTHandle CoCHistoryAllocator(string id, int frameIndex, RTHandleSystem rtHandleSystem)
-        {
-            return rtHandleSystem.Alloc(
-                Vector2.one, depthBufferBits: DepthBits.None, filterMode: FilterMode.Point, sRGB: false,
-                colorFormat: RenderTextureFormat.RHalf, enableRandomWrite: true, name: "CoC History"
-            );
+            next = camera.GetCurrentFrameRT((int)HDCameraFrameHistoryType.DepthOfFieldCoC)
+                ?? camera.AllocHistoryFrameRT((int)HDCameraFrameHistoryType.DepthOfFieldCoC, Allocator, 2);
+            previous = camera.GetPreviousFrameRT((int)HDCameraFrameHistoryType.DepthOfFieldCoC);
         }
 
         #endregion
