@@ -1,5 +1,6 @@
 namespace UnityEngine.Rendering
 {
+    // Has to be kept in sync with PhysicalCamera.hlsl
     public static class ColorUtils
     {
         // An analytical model of chromaticity of the standard illuminant, by Judd et al.

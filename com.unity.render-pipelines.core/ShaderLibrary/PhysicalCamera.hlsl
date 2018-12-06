@@ -1,6 +1,8 @@
 #ifndef UNITY_PHYSICAL_CAMERA_INCLUDED
 #define UNITY_PHYSICAL_CAMERA_INCLUDED
 
+// Has to be kept in sync with ColorUtils.cs
+
 // References:
 // "Moving Frostbite to PBR" (Sébastien Lagarde & Charles de Rousiers)
 //   https://seblagarde.files.wordpress.com/2015/07/course_notes_moving_frostbite_to_pbr_v32.pdf
