@@ -12,8 +12,9 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
     // lighting/surface effect like SSR/AO
     public sealed class PostProcessSystem
     {
-        const RenderTextureFormat k_ColorFormat = RenderTextureFormat.RGB111110Float;
-        const RenderTextureFormat k_CoCFormat = RenderTextureFormat.RHalf;
+        const RenderTextureFormat k_ColorFormat    = RenderTextureFormat.RGB111110Float;
+        const RenderTextureFormat k_CoCFormat      = RenderTextureFormat.RHalf;
+        const RenderTextureFormat k_ExposureFormat = RenderTextureFormat.RGFloat;
 
         readonly RenderPipelineResources m_Resources;
         bool m_ResetHistory;
@@ -120,12 +121,16 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 sRGB: false
             );
 
-            // Setup a default exposure textures and clear it to black
-            m_EmptyExposureTexture = RTHandles.Alloc(1, 1, colorFormat: RenderTextureFormat.RGHalf,
+            // Setup a default exposure textures and clear it to (1,0)
+            m_EmptyExposureTexture = RTHandles.Alloc(1, 1, colorFormat: k_ExposureFormat,
                 sRGB: false, enableRandomWrite: true, name: "Empty EV100 Exposure"
             );
 
-            Graphics.Blit(Texture2D.blackTexture, m_EmptyExposureTexture);
+            var tex = new Texture2D(1, 1, TextureFormat.RGFloat, false, true);
+            tex.SetPixel(0, 0, new Color(1f, 0f, 0f, 0f));
+            tex.Apply();
+            Graphics.Blit(tex, m_EmptyExposureTexture);
+            CoreUtils.Destroy(tex);
 
             // Initialize our target pool to ease RT management
             m_Pool = new TargetPool();
@@ -439,8 +444,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         {
             // R: Exposure in EV100
             // G: Discard
-            return rtHandleSystem.Alloc(1, 1, colorFormat: RenderTextureFormat.RGHalf,
-                sRGB: false, enableRandomWrite: true, name: string.Format("EV100 Exposure ({0}) {1}", id, frameIndex)
+            return rtHandleSystem.Alloc(1, 1, colorFormat: k_ExposureFormat,
+                sRGB: false, enableRandomWrite: true, name: $"EV100 Exposure ({id}) {frameIndex}"
             );
         }
 
@@ -495,6 +500,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         void DoDynamicExposure(CommandBuffer cmd, HDCamera camera, RTHandle colorBuffer, RTHandle lightingBuffer)
         {
             var cs = m_Resources.shaders.exposureCS;
+            int kernel = 0;
 
             GrabExposureHistoryTextures(camera, out var prevExposure, out var nextExposure);
 
@@ -503,6 +509,13 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
             if (!Application.isPlaying || m_ResetHistory)
                 adaptationMode = AdaptationMode.Fixed;
+
+            if (m_ResetHistory)
+            {
+                kernel = cs.FindKernel("KReset");
+                cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._OutputTexture, prevExposure);
+                cmd.DispatchCompute(cs, kernel, 1, 1, 1);
+            }
 
             m_ExposureVariants[0] = 1; // (int)exposureSettings.luminanceSource.value;
             m_ExposureVariants[1] = (int)m_Exposure.meteringMode.value;
@@ -515,7 +528,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             //    : colorBuffer;
             var sourceTex = colorBuffer;
 
-            int kernel = cs.FindKernel("KPrePass");
+            kernel = cs.FindKernel("KPrePass");
             cmd.SetComputeIntParams(cs, HDShaderIDs._Variants, m_ExposureVariants);
             cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._PreviousExposureTexture, prevExposure);
             cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._InputTexture, sourceTex);

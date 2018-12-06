@@ -173,7 +173,7 @@ void SHADE_OPAQUE_ENTRY(uint2 dispatchThreadId : SV_DispatchThreadID, uint2 grou
     LightLoop(V, posInput, preLightData, bsdfData, builtinData, featureFlags, diffuseLighting, specularLighting);
 
 #ifndef DEBUG_DISPLAY
-    float exposure = ConvertEV100ToExposure(LOAD_TEXTURE2D(_ExposureTexture, int2(0, 0)).x);
+    float exposure = LOAD_TEXTURE2D(_ExposureTexture, int2(0, 0)).x;
     diffuseLighting *= exposure;
     specularLighting *= exposure;
 #endif
