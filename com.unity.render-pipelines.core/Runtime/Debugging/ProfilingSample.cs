@@ -16,10 +16,9 @@ namespace UnityEngine.Rendering
             m_Cmd = cmd;
             m_Name = name;
             m_Disposed = false;
-            cmd.BeginSample(name);
+            cmd?.BeginSample(name);
             m_Sampler = sampler;
-            if (m_Sampler != null)
-                m_Sampler.Begin();
+            m_Sampler?.Begin();
         }
 
         // Shortcut to string.Format() using only one argument (reduces Gen0 GC pressure)
@@ -49,10 +48,8 @@ namespace UnityEngine.Rendering
             // this but will generate garbage on every frame (and this struct is used quite a lot).
             if (disposing)
             {
-                if (m_Cmd != null)
-                    m_Cmd.EndSample(m_Name);
-                if (m_Sampler != null)
-                    m_Sampler.End();
+                m_Cmd?.EndSample(m_Name);
+                m_Sampler?.End();
             }
 
             m_Disposed = true;

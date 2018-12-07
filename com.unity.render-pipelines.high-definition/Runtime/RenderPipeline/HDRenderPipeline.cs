@@ -1025,6 +1025,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             var camera = hdCamera.camera;
             var cullingResults = renderRequest.cullingResults;
             var postProcessLayer = renderRequest.postProcessLayer;
+            var target = renderRequest.target;
+            m_IsDepthBufferCopyValid = false; // this is a new render frame
 
             if (hdCamera.frameSettings.enableDecals && false)
             {
@@ -1135,6 +1137,10 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                         cmd.ClearRandomWriteTargets();
                     }
                 }
+                // TODO: Find where to properly copy Depth buffer
+                //   - Depth buffer is created on GBuffer
+                //   - But DBuffer copy it and use it before GBuffer pass?!
+                m_IsDepthBufferCopyValid = false; // this is a new render frame
 
                 // In both forward and deferred, everything opaque should have been rendered at this point so we can safely copy the depth buffer for later processing.
                 GenerateDepthPyramid(hdCamera, cmd, FullScreenDebugMode.DepthPyramid);
@@ -1179,14 +1185,14 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                         using (new ProfilingSample(cmd, "Clear and copy stencil texture", CustomSamplerId.ClearAndCopyStencilTexture.GetSampler()))
                         {
 #if UNITY_SWITCH
-                                // Faster on Switch.
-                                HDUtils.SetRenderTarget(cmd, hdCamera, m_SharedRTManager.GetStencilBufferCopy(), m_SharedRTManager.GetDepthStencilBuffer(), ClearFlag.Color, CoreUtils.clearColorAllBlack);
+                            // Faster on Switch.
+                            HDUtils.SetRenderTarget(cmd, hdCamera, m_SharedRTManager.GetStencilBufferCopy(), m_SharedRTManager.GetDepthStencilBuffer(), ClearFlag.Color, CoreUtils.clearColorAllBlack);
 
-                                m_CopyStencil.SetInt(HDShaderIDs._StencilRef, (int)StencilLightingUsage.NoLighting);
-                                m_CopyStencil.SetInt(HDShaderIDs._StencilMask, (int)StencilBitMask.LightingMask);
+                            m_CopyStencil.SetInt(HDShaderIDs._StencilRef, (int)StencilLightingUsage.NoLighting);
+                            m_CopyStencil.SetInt(HDShaderIDs._StencilMask, (int)StencilBitMask.LightingMask);
 
-                                // Use ShaderPassID 1 => "Pass 1 - Write 1 if value different from stencilRef to output"
-                                CoreUtils.DrawFullScreen(cmd, m_CopyStencil, null, 1);
+                            // Use ShaderPassID 1 => "Pass 1 - Write 1 if value different from stencilRef to output"
+                            CoreUtils.DrawFullScreen(cmd, m_CopyStencil, null, 1);
 #else
                             HDUtils.SetRenderTarget(cmd, hdCamera, m_SharedRTManager.GetStencilBufferCopy(), ClearFlag.Color, CoreUtils.clearColorAllBlack);
                             HDUtils.SetRenderTarget(cmd, hdCamera, m_SharedRTManager.GetDepthStencilBuffer());
@@ -1442,7 +1448,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     // Final blit
                     if (hdCamera.frameSettings.enablePostprocess)
                     {
-                        RenderPostProcess(hdCamera, cmd, postProcessLayer);
+                        RenderPostProcess(hdCamera, cmd, postProcessLayer, target);
                     }
                     else
                     {
@@ -1458,14 +1464,14 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                                 finalDoubleWideBlit.SetVector(HDShaderIDs._BlitScaleBiasRt, new Vector4(1.0f, 1.0f, 0.0f, 0.0f));
                                 finalDoubleWideBlit.SetVector(HDShaderIDs._BlitScaleBias, new Vector4(1.0f, 1.0f, 0.0f, 0.0f));
                                 int pass = 1; // triangle, bilinear (from Blit.shader)
-                                cmd.Blit(m_CameraColorBuffer, BuiltinRenderTextureType.CameraTarget, finalDoubleWideBlit, pass);
+                                cmd.Blit(m_CameraColorBuffer, target, finalDoubleWideBlit, pass);
 #else
-                                    cmd.BlitFullscreenTriangle(m_CameraColorBuffer, BuiltinRenderTextureType.CameraTarget); // Prior to 2019.1's y-flip fixes, we didn't need a flip in the shader
+                                cmd.BlitFullscreenTriangle(m_CameraColorBuffer, target); // Prior to 2019.1's y-flip fixes, we didn't need a flip in the shader
 #endif
                             }
                             else
                             {
-                                HDUtils.BlitCameraTexture(cmd, hdCamera, m_CameraColorBuffer, BuiltinRenderTextureType.CameraTarget, hdCamera.flipYMode == HDAdditionalCameraData.FlipYMode.ForceFlipY);
+                                HDUtils.BlitCameraTexture(cmd, hdCamera, m_CameraColorBuffer, target, hdCamera.flipYMode == HDAdditionalCameraData.FlipYMode.ForceFlipY);
                             }
                         }
                     }
@@ -1513,7 +1519,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 #endif
 
                 if (renderRequest.destroyCamera)
-                    Object.Destroy(camera.gameObject);
+                    CoreUtils.Destroy(camera.gameObject);
             }
         }
 
@@ -1662,7 +1668,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 cullingResults = renderContext.Cull(ref cullingParams);
             }
 
-            m_IsDepthBufferCopyValid = false; // this is a new render frame
             m_ReflectionProbeCullResults.Cull();
 
             m_DbufferManager.enableDecals = false;
@@ -2483,7 +2488,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             // String.Format
             using (new ProfilingSample(cmd, "Generate Depth Buffer MIP Chain", CustomSamplerId.DepthPyramid))
             {
-                m_MipGenerator.RenderMinDepthPyramid(cmd, m_SharedRTManager.GetDepthTexture(), m_SharedRTManager.GetDepthBufferMipChainInfo());
+                 m_MipGenerator.RenderMinDepthPyramid(cmd, m_SharedRTManager.GetDepthTexture(), m_SharedRTManager.GetDepthBufferMipChainInfo());
             }
 
             float scaleX = hdCamera.actualWidth / (float)m_SharedRTManager.GetDepthTexture().rt.width;
@@ -2497,7 +2502,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             PushFullScreenDebugTextureMip(hdCamera, cmd, m_SharedRTManager.GetDepthTexture(), mipCount, m_PyramidScale, debugMode);
         }
 
-        void RenderPostProcess(HDCamera hdcamera, CommandBuffer cmd, PostProcessLayer layer)
+        void RenderPostProcess(HDCamera hdcamera, CommandBuffer cmd, PostProcessLayer layer, RenderTargetIdentifier target)
         {
             using (new ProfilingSample(cmd, "Post-processing", CustomSamplerId.PostProcessing.GetSampler()))
             {
@@ -2541,7 +2546,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 var context = hdcamera.postprocessRenderContext;
                 context.Reset();
                 context.source = source;
-                context.destination = BuiltinRenderTextureType.CameraTarget;
+                context.destination = target;
                 context.command = cmd;
                 context.camera = hdcamera.camera;
                 context.sourceFormat = RenderTextureFormat.ARGBHalf;
