@@ -17,7 +17,6 @@ Shader "Hidden/HDRenderPipeline/Sky/ProceduralSky"
     #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
     #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
     #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/CommonLighting.hlsl"
-    #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/PhysicalCamera.hlsl"
     #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
 
     float4   _SkyParam; // x exposure, y multiplier, z rotation

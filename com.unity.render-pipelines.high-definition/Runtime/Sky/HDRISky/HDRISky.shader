@@ -10,7 +10,6 @@ Shader "Hidden/HDRenderPipeline/Sky/HDRISky"
     #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
     #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
     #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/CommonLighting.hlsl"
-    #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/PhysicalCamera.hlsl"
     #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
 
     TEXTURECUBE(_Cubemap);
