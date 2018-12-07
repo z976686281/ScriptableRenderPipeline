@@ -68,7 +68,7 @@ Shader "Hidden/HDRenderPipeline/FinalPass"
         #endif
 
             // Flip logic
-            posInputs.positionSS = posInputs.positionSS * _UVTransform.xy + _UVTransform.zw * _ScreenSize.xy;
+            posInputs.positionSS = posInputs.positionSS * _UVTransform.xy + _UVTransform.zw * (_ScreenSize.xy - 1.0);
             posInputs.positionNDC = posInputs.positionNDC * _UVTransform.xy + _UVTransform.zw;
 
             float3 outColor = Load(posInputs.positionSS, 0, 0);
