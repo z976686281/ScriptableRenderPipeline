@@ -1581,7 +1581,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             );
 
             // Setup the uber shader
-            float postExposureLinear = ColorUtils.ConvertEV100ToExposure(-m_ColorAdjustments.postExposure);
+            float postExposureLinear = Mathf.Pow(2f, m_ColorAdjustments.postExposure);
             var logLutSettings = new Vector4(1f / k_LogLutSize, k_LogLutSize - 1f, postExposureLinear, 0f);
             cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._LogLut3D, m_InternalLogLut);
             cmd.SetComputeVectorParam(cs, HDShaderIDs._LogLut3D_Params, logLutSettings);
