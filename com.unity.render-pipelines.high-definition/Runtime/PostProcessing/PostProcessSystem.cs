@@ -1755,10 +1755,15 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             }
 
             // Flip logic
-            if (SystemInfo.graphicsUVStartsAtTop && camera.camera.cameraType != CameraType.SceneView)
-                m_FinalPassMaterial.SetVector(HDShaderIDs._UVTransform, new Vector4(1.0f, -1.0f, 0.0f, 1.0f));
-            else
-                m_FinalPassMaterial.SetVector(HDShaderIDs._UVTransform, new Vector4(1.0f, 1.0f, 0.0f, 0.0f));
+            bool flip = SystemInfo.graphicsUVStartsAtTop
+                && camera.camera.cameraType != CameraType.SceneView
+                && camera.camera.targetTexture == null;
+
+            m_FinalPassMaterial.SetVector(HDShaderIDs._UVTransform,
+                flip
+                ? new Vector4(1.0f, -1.0f, 0.0f, 1.0f)
+                : new Vector4(1.0f,  1.0f, 0.0f, 0.0f)
+            );
 
             // Blit to backbuffer
             HDUtils.DrawFullScreen(cmd, camera, m_FinalPassMaterial, BuiltinRenderTextureType.CameraTarget, shaderPassId: pass);
