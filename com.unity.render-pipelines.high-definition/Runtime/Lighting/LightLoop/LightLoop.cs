@@ -1617,7 +1617,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
         // Return true if BakedShadowMask are enabled
         public bool PrepareLightsForGPU(CommandBuffer cmd, HDCamera hdCamera, CullingResults cullResults,
-            ReflectionProbeCullResults reflectionProbeCullResults, DensityVolumeList densityVolumes, DebugDisplaySettings debugDisplaySettings)
+            HDProbeCullingResults hdProbeCullingResults, DensityVolumeList densityVolumes, DebugDisplaySettings debugDisplaySettings)
         {
             using (new ProfilingSample(cmd, "Prepare Lights For GPU"))
             {
@@ -1894,7 +1894,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     Debug.Assert(m_MaxEnvLightsOnScreen <= 256); //for key construction
                     int envLightCount = 0;
 
-                    var totalProbes = cullResults.visibleReflectionProbes.Length + reflectionProbeCullResults.visiblePlanarReflectionProbeCount;
+                    var totalProbes = cullResults.visibleReflectionProbes.Length + hdProbeCullingResults.visibleProbes.Count;
                     int probeCount = Math.Min(totalProbes, m_MaxEnvLightsOnScreen);
                     UpdateSortKeysArray(probeCount);
                     sortCount = 0;
@@ -1936,7 +1936,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                         else
                         {
                             var planarProbeIndex = probeIndex - cullResults.visibleReflectionProbes.Length;
-                            var probe = reflectionProbeCullResults.visiblePlanarReflectionProbes[planarProbeIndex];
+                            var probe = hdProbeCullingResults.visibleProbes[planarProbeIndex];
 
                             // probe.texture can be null when we are adding a reflection probe in the editor
                             if (probe.texture == null || envLightCount >= k_MaxEnvLightsOnScreen)
@@ -1970,7 +1970,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                         if (listType == 0)
                             probe = cullResults.visibleReflectionProbes[probeIndex];
                         else
-                            planarProbe = reflectionProbeCullResults.visiblePlanarReflectionProbes[probeIndex];
+                            planarProbe = (PlanarReflectionProbe)hdProbeCullingResults.visibleProbes[probeIndex];
 
                         var probeWrapper = SelectProbe(probe, planarProbe);
 

@@ -255,8 +255,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
             EncodeBC6H.DefaultInstance = EncodeBC6H.DefaultInstance ?? new EncodeBC6H(asset.renderPipelineResources.shaders.encodeBC6HCS);
 
-            m_ReflectionProbeCullResults = new ReflectionProbeCullResults(asset.reflectionSystemParameters);
-
             // Scan material list and assign it
             m_MaterialList = HDUtils.GetRenderPipelineMaterialList();
             // Find first material that have non 0 Gbuffer count and assign it as deferredMaterial
@@ -777,13 +775,17 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         struct RenderRequest
         {
             public HDCamera hdCamera;
-            public CullingResults cullingResults;
             public PostProcessLayer postProcessLayer;
             public bool destroyCamera;
             public RenderTargetIdentifier target;
+            public HDCullingResults cullingResults;
+        }
+        struct HDCullingResults
+        {
+            public CullingResults cullingResults;
+            public HDProbeCullingResults hdProbeCullingResults;
             // TODO: DecalCullResults
         }
-        ReflectionProbeCullResults m_ReflectionProbeCullResults;
         protected override void Render(ScriptableRenderContext renderContext, Camera[] cameras)
         {
             if (!m_ValidAPI)
@@ -863,8 +865,15 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 if (camera == null)
                     continue;
 
+                // TODO: Very weird callbacks
+                //  They are called at the beginning of a camera render, but the very same camera may not end its rendering
+                //  for various reasons (full screen pass through, custom render, or just invalid parameters)
+                //  and in that case the associated ending call is never called.
                 UnityEngine.Rendering.RenderPipeline.BeginCameraRendering(camera);
                 UnityEngine.Experimental.VFX.VFXManager.ProcessCamera(camera); //Visual Effect Graph is not yet a required package but calling this method when there isn't any VisualEffect component has no effect (but needed for Camera sorting in Visual Effect Graph context)
+
+                // TODO: pool this to avoid GC
+                HDCullingResults cullingResults = new HDCullingResults();
 
                 if (!(TryCalculateFrameParameters(
                         camera, assetFrameSettingsIsDirty,
@@ -875,7 +884,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     )
                     && TryCull(
                         camera, hdCamera, renderContext, cullingParameters,
-                        out CullingResults cullingResults
+                        ref cullingResults
                     )))
                 {
                     // We failed either to get proper rendering parameter
@@ -893,9 +902,9 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 }
 
                 // Add visible probes to list
-                for (int i = 0; i < cullingResults.visibleReflectionProbes.Length; ++i)
+                for (int i = 0; i < cullingResults.cullingResults.visibleReflectionProbes.Length; ++i)
                 {
-                    var visibleProbe = cullingResults.visibleReflectionProbes[i];
+                    var visibleProbe = cullingResults.cullingResults.visibleReflectionProbes[i];
 
                     var additionalReflectionData =
                         visibleProbe.reflectionProbe.GetComponent<HDAdditionalReflectionData>()
@@ -903,8 +912,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
                     visibleProbes.Add(additionalReflectionData);
                 }
-                for (int i = 0; i < m_ReflectionProbeCullResults.visiblePlanarReflectionProbeCount; ++i)
-                    visibleProbes.Add(m_ReflectionProbeCullResults.visiblePlanarReflectionProbes[i]);
+                visibleProbes.UnionWith(cullingResults.hdProbeCullingResults.visibleProbes);
 
                 // Add render request
                 var request = new RenderRequest
@@ -971,6 +979,9 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 {
                     var camera = new GameObject("_RenderCamera").AddComponent<Camera>();
 
+                    // TODO: pool this to avoid garbage
+                    HDCullingResults cullingResults = new HDCullingResults();
+
                     if (!(TryCalculateFrameParameters(
                         camera, assetFrameSettingsIsDirty,
                         out HDAdditionalCameraData additionalCameraData,
@@ -980,7 +991,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     )
                     && TryCull(
                         camera, hdCamera, renderContext, cullingParameters,
-                        out CullingResults cullingResults
+                        ref cullingResults
                     )))
                     {
                         Object.Destroy(camera);
@@ -1005,17 +1016,14 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
             foreach (var renderRequest in renderRequests)
             {
-                // This is the main command buffer used for the frame.
                 var cmd = CommandBufferPool.Get("");
 
                 ExecuteRenderRequest(renderRequest, renderContext, cmd);
 
-                // Caution: ExecuteCommandBuffer must be outside of the profiling bracket
                 renderContext.ExecuteCommandBuffer(cmd);
 
                 CommandBufferPool.Release(cmd);
                 renderContext.Submit();
-
             }
         }
 
@@ -1023,10 +1031,12 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         {
             var hdCamera = renderRequest.hdCamera;
             var camera = hdCamera.camera;
-            var cullingResults = renderRequest.cullingResults;
+            var cullingResults = renderRequest.cullingResults.cullingResults;
+            var hdProbeCullingResults = renderRequest.cullingResults.hdProbeCullingResults;
             var postProcessLayer = renderRequest.postProcessLayer;
             var target = renderRequest.target;
 
+            m_DbufferManager.enableDecals = false;
             if (hdCamera.frameSettings.enableDecals)
             {
                 using (new ProfilingSample(null, "DBufferPrepareDrawData", CustomSamplerId.DBufferPrepareDrawData.GetSampler()))
@@ -1077,7 +1087,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 bool enableBakeShadowMask;
                 using (new ProfilingSample(cmd, "TP_PrepareLightsForGPU", CustomSamplerId.TPPrepareLightsForGPU.GetSampler()))
                 {
-                    enableBakeShadowMask = m_LightLoop.PrepareLightsForGPU(cmd, hdCamera, cullingResults, m_ReflectionProbeCullResults, densityVolumes, m_DebugDisplaySettings);
+                    enableBakeShadowMask = m_LightLoop.PrepareLightsForGPU(cmd, hdCamera, cullingResults, hdProbeCullingResults, densityVolumes, m_DebugDisplaySettings);
                 }
                 // Configure all the keywords
                 ConfigureKeywords(enableBakeShadowMask, hdCamera, cmd);
@@ -1636,10 +1646,9 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             HDCamera hdCamera,
             ScriptableRenderContext renderContext,
             ScriptableCullingParameters cullingParams,
-            out CullingResults cullingResults
+            ref HDCullingResults cullingResults
         )
         {
-
 #if UNITY_EDITOR
             // emit scene view UI
             if (camera.cameraType == CameraType.SceneView)
@@ -1655,17 +1664,21 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 DecalSystem.instance.BeginCull();
             }
 
-            HDProbeSystem.PrepareCull(camera, m_ReflectionProbeCullResults);
-
+            // TODO: use a parameter to select probe types to cull depending on what is enabled in framesettings
+            HDProbeCullState hdProbeCullState = new HDProbeCullState();
+            if (hdCamera.frameSettings.enableRealtimePlanarReflection)
+                hdProbeCullState = HDProbeSystem.PrepareCull(camera);
 
             using (new ProfilingSample(null, "CullResults.Cull", CustomSamplerId.CullResultsCull.GetSampler()))
             {
-                cullingResults = renderContext.Cull(ref cullingParams);
+                cullingResults.cullingResults = renderContext.Cull(ref cullingParams);
             }
 
-            m_ReflectionProbeCullResults.Cull();
+            if (hdCamera.frameSettings.enableRealtimePlanarReflection)
+                HDProbeSystem.QueryCullResults(hdProbeCullState, ref cullingResults.hdProbeCullingResults);
+            else
+                cullingResults.hdProbeCullingResults = default;
 
-            m_DbufferManager.enableDecals = false;
             if (hdCamera.frameSettings.enableDecals)
             {
                 using (new ProfilingSample(null, "DBufferPrepareDrawData", CustomSamplerId.DBufferPrepareDrawData.GetSampler()))
