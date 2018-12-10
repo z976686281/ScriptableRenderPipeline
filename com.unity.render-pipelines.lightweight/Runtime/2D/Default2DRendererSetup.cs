@@ -11,17 +11,17 @@ namespace UnityEngine.Experimental.Rendering.LightweightPipeline
     internal class Default2DRendererSetup : LightweightRendererSetup
     {
         [SerializeField]
-        private Light2DRTInfo m_AmbientRenderTextureInfo = new Light2DRTInfo(true, 64, 64, FilterMode.Bilinear);
+        private Light2DRTInfo m_AmbientRenderTextureInfo = new Light2DRTInfo(64, 64, FilterMode.Bilinear);
         [SerializeField]
-        private Light2DRTInfo m_SpecularRenderTextureInfo = new Light2DRTInfo(true, 1024, 512, FilterMode.Bilinear);
+        private Light2DRTInfo m_SpecularRenderTextureInfo = new Light2DRTInfo(1024, 512, FilterMode.Bilinear);
         [SerializeField]
-        private Light2DRTInfo m_RimRenderTextureInfo = new Light2DRTInfo(false, 64, 64, FilterMode.Bilinear);
+        private Light2DRTInfo m_RimRenderTextureInfo = new Light2DRTInfo(64, 64, FilterMode.Bilinear);
         //[SerializeField]
         //private Light2DRTInfo m_ShadowRenderTextureInfo = new Light2DRTInfo(true, 1024, 512, FilterMode.Bilinear);
         [SerializeField]
-        private Light2DRTInfo m_PointLightNormalRenderTextureInfo = new Light2DRTInfo(false, 512, 512, FilterMode.Bilinear);
+        private Light2DRTInfo m_PointLightNormalRenderTextureInfo = new Light2DRTInfo(512, 512, FilterMode.Bilinear);
         [SerializeField]
-        private Light2DRTInfo m_PointLightColorRenderTextureInfo = new Light2DRTInfo(false, 512, 512, FilterMode.Bilinear);
+        private Light2DRTInfo m_PointLightColorRenderTextureInfo = new Light2DRTInfo(512, 512, FilterMode.Bilinear);
         [SerializeField]
         private float         m_LightIntensityScale = 1;
 

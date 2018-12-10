@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -85,44 +85,46 @@ namespace UnityEngine.Experimental.Rendering.LightweightPipeline
         }
 
 
-        static private void RenderLightSet(Camera camera, Light2D.ShapeLightTypes type, CommandBuffer cmdBuffer, int layerToRender, RenderTexture renderTexture, Color fillColor, string shaderKeyword, List<Light2D> lights)
+        static private bool RenderLightSet(Camera camera, Light2D.ShapeLightTypes type, CommandBuffer cmdBuffer, int layerToRender, RenderTexture renderTexture, Color fillColor, string shaderKeyword, List<Light2D> lights)
         {
             cmdBuffer.DisableShaderKeyword(shaderKeyword);
+            bool renderedFirstLight = false;
             if (renderTexture != null)
             {
-                bool renderedFirstLight = false;
-                if (lights.Count > 0)
+                for (int i = 0; i < lights.Count; i++)
                 {
-                    for (int i = 0; i < lights.Count; i++)
+                    Light2D light = lights[i];
+                    if (light != null && light.isActiveAndEnabled && light.ShapeLightType == type && light.IsLitLayer(layerToRender) && light.IsLightVisible(camera))
                     {
-                        Light2D light = lights[i];
-
-                        if (light != null && light.isActiveAndEnabled && light.ShapeLightType == type && light.IsLitLayer(layerToRender) && light.IsLightVisible(camera))
+                        Material shapeLightMaterial = light.GetMaterial();
+                        if (shapeLightMaterial != null)
                         {
-                            Material shapeLightMaterial = light.GetMaterial();
-                            if (shapeLightMaterial != null)
+                            Mesh lightMesh = light.GetMesh();
+                            if (lightMesh != null)
                             {
-                                Mesh lightMesh = light.GetMesh();
-                                if (lightMesh != null)
+                                if (!renderedFirstLight)
                                 {
-                                    if (!renderedFirstLight)
-                                    {
-                                        cmdBuffer.SetRenderTarget(renderTexture);
-                                        cmdBuffer.ClearRenderTarget(false, true, fillColor, 1.0f);
-                                        renderedFirstLight = true;
-                                    }
-
-                                    cmdBuffer.EnableShaderKeyword(shaderKeyword);
-                                    cmdBuffer.DrawMesh(lightMesh, light.transform.localToWorldMatrix, shapeLightMaterial);
+                                    cmdBuffer.SetRenderTarget(renderTexture);
+                                    cmdBuffer.ClearRenderTarget(false, true, fillColor, 1.0f);
+                                    renderedFirstLight = true;
                                 }
+
+                                cmdBuffer.EnableShaderKeyword(shaderKeyword);
+                                cmdBuffer.DrawMesh(lightMesh, light.transform.localToWorldMatrix, shapeLightMaterial);
                             }
                         }
                     }
                 }
             }
+
+            return renderedFirstLight;
         }
 
-        static public void SetShaderGlobals(CommandBuffer cmdBuffer)
+        static public void SetShaderGlobals(
+            CommandBuffer cmdBuffer,
+            Vector2 specularBlendFactors,
+            Vector2 rimBlendFactors,
+            Vector2 ambientBlendFactors)
         {
             cmdBuffer.SetGlobalColor("_AmbientColor", m_DefaultAmbientColor);
             cmdBuffer.SetGlobalColor("_RimColor", m_DefaultRimColor);
@@ -130,25 +132,43 @@ namespace UnityEngine.Experimental.Rendering.LightweightPipeline
             cmdBuffer.SetGlobalTexture("_AmbientLightingTex", m_FullScreenAmbientLightTexture);
             cmdBuffer.SetGlobalTexture("_RimLightingTex", m_FullScreenRimLightTexture);
             cmdBuffer.SetGlobalTexture("_ShadowTex", m_FullScreenShadowTexture);
+
+            cmdBuffer.SetGlobalVector("_SpecularBlendFactors", specularBlendFactors);
+            cmdBuffer.SetGlobalVector("_RimBlendFactors", rimBlendFactors);
+            cmdBuffer.SetGlobalVector("_AmbientBlendFactors", ambientBlendFactors);
         }
 
-
-        static public void RenderLights(Camera camera, CommandBuffer cmdBuffer, int layerToRender)
+        static public bool RenderLights(Camera camera, CommandBuffer cmdBuffer, int layerToRender, bool anyRTDirty)
         {
+            bool renderedAnyLight = false;
+
             cmdBuffer.BeginSample("2D Shape Lights - Specular Lights");
             List<Light2D> specularLights = Light2D.GetSpecularLights();
-            RenderLightSet(camera, Light2D.ShapeLightTypes.Specular, cmdBuffer, layerToRender, m_FullScreenSpecularLightTexture, m_DefaultSpecularColor, k_UseSpecularTexture, specularLights);
+            renderedAnyLight = renderedAnyLight || RenderLightSet(camera, Light2D.ShapeLightTypes.Specular, cmdBuffer, layerToRender, m_FullScreenSpecularLightTexture, m_DefaultSpecularColor, k_UseSpecularTexture, specularLights);
             cmdBuffer.EndSample("2D Shape Lights - Specular Lights");
 
             cmdBuffer.BeginSample("2D Shape Lights - Ambient Lights");
             List<Light2D> ambientLights = Light2D.GetAmbientLights();
-            RenderLightSet(camera, Light2D.ShapeLightTypes.LocalAmbient, cmdBuffer, layerToRender, m_FullScreenAmbientLightTexture, m_DefaultAmbientColor, k_UseAmbientTexture, ambientLights);
+            renderedAnyLight = renderedAnyLight || RenderLightSet(camera, Light2D.ShapeLightTypes.LocalAmbient, cmdBuffer, layerToRender, m_FullScreenAmbientLightTexture, m_DefaultAmbientColor, k_UseAmbientTexture, ambientLights);
             cmdBuffer.EndSample("2D Shape Lights - Ambient Lights");
 
             cmdBuffer.BeginSample("2D Shape Lights - Rim Lights");
             List<Light2D> rimLights = Light2D.GetRimLights();
-            RenderLightSet(camera, Light2D.ShapeLightTypes.Rim, cmdBuffer, layerToRender, m_FullScreenRimLightTexture, m_DefaultRimColor, k_UseRimTexture, rimLights);
+            renderedAnyLight = renderedAnyLight || RenderLightSet(camera, Light2D.ShapeLightTypes.Rim, cmdBuffer, layerToRender, m_FullScreenRimLightTexture, m_DefaultRimColor, k_UseRimTexture, rimLights);
             cmdBuffer.EndSample("2D Shape Lights - Rim Lights");
+
+            if (!renderedAnyLight)
+            {
+                if (anyRTDirty)
+                {
+                    Clear(cmdBuffer);
+                    anyRTDirty = false;
+                }
+            }
+            else
+                anyRTDirty = true;
+
+            return anyRTDirty;
         }
     }
 }

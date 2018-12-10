@@ -1,4 +1,4 @@
-﻿#if !defined(COMBINED_SHAPE_LIGHT_PASS)
+#if !defined(COMBINED_SHAPE_LIGHT_PASS)
 #define COMBINED_SHAPE_LIGHT_PASS
 
 #include "UnityCG.cginc"
@@ -53,6 +53,10 @@ uniform float4 _PointLightOrigin;
 
 uniform float  _LightIntensityScale;
 
+uniform float2 _SpecularBlendFactors;
+uniform float2 _RimBlendFactors;
+uniform float2 _AmbientBlendFactors;
+
 v2f CombinedShapeLightVertex(appdata v)
 {
 	v2f o;
@@ -76,66 +80,91 @@ v2f CombinedShapeLightVertex(appdata v)
 	return o;
 }
 
+//fixed4 CombinedShapeLightFragment(v2f i) : SV_Target
+//{
+//	fixed4 main = i.color * tex2D(_MainTex, i.uv);
+//	fixed4 mask = tex2D(_MaskTex, i.uv);									// Mask Order (For RGBA) - Specular, Rim, Ambient Occlusion
+//
+//	fixed4 specular = 0;
+//	#if USE_SPECULAR_TEXTURE
+//		specular = tex2D(_SpecularLightingTex, i.lightingUV) * _LightIntensityScale;
+//	#else
+//		specular = 0;
+//	#endif
+//
+//	fixed4 ambientColor;
+//	#if USE_AMBIENT_TEXTURE
+//		ambientColor = tex2D(_AmbientLightingTex, i.lightingUV) * mask.b * _LightIntensityScale;  // mask.b is the ambient occlusion channel
+//	#else
+//		ambientColor = _AmbientColor * _LightIntensityScale;
+//	#endif
+//	
+//	fixed4 rimColor;
+//	#if USE_RIM_TEXTURE
+//		rimColor = tex2D(_RimLightingTex, i.lightingUV) * _LightIntensityScale;
+//	#else
+//		rimColor = 0;
+//	#endif
+//
+//	fixed3 pointLightColor;
+//	#if USE_POINT_LIGHTS
+//		pointLightColor = tex2D(_PointLightingTex, i.lightingUV) *  _LightIntensityScale;
+//	#else
+//		pointLightColor = 0;
+//	#endif
+//
+//	// Diffuse calculation
+//	fixed3 diffuseColor = main.rgb * (specular.rgb + pointLightColor + ambientColor.rgb);
+//
+//	// Specular calculation
+//	fixed3 appliedSpecularColor;
+//	#if USE_SPECULAR_TEXTURE
+//		appliedSpecularColor = (mask.r * (specular.rgb + pointLightColor)) + diffuseColor.rgb;  // mask.r is the specular channel
+//	#else
+//		#if USE_POINT_LIGHTS
+//			appliedSpecularColor = (mask.r * pointLightColor) + diffuseColor.rgb;
+//		#else
+//			appliedSpecularColor = diffuseColor.rgb;
+//		#endif
+//	#endif
+//
+//	// Rim calculation
+//	fixed3 appliedRimColor;
+//	#if USE_RIM_TEXTURE
+//		appliedRimColor = mask.g * rimColor.rgb + appliedSpecularColor;  // mask.g is the rim channel
+//	#else
+//		appliedRimColor = appliedSpecularColor;
+//	#endif
+//
+//	fixed4 finalOutput;
+//	finalOutput.rgb = appliedRimColor;
+//	finalOutput.a = main.a;
+//	return finalOutput;
+//}
+
 fixed4 CombinedShapeLightFragment(v2f i) : SV_Target
 {
-	fixed4 main = i.color * tex2D(_MainTex, i.uv);
-	fixed4 mask = tex2D(_MaskTex, i.uv);									// Mask Order (For RGBA) - Specular, Rim, Ambient Occlusion
+    fixed4 main = i.color * tex2D(_MainTex, i.uv);
+    fixed4 mask = tex2D(_MaskTex, i.uv);    // Mask Order (For RGBA) - Specular, Rim, Ambient Occlusion
 
-	fixed4 specular = 0;
-	#if USE_SPECULAR_TEXTURE
-		specular = tex2D(_SpecularLightingTex, i.lightingUV) * _LightIntensityScale;
-	#else
-		specular = 0;
-	#endif
+    fixed4 specular = tex2D(_SpecularLightingTex, i.lightingUV) * mask.r;
+    fixed4 appliedSpecularModulate = _SpecularBlendFactors.x * specular;
+    fixed4 appliedSpecularAdditive = _SpecularBlendFactors.y * specular;
 
-	fixed4 ambientColor;
-	#if USE_AMBIENT_TEXTURE
-		ambientColor = tex2D(_AmbientLightingTex, i.lightingUV) * mask.b * _LightIntensityScale;  // mask.b is the ambient occlusion channel
-	#else
-		ambientColor = _AmbientColor * _LightIntensityScale;
-	#endif
-	
-	fixed4 rimColor;
-	#if USE_RIM_TEXTURE
-		rimColor = tex2D(_RimLightingTex, i.lightingUV) * _LightIntensityScale;
-	#else
-		rimColor = 0;
-	#endif
+    fixed4 rim = tex2D(_RimLightingTex, i.lightingUV) * mask.g;
+    fixed4 appliedRimColorModulate = _RimBlendFactors.x * rim;
+    fixed4 appliedRimColorAdditive = _RimBlendFactors.y * rim;
 
-	fixed3 pointLightColor;
-	#if USE_POINT_LIGHTS
-		pointLightColor = tex2D(_PointLightingTex, i.lightingUV) *  _LightIntensityScale;
-	#else
-		pointLightColor = 0;
-	#endif
+    fixed4 ambient = tex2D(_AmbientLightingTex, i.lightingUV) * mask.b;
+    fixed4 appliedAmbientColorModulate = _AmbientBlendFactors.x * ambient;
+    fixed4 appliedAmbientColorAdditive = _AmbientBlendFactors.y * ambient;
 
-	// Diffuse calculation
-	fixed3 diffuseColor = main.rgb * (specular.rgb + pointLightColor + ambientColor.rgb);
+    fixed4 pointLight = tex2D(_PointLightingTex, i.lightingUV);
 
-	// Specular calculation
-	fixed3 appliedSpecularColor;
-	#if USE_SPECULAR_TEXTURE
-		appliedSpecularColor = (mask.r * (specular.rgb + pointLightColor)) + diffuseColor.rgb;  // mask.r is the specular channel
-	#else
-		#if USE_POINT_LIGHTS
-			appliedSpecularColor = (mask.r * pointLightColor) + diffuseColor.rgb;
-		#else
-			appliedSpecularColor = diffuseColor.rgb;
-		#endif
-	#endif
-
-	// Rim calculation
-	fixed3 appliedRimColor;
-	#if USE_RIM_TEXTURE
-		appliedRimColor = mask.g * rimColor.rgb + appliedSpecularColor;  // mask.g is the rim channel
-	#else
-		appliedRimColor = appliedSpecularColor;
-	#endif
-
-	fixed4 finalOutput;
-	finalOutput.rgb = appliedRimColor;
-	finalOutput.a = main.a;
-	return finalOutput;
+    fixed4 finalOutput;
+    finalOutput.rgb = (main * (appliedSpecularModulate + appliedRimColorModulate + appliedAmbientColorModulate + pointLight) + appliedSpecularAdditive + appliedRimColorAdditive + appliedAmbientColorAdditive).rgb;
+    finalOutput.a = main.a;
+    return finalOutput;
 }
 
 #endif

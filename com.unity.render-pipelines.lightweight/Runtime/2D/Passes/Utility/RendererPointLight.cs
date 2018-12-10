@@ -200,17 +200,26 @@ namespace UnityEngine.Experimental.Rendering.LightweightPipeline
 
         static void RenderNormals(ScriptableRenderContext renderContext, CullingResults cullResults, DrawingSettings drawSettings, FilteringSettings filterSettings)
         {
-            m_TemporaryCmdBuffer.name = "Render Normals";
+            m_TemporaryCmdBuffer.name = "Clear Normals";
             m_TemporaryCmdBuffer.Clear();
             m_TemporaryCmdBuffer.SetRenderTarget(m_NormalRT);
             m_TemporaryCmdBuffer.ClearRenderTarget(true, true, k_ClearColor); 
             renderContext.ExecuteCommandBuffer(m_TemporaryCmdBuffer);
+
             drawSettings.SetShaderPassName(0, m_NormalsRenderingPassName);
             renderContext.DrawRenderers(cullResults, ref drawSettings, ref filterSettings);
         }
 
-        static public void RenderLights(Camera camera, CommandBuffer cmdBuffer, ScriptableRenderContext renderContext, CullingResults cullResults, DrawingSettings drawSettings, FilteringSettings filterSettings, int layerToRender)
+        static public bool RenderLights(Camera camera, CommandBuffer cmdBuffer, ScriptableRenderContext renderContext, CullingResults cullResults, DrawingSettings drawSettings, FilteringSettings filterSettings, int layerToRender, bool rtDirty)
         {
+            if (rtDirty)
+            {
+                cmdBuffer.SetRenderTarget(m_ColorRT);
+                cmdBuffer.ClearRenderTarget(true, true, k_ClearColor);
+                rtDirty = false;
+                Clear(cmdBuffer);
+            }
+
             //List<GameObject> shadowCasters = GameObject.FindGameObjectsWithTag("Shadow").ToList();
             cmdBuffer.DisableShaderKeyword("USE_POINT_LIGHTS");
             cmdBuffer.SetGlobalTexture("_PointLightingTex", m_ColorRT);
@@ -218,21 +227,20 @@ namespace UnityEngine.Experimental.Rendering.LightweightPipeline
             List<Light2D> pointLights = Light2D.GetPointLights();
             if (pointLights != null && pointLights.Count > 0)
             {
-                cmdBuffer.EnableShaderKeyword("USE_POINT_LIGHTS");
-                RenderNormals(renderContext, cullResults, drawSettings, filterSettings);
-
-                cmdBuffer.BeginSample("2D Point Lights");
-                //cmdBuffer.EnableShaderKeyword("USE_POINT_LIGHTS");
-
-                cmdBuffer.SetRenderTarget(m_ColorRT);
-                cmdBuffer.ClearRenderTarget(true, true, k_ClearColor);
-
+                bool renderedFirstLight = false;
                 for (int i = 0; i < pointLights.Count; i++)
                 {
                     Light2D light = pointLights[i];
 
                     if (light.IsLitLayer(layerToRender) && light.isActiveAndEnabled && light.IsLightVisible(camera))
                     {
+                        if (!renderedFirstLight)
+                        {
+                            cmdBuffer.EnableShaderKeyword("USE_POINT_LIGHTS");
+                            cmdBuffer.BeginSample("2D Point Lights");
+                            RenderNormals(renderContext, cullResults, drawSettings, filterSettings);
+                        }
+
                         // Sort the shadow casters by distance to light, and render the ones furthest first
                         //SortShadowCasters(light, shadowCasters);
 
@@ -309,18 +317,19 @@ namespace UnityEngine.Experimental.Rendering.LightweightPipeline
                         //    }
                         //}
                         //}
+
+                        rtDirty = true;
+                        renderedFirstLight = true;
                     }
                 }
-                cmdBuffer.EndSample("2D Point Lights");
-            }
-            else
-            {
-                cmdBuffer.SetRenderTarget(m_ColorRT);
-                cmdBuffer.ClearRenderTarget(true, true, k_ClearColor);
+
+                if (renderedFirstLight)
+                    cmdBuffer.EndSample("2D Point Lights");
             }
 
             renderContext.ExecuteCommandBuffer(cmdBuffer);
             cmdBuffer.Clear();
+            return rtDirty;
         }
 
         static public void SetShaderGlobals(CommandBuffer cmdBuffer)

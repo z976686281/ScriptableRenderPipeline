@@ -69,7 +69,6 @@ namespace UnityEngine.Experimental.Rendering.LightweightPipeline
             filterSettings.layerMask = -1;
             filterSettings.renderingLayerMask = 0xFFFFFFFF;
             filterSettings.sortingLayerRange = SortingLayerRange.all;
-            bool renderBuffersDirty = true;
             Profiler.EndSample();
 
             Profiler.BeginSample("RenderSpritesWithLighting - Create Render Textures");
@@ -79,44 +78,34 @@ namespace UnityEngine.Experimental.Rendering.LightweightPipeline
 
             m_CommandBuffer.Clear();
             RendererPointLights.SetShaderGlobals(m_CommandBuffer);
-            RendererShapeLights.SetShaderGlobals(m_CommandBuffer);
+            RendererShapeLights.SetShaderGlobals(m_CommandBuffer, m_SpecularRenderTextureInfo.blendFactors, m_RimRenderTextureInfo.blendFactors, m_AmbientRenderTextureInfo.blendFactors);
             RendererPointLights.Clear(m_CommandBuffer);
             RendererShapeLights.Clear(m_CommandBuffer);
-
             context.ExecuteCommandBuffer(m_CommandBuffer);
+            bool pointLightRTDirty = true;
+            bool anyShapeLightRTDirty = false;
 
-            bool cleared = false;
+            bool cameraTargetCleared = false;
             for (int i = 0; i < m_SortingLayers.Length; i++)
             {
                 m_CommandBuffer.Clear();
-                bool isLitLayer = true;
                 int layerToRender = m_SortingLayers[i].id;
                 short layerValue = (short)m_SortingLayers[i].value;
 
                 m_SortingLayerRange = new SortingLayerRange(layerValue, layerValue);
                 filterSettings.sortingLayerRange = m_SortingLayerRange;
 
-                if (isLitLayer)
-                {
-                    RendererPointLights.RenderLights(camera, m_CommandBuffer, context, renderingData.cullResults, drawSettings, filterSettings, layerToRender);
-                    RendererShapeLights.RenderLights(camera, m_CommandBuffer, layerToRender);
-                    renderBuffersDirty = true;
-                }
-                else if (renderBuffersDirty)
-                {
-                    RendererPointLights.Clear(m_CommandBuffer);
-                    RendererShapeLights.Clear(m_CommandBuffer);
-                    renderBuffersDirty = false;
-                }
+                pointLightRTDirty = RendererPointLights.RenderLights(camera, m_CommandBuffer, context, renderingData.cullResults, drawSettings, filterSettings, layerToRender, pointLightRTDirty);
+                anyShapeLightRTDirty = RendererShapeLights.RenderLights(camera, m_CommandBuffer, layerToRender, anyShapeLightRTDirty);
 
                 // This should have an optimization where I can determine if this needs to be called
                 m_CommandBuffer.SetRenderTarget(BuiltinRenderTextureType.CameraTarget);
 
                 // This is only needed if no previous pass has cleared the camera RT yet.
-                if (!cleared)
+                if (!cameraTargetCleared)
                 {
                     m_CommandBuffer.ClearRenderTarget(true, true, renderingData.cameraData.camera.backgroundColor);
-                    cleared = true;
+                    cameraTargetCleared = true;
                 }
 
                 context.ExecuteCommandBuffer(m_CommandBuffer);
