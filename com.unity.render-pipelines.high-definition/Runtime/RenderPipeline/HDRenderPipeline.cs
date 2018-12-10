@@ -1026,9 +1026,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             var cullingResults = renderRequest.cullingResults;
             var postProcessLayer = renderRequest.postProcessLayer;
             var target = renderRequest.target;
-            m_IsDepthBufferCopyValid = false; // this is a new render frame
 
-            if (hdCamera.frameSettings.enableDecals && false)
+            if (hdCamera.frameSettings.enableDecals)
             {
                 using (new ProfilingSample(null, "DBufferPrepareDrawData", CustomSamplerId.DBufferPrepareDrawData.GetSampler()))
                 {
@@ -1137,10 +1136,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                         cmd.ClearRandomWriteTargets();
                     }
                 }
-                // TODO: Find where to properly copy Depth buffer
-                //   - Depth buffer is created on GBuffer
-                //   - But DBuffer copy it and use it before GBuffer pass?!
-                m_IsDepthBufferCopyValid = false; // this is a new render frame
 
                 // In both forward and deferred, everything opaque should have been rendered at this point so we can safely copy the depth buffer for later processing.
                 GenerateDepthPyramid(hdCamera, cmd, FullScreenDebugMode.DepthPyramid);
@@ -2756,6 +2751,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                             HDUtils.SetRenderTarget(cmd, hdCamera, m_SharedRTManager.GetDepthTexture(true), m_SharedRTManager.GetDepthStencilBuffer(true), ClearFlag.Color, Color.black);
                         }
                     }
+                    m_IsDepthBufferCopyValid = false;
                 }
 
                 // Clear the HDR target
