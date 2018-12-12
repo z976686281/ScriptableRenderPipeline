@@ -137,12 +137,12 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
         static readonly Vector3[] s_GenerateRenderingSettingsFor_Rotations =
         {
-            new Vector3(0, 270, 0),
             new Vector3(0, 90, 0),
+            new Vector3(0, 270, 0),
             new Vector3(270, 0, 0),
             new Vector3(90, 0, 0),
-            new Vector3(0, 180, 0),
             new Vector3(0, 0, 0),
+            new Vector3(0, 180, 0),
         };
         public static void GenerateRenderingSettingsFor(
             ProbeSettings settings, ProbeCapturePositionSettings position,

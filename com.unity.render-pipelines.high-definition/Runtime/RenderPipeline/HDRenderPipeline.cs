@@ -774,11 +774,18 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
         struct RenderRequest
         {
+            public struct Target
+            {
+                public RenderTargetIdentifier id;
+                public CubemapFace face;
+                public RenderTexture copyToTarget;
+            }
             public HDCamera hdCamera;
             public PostProcessLayer postProcessLayer;
             public bool destroyCamera;
-            public RenderTargetIdentifier target;
+            public Target target;
             public HDCullingResults cullingResults;
+            public int priority;
         }
         struct HDCullingResults
         {
@@ -920,7 +927,12 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     hdCamera = hdCamera,
                     cullingResults = cullingResults,
                     postProcessLayer = postProcessLayer,
-                    target = camera.targetTexture ?? new RenderTargetIdentifier(BuiltinRenderTextureType.CameraTarget)
+                    target = new RenderRequest.Target
+                    {
+                        id = camera.targetTexture ?? new RenderTargetIdentifier(BuiltinRenderTextureType.CameraTarget),
+                        face = CubemapFace.Unknown
+                    },
+                    priority = 0
                     // TODO: store DecalCullResult
                 };
                 renderRequests.Add(request);
@@ -977,7 +989,12 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
                 for (int j = 0; j < cameraSettings.Count; ++j)
                 {
-                    var camera = new GameObject("_RenderCamera").AddComponent<Camera>();
+                    // TODO: Pool these cameras for performance
+                    // TODO: when pooling, recycle them if they were used last frame (avoid flooding with new camera when an error occured during rendering)
+                    var camera = new GameObject($"HDProbe RenderCamera ({probe.name}:{j})").AddComponent<Camera>();
+                    camera.ApplySettings(cameraSettings[j]);
+                    camera.ApplySettings(cameraPositionSettings[j]);
+                    camera.pixelRect = new Rect(0, 0, probe.realtimeTexture.width, probe.realtimeTexture.height);
 
                     // TODO: pool this to avoid garbage
                     HDCullingResults cullingResults = new HDCullingResults();
@@ -997,6 +1014,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                         Object.Destroy(camera);
                         continue;
                     }
+                    camera.GetComponent<HDAdditionalCameraData>().flipYMode
+                        = HDAdditionalCameraData.FlipYMode.ForceFlipY;
 
                     var request = new RenderRequest
                     {
@@ -1004,21 +1023,75 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                         cullingResults = cullingResults,
                         postProcessLayer = postProcessLayer,
                         destroyCamera = true,
+                        priority = 10,
                         // TODO: store DecalCullResult
                     };
                     if (cameraSettings.Count > 1)
-                        request.target = new RenderTargetIdentifier(probe.realtimeTexture, cubeFace: (CubemapFace)j);
+                    {
+                        var face = (CubemapFace)j;
+                        request.target = new RenderRequest.Target
+                        {
+                            copyToTarget = probe.realtimeTexture,
+                            face = face
+                        };
+                    }
                     else
-                        request.target = probe.realtimeTexture;
+                        request.target = new RenderRequest.Target
+                        {
+                            id = probe.realtimeTexture,
+                            face = CubemapFace.Unknown
+                        };
                     renderRequests.Add(request);
                 }
             }
 
-            foreach (var renderRequest in renderRequests)
+            // Descending ordering of priority
+            // So probes are rendered before main cameras
+            renderRequests.Sort((l, r) => -(l.priority - r.priority));
+
+            for (int i = 0; i < renderRequests.Count; ++i)
             {
+                var renderRequest = renderRequests[i];
+
                 var cmd = CommandBufferPool.Get("");
 
-                ExecuteRenderRequest(renderRequest, renderContext, cmd);
+                // TODO: CommandBuffer.Blit does not work on Cubemap faces
+                //  So we use an intermediate RT to perform a CommandBuffer.CopyTexture in the target Cubemap face
+                var rtNameID = renderRequest.hdCamera.camera.name.GetHashCode();
+                if (renderRequest.target.face != CubemapFace.Unknown)
+                {
+                    var hdCamera = renderRequest.hdCamera;
+                    cmd.GetTemporaryRT(
+                        rtNameID,
+                        hdCamera.actualWidth, hdCamera.actualHeight, 1, FilterMode.Point,
+                        GraphicsFormat.R16G16B16A16_SFloat
+                    );
+                    ref var target = ref renderRequest.target;
+                    target.id = new RenderTargetIdentifier(rtNameID);
+                }
+
+                using (new ProfilingSample(
+                    cmd,
+                    $"HDRenderPipeline::Render {renderRequest.hdCamera.camera.name}",
+                    CustomSamplerId.HDRenderPipelineRender.GetSampler())
+                )
+                {
+                    ExecuteRenderRequest(renderRequest, renderContext, cmd);
+
+                    var target = renderRequest.target;
+                    // Handle the copy if requested
+                    if (target.copyToTarget != null)
+                    {
+                        cmd.CopyTexture(
+                            target.id, 0, 0, 0, 0, renderRequest.hdCamera.actualWidth, renderRequest.hdCamera.actualHeight,
+                            target.copyToTarget, (int)target.face, 0, 0, 0
+                        );
+                        cmd.ReleaseTemporaryRT(rtNameID);
+                    }
+                    // Destroy the camera if requested
+                    if (renderRequest.destroyCamera)
+                        CoreUtils.Destroy(renderRequest.hdCamera.camera.gameObject);
+                }
 
                 renderContext.ExecuteCommandBuffer(cmd);
 
@@ -1049,7 +1122,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 }
             }
 
-            using (new ProfilingSample(cmd, "HDRenderPipeline::Render", CustomSamplerId.HDRenderPipelineRender.GetSampler()))
             {
                 using (new ProfilingSample(cmd, "Volume Update", CustomSamplerId.VolumeUpdate.GetSampler()))
                 {
@@ -1453,7 +1525,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     // Final blit
                     if (hdCamera.frameSettings.enablePostprocess)
                     {
-                        RenderPostProcess(hdCamera, cmd, postProcessLayer, target);
+                        RenderPostProcess(hdCamera, cmd, postProcessLayer, target.id);
                     }
                     else
                     {
@@ -1469,14 +1541,14 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                                 finalDoubleWideBlit.SetVector(HDShaderIDs._BlitScaleBiasRt, new Vector4(1.0f, 1.0f, 0.0f, 0.0f));
                                 finalDoubleWideBlit.SetVector(HDShaderIDs._BlitScaleBias, new Vector4(1.0f, 1.0f, 0.0f, 0.0f));
                                 int pass = 1; // triangle, bilinear (from Blit.shader)
-                                cmd.Blit(m_CameraColorBuffer, target, finalDoubleWideBlit, pass);
+                                cmd.Blit(m_CameraColorBuffer, target.id, finalDoubleWideBlit, pass);
 #else
                                 cmd.BlitFullscreenTriangle(m_CameraColorBuffer, target); // Prior to 2019.1's y-flip fixes, we didn't need a flip in the shader
 #endif
                             }
                             else
                             {
-                                HDUtils.BlitCameraTexture(cmd, hdCamera, m_CameraColorBuffer, target, hdCamera.flipYMode == HDAdditionalCameraData.FlipYMode.ForceFlipY);
+                                HDUtils.BlitCameraTexture(cmd, hdCamera, m_CameraColorBuffer, target.id, hdCamera.flipYMode == HDAdditionalCameraData.FlipYMode.ForceFlipY);
                             }
                         }
                     }
@@ -1508,7 +1580,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                         m_CopyDepth.SetTexture(HDShaderIDs._InputDepth, m_SharedRTManager.GetDepthStencilBuffer());
                         // When we are Main Game View we need to flip the depth buffer ourselves as we are after postprocess / blit that have already flip the screen
                         m_CopyDepth.SetInt("_FlipY", isMainGameView ? 1 : 0);
-                        cmd.Blit(null, BuiltinRenderTextureType.CameraTarget, m_CopyDepth);
+                        cmd.Blit(null, target.id, m_CopyDepth);
                     }
                 }
 
@@ -1522,9 +1594,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 // Render overlay Gizmos
                 RenderGizmos(cmd, camera, renderContext, GizmoSubset.PostImageEffects);
 #endif
-
-                if (renderRequest.destroyCamera)
-                    CoreUtils.Destroy(camera.gameObject);
             }
         }
 
