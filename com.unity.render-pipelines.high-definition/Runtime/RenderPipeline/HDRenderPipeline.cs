@@ -202,6 +202,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         bool                            m_FullScreenDebugPushed;
         bool                            m_ValidAPI; // False by default mean we render normally, true mean we don't render anything
         bool                            m_IsDepthBufferCopyValid;
+        RenderTexture                   m_TemporaryTargetForCubemaps;
 
         RenderTargetIdentifier[] m_MRTWithSSS;
         string m_ForwardPassProfileName;
@@ -1017,6 +1018,16 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     camera.GetComponent<HDAdditionalCameraData>().flipYMode
                         = HDAdditionalCameraData.FlipYMode.ForceFlipY;
 
+                    if (!probe.realtimeTexture.IsCreated())
+                        probe.realtimeTexture.Create();
+
+                    // TODO: Assign the actual final target to render to.
+                    //   Currently, we use a target for each probe, and then copy it into the cache before using it
+                    //   during the lighting pass.
+                    //   But what we actually want here, is to render directly into the cache (either CubeArray, 
+                    //   or Texture2DArray)
+                    //   To do so, we need to first allocate in the cache the location of the target and then assign
+                    //   it here.
                     var request = new RenderRequest
                     {
                         hdCamera = hdCamera,
@@ -1049,25 +1060,67 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             // So probes are rendered before main cameras
             renderRequests.Sort((l, r) => -(l.priority - r.priority));
 
+            // TODO: Refactor into a method. If possible remove the intermediate target
+            // Find max size for Cubemap face targets and resize/allocate if required the intermediate render target
+            {
+                var size = Vector2Int.zero;
+                for (int i = 0; i < renderRequests.Count; ++i)
+                {
+                    var renderRequest = renderRequests[i];
+                    var isCubemapFaceTarget = renderRequest.target.face != CubemapFace.Unknown;
+                    if (!isCubemapFaceTarget)
+                        continue;
+
+                    var width = renderRequest.hdCamera.actualWidth;
+                    var height = renderRequest.hdCamera.actualHeight;
+                    size.x = Mathf.Max(width, size.x);
+                    size.y = Mathf.Max(height, size.y);
+                }
+
+                if (size != Vector2.zero)
+                {
+                    if (m_TemporaryTargetForCubemaps != null)
+                    {
+                        if (m_TemporaryTargetForCubemaps.width != size.x
+                            || m_TemporaryTargetForCubemaps.height != size.y)
+                        {
+                            m_TemporaryTargetForCubemaps.Release();
+                            m_TemporaryTargetForCubemaps = null;
+                        }
+                    }
+                    if (m_TemporaryTargetForCubemaps == null)
+                    {
+                        m_TemporaryTargetForCubemaps = new RenderTexture(
+                            size.x, size.y, 1, GraphicsFormat.R16G16B16A16_SFloat
+                        )
+                        {
+                            autoGenerateMips = false,
+                            useMipMap = false,
+                            name = "Temporary Target For Cubemap Face",
+                            volumeDepth = 1,
+                            useDynamicScale = false
+                        };
+                    }
+                }
+            }
+
             for (int i = 0; i < renderRequests.Count; ++i)
             {
                 var renderRequest = renderRequests[i];
 
                 var cmd = CommandBufferPool.Get("");
 
-                // TODO: CommandBuffer.Blit does not work on Cubemap faces
+                // TODO: Avoid the intermediate target and render directly into final target
+                //  CommandBuffer.Blit does not work on Cubemap faces
                 //  So we use an intermediate RT to perform a CommandBuffer.CopyTexture in the target Cubemap face
-                var rtNameID = renderRequest.hdCamera.camera.name.GetHashCode();
                 if (renderRequest.target.face != CubemapFace.Unknown)
                 {
+                    if (!m_TemporaryTargetForCubemaps.IsCreated())
+                        m_TemporaryTargetForCubemaps.Create();
+
                     var hdCamera = renderRequest.hdCamera;
-                    cmd.GetTemporaryRT(
-                        rtNameID,
-                        hdCamera.actualWidth, hdCamera.actualHeight, 1, FilterMode.Point,
-                        GraphicsFormat.R16G16B16A16_SFloat
-                    );
                     ref var target = ref renderRequest.target;
-                    target.id = new RenderTargetIdentifier(rtNameID);
+                    target.id = m_TemporaryTargetForCubemaps;
                 }
 
                 using (new ProfilingSample(
@@ -1086,7 +1139,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                             target.id, 0, 0, 0, 0, renderRequest.hdCamera.actualWidth, renderRequest.hdCamera.actualHeight,
                             target.copyToTarget, (int)target.face, 0, 0, 0
                         );
-                        cmd.ReleaseTemporaryRT(rtNameID);
+                        target.copyToTarget.IncrementUpdateCount();
                     }
                     // Destroy the camera if requested
                     if (renderRequest.destroyCamera)
