@@ -1139,7 +1139,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                             target.id, 0, 0, 0, 0, renderRequest.hdCamera.actualWidth, renderRequest.hdCamera.actualHeight,
                             target.copyToTarget, (int)target.face, 0, 0, 0
                         );
-                        target.copyToTarget.IncrementUpdateCount();
+                        target.copyToTarget.IncrementUpdateCount(); // Mark that this render texture changed
                     }
                     // Destroy the camera if requested
                     if (renderRequest.destroyCamera)
