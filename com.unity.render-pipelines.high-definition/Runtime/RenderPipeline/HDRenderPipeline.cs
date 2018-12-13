@@ -956,7 +956,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             {
                 var probe = probeToRenderList[i];
                 // TODO: handle case for planar probe that depends on the viewing camera
-                var position = ProbeCapturePositionSettings.ComputeFrom(probe, null);
+                var position = ProbeCapturePositionSettings.ComputeFrom(probe, cameras[0].transform);
                 cameraSettings.Clear();
                 cameraPositionSettings.Clear();
                 HDRenderUtilities.GenerateRenderingSettingsFor(
@@ -1028,6 +1028,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     //   or Texture2DArray)
                     //   To do so, we need to first allocate in the cache the location of the target and then assign
                     //   it here.
+                    probe.realtimeTexture.IncrementUpdateCount(); // Mark that this render texture will be changed
                     var request = new RenderRequest
                     {
                         hdCamera = hdCamera,
@@ -1139,7 +1140,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                             target.id, 0, 0, 0, 0, renderRequest.hdCamera.actualWidth, renderRequest.hdCamera.actualHeight,
                             target.copyToTarget, (int)target.face, 0, 0, 0
                         );
-                        target.copyToTarget.IncrementUpdateCount(); // Mark that this render texture changed
                     }
                     // Destroy the camera if requested
                     if (renderRequest.destroyCamera)
