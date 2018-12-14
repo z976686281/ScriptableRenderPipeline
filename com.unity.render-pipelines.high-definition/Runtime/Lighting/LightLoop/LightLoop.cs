@@ -1371,11 +1371,15 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             switch (probe)
             {
                 case PlanarReflectionProbe planarProbe:
-            {
-                if (!hdCamera.frameSettings.enableRealtimePlanarReflection)
-                    break;
+                    {
+                        if (!hdCamera.frameSettings.enableRealtimePlanarReflection)
+                            break;
+                        // WIP (force cache to upload realtime targets)
+                        //if (probe.texture is RenderTexture rt)
+                        //    rt.IncrementUpdateCount();
+                        // ENDWIP
                         var fetchIndex = m_ReflectionPlanarProbeCache.FetchSlice(cmd, probe.texture);
-                envIndex = (fetchIndex << 1) | (int)EnvCacheType.Texture2D;
+                        envIndex = (fetchIndex << 1) | (int)EnvCacheType.Texture2D;
 
                         var renderData = planarProbe.renderData;
                         var worldToCameraRHSMatrix = renderData.worldToCameraRHS;
@@ -1390,13 +1394,13 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                         var gpuView = worldToCameraRHSMatrix;
 
                         var vp = gpuProj * gpuView;
-                m_Env2DCaptureVP[fetchIndex] = vp;
+                        m_Env2DCaptureVP[fetchIndex] = vp;
                         break;
-            }
+                    }
                 case HDAdditionalReflectionData cubeProbe:
-            {
+                    {
                         envIndex = m_ReflectionProbeCache.FetchSlice(cmd, probe.texture);
-                envIndex = envIndex << 1 | (int)EnvCacheType.Cubemap;
+                        envIndex = envIndex << 1 | (int)EnvCacheType.Cubemap;
 
                         // Calculate settings to use for the probe
                         var probePositionSettings = ProbeCapturePositionSettings.ComputeFrom(probe, camera.transform);

@@ -935,6 +935,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 rootRenderRequestIndices.Add(request.index);
 
                 // TODO: add culling mask to cull the influence of specific probes
+                // TODO: add options in framesettings to cull specific HDProbes (bake/realtime, planar/standard)
                 // Add visible probes to list
                 for (int i = 0; i < cullingResults.cullingResults.visibleReflectionProbes.Length; ++i)
                 {
@@ -953,8 +954,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 void AddVisibleProbeVisibleIndexIfUpdateIsRequired(HDProbe probe, int visibleInIndex)
                 {
                     // Don't add it if it has already been updated this frame or not a real time probe
-                    if (probe.mode != ProbeSettings.Mode.Realtime
-                        || probe.lastRenderedFrame == Time.frameCount)
+                    // TODO: discard probes that are baked once per frame and already baked this frame
+                    if (probe.mode != ProbeSettings.Mode.Realtime)
                         return;
 
                     if (!visibleProbes.TryGetValue(probe, out List<int> visibleInIndices))
@@ -1089,7 +1090,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     //   or Texture2DArray)
                     //   To do so, we need to first allocate in the cache the location of the target and then assign
                     //   it here.
-                    visibleProbe.realtimeTexture.IncrementUpdateCount(); // Mark that this render texture will be changed
                     var request = new RenderRequest
                     {
                         hdCamera = hdCamera,
