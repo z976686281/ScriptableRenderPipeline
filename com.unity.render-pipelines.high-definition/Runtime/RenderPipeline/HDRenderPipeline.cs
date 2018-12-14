@@ -786,7 +786,9 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             public bool destroyCamera;
             public Target target;
             public HDCullingResults cullingResults;
-            public int priority;
+            public int index;
+            // Indices of render request to render before this one
+            public List<int> dependsOnRenderRequestIndices;
         }
         struct HDCullingResults
         {
@@ -865,7 +867,9 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             // TODO: Use a member list || Pool the lists to avoid garbage
             var renderRequests = new List<RenderRequest>();
             // TODO: Use a member list || Pool the lists to avoid garbage
-            var visibleProbes = new HashSet<HDProbe>();
+            var visibleProbes = new Dictionary<HDProbe, List<int>>();
+            // TODO: Use a member list || Pool the lists to avoid garbage
+            var rootRenderRequestIndices = new List<int>();
 
             // Culling loop
             foreach (var camera in cameras)
@@ -909,19 +913,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     continue;
                 }
 
-                // Add visible probes to list
-                for (int i = 0; i < cullingResults.cullingResults.visibleReflectionProbes.Length; ++i)
-                {
-                    var visibleProbe = cullingResults.cullingResults.visibleReflectionProbes[i];
-
-                    var additionalReflectionData =
-                        visibleProbe.reflectionProbe.GetComponent<HDAdditionalReflectionData>()
-                        ?? visibleProbe.reflectionProbe.gameObject.AddComponent<HDAdditionalReflectionData>();
-
-                    visibleProbes.Add(additionalReflectionData);
-                }
-                visibleProbes.UnionWith(cullingResults.hdProbeCullingResults.visibleProbes);
-
                 // Add render request
                 var request = new RenderRequest
                 {
@@ -933,43 +924,100 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                         id = camera.targetTexture ?? new RenderTargetIdentifier(BuiltinRenderTextureType.CameraTarget),
                         face = CubemapFace.Unknown
                     },
-                    priority = 0
+                    dependsOnRenderRequestIndices = new List<int>(), // TODO: Pool this to avoid GC
+                    index = renderRequests.Count
                     // TODO: store DecalCullResult
                 };
                 renderRequests.Add(request);
-            }
+                // This is a root render request
+                rootRenderRequestIndices.Add(request.index);
 
-            // TODO: store as member or pool it to avoid GC
-            var probeToRenderList = new List<HDProbe>();
-            foreach (var probe in visibleProbes)
-            {
-                if (probe.mode == ProbeSettings.Mode.Realtime
-                    && probe.lastRenderedFrame != Time.frameCount)
-                    probeToRenderList.Add(probe);
+                // Add visible probes to list
+                for (int i = 0; i < cullingResults.cullingResults.visibleReflectionProbes.Length; ++i)
+                {
+                    var visibleProbe = cullingResults.cullingResults.visibleReflectionProbes[i];
+
+                    var additionalReflectionData =
+                        visibleProbe.reflectionProbe.GetComponent<HDAdditionalReflectionData>()
+                        ?? visibleProbe.reflectionProbe.gameObject.AddComponent<HDAdditionalReflectionData>();
+
+                    AddVisibleProbeVisibleIndexIfUpdateIsRequired(additionalReflectionData, request.index);
+                }
+                for (int i = 0; i < cullingResults.hdProbeCullingResults.visibleProbes.Count; ++i)
+                    AddVisibleProbeVisibleIndexIfUpdateIsRequired(cullingResults.hdProbeCullingResults.visibleProbes[i], request.index);
+
+                // local function to help insertion of visible probe
+                void AddVisibleProbeVisibleIndexIfUpdateIsRequired(HDProbe probe, int visibleInIndex)
+                {
+                    // Don't add it if it has already been updated this frame or not a real time probe
+                    if (probe.mode != ProbeSettings.Mode.Realtime
+                        || probe.lastRenderedFrame == Time.frameCount)
+                        return;
+
+                    if (!visibleProbes.TryGetValue(probe, out List<int> visibleInIndices))
+                    {
+                        visibleInIndices = new List<int>();// TODO: Pool this to avoid GC
+                        visibleProbes.Add(probe, visibleInIndices);
+                    }
+                    visibleInIndices.Add(visibleInIndex);
+                }
             }
 
             // TODO: store as member or pool it to avoid GC
             var cameraSettings = new List<CameraSettings>();
             // TODO: store as member or pool it to avoid GC
             var cameraPositionSettings = new List<CameraPositionSettings>();
-            for (int i = 0; i < probeToRenderList.Count; ++i)
+            foreach (var probeToRenderAndDependencies in visibleProbes)
             {
-                var probe = probeToRenderList[i];
-                // TODO: handle case for planar probe that depends on the viewing camera
-                var position = ProbeCapturePositionSettings.ComputeFrom(probe, cameras[0].transform);
+                var visibleProbe = probeToRenderAndDependencies.Key;
+                var visibleInIndices = probeToRenderAndDependencies.Value;
+
+                // Two cases:
+                //   - If the probe is view independent, we add only one render request per face that is 
+                //      a dependency for all its 'visibleIn' render requests
+                //   - If the probe is view dependent, we add one render request per face per 'visibleIn'
+                //      render requests
+                var isViewDependent = visibleProbe.type == ProbeSettings.ProbeType.PlanarProbe;
+
+                if (isViewDependent)
+                {
+                    for (int i = 0; i < visibleInIndices.Count; ++i)
+                    {
+                        var visibleInIndex = visibleInIndices[i];
+                        var visibleInRenderRequest = renderRequests[visibleInIndices[i]];
+                        var viewerTransform = visibleInRenderRequest.hdCamera.camera.transform;
+
+                        AddHDProbeRenderRequests(visibleProbe, viewerTransform, Enumerable.Repeat(visibleInIndex, 1));
+                    }
+                }
+                else
+                    AddHDProbeRenderRequests(visibleProbe, null, visibleInIndices);
+            }
+
+            // Local function to share common code between view dependent and view independent requests
+            void AddHDProbeRenderRequests(
+                HDProbe visibleProbe,
+                Transform viewerTransform,
+                IEnumerable<int> visibleInIndices
+            )
+            {
+                var position = ProbeCapturePositionSettings.ComputeFrom(
+                    visibleProbe,
+                    viewerTransform
+                );
                 cameraSettings.Clear();
                 cameraPositionSettings.Clear();
                 HDRenderUtilities.GenerateRenderingSettingsFor(
-                    probe.settings, position,
+                    visibleProbe.settings, position,
                     cameraSettings, cameraPositionSettings
                 );
 
-                if (probe.realtimeTexture == null)
+                if (visibleProbe.realtimeTexture == null)
                 {
-                    switch (probe.type)
+                    switch (visibleProbe.type)
                     {
                         case ProbeSettings.ProbeType.ReflectionProbe:
-                            probe.SetTexture(
+                            visibleProbe.SetTexture(
                                 ProbeSettings.Mode.Realtime,
                                 HDRenderUtilities.CreateReflectionProbeRenderTarget(
                                     (int)((HDRenderPipeline)RenderPipelineManager.currentPipeline)
@@ -977,7 +1025,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                                 ));
                             break;
                         case ProbeSettings.ProbeType.PlanarProbe:
-                            probe.SetTexture(
+                            visibleProbe.SetTexture(
                                 ProbeSettings.Mode.Realtime,
                                 HDRenderUtilities.CreatePlanarProbeRenderTarget(
                                     (int)((HDRenderPipeline)RenderPipelineManager.currentPipeline)
@@ -992,10 +1040,10 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 {
                     // TODO: Pool these cameras for performance
                     // TODO: when pooling, recycle them if they were used last frame (avoid flooding with new camera when an error occured during rendering)
-                    var camera = new GameObject($"HDProbe RenderCamera ({probe.name}:{j})").AddComponent<Camera>();
+                    var camera = new GameObject($"HDProbe RenderCamera ({visibleProbe.name}:{j} for {viewerTransform})").AddComponent<Camera>();
                     camera.ApplySettings(cameraSettings[j]);
                     camera.ApplySettings(cameraPositionSettings[j]);
-                    camera.pixelRect = new Rect(0, 0, probe.realtimeTexture.width, probe.realtimeTexture.height);
+                    camera.pixelRect = new Rect(0, 0, visibleProbe.realtimeTexture.width, visibleProbe.realtimeTexture.height);
 
                     // TODO: pool this to avoid garbage
                     HDCullingResults cullingResults = new HDCullingResults();
@@ -1018,8 +1066,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     camera.GetComponent<HDAdditionalCameraData>().flipYMode
                         = HDAdditionalCameraData.FlipYMode.ForceFlipY;
 
-                    if (!probe.realtimeTexture.IsCreated())
-                        probe.realtimeTexture.Create();
+                    if (!visibleProbe.realtimeTexture.IsCreated())
+                        visibleProbe.realtimeTexture.Create();
 
                     // TODO: Assign the actual final target to render to.
                     //   Currently, we use a target for each probe, and then copy it into the cache before using it
@@ -1028,14 +1076,15 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     //   or Texture2DArray)
                     //   To do so, we need to first allocate in the cache the location of the target and then assign
                     //   it here.
-                    probe.realtimeTexture.IncrementUpdateCount(); // Mark that this render texture will be changed
+                    visibleProbe.realtimeTexture.IncrementUpdateCount(); // Mark that this render texture will be changed
                     var request = new RenderRequest
                     {
                         hdCamera = hdCamera,
                         cullingResults = cullingResults,
                         postProcessLayer = postProcessLayer,
                         destroyCamera = true,
-                        priority = 10,
+                        dependsOnRenderRequestIndices = new List<int>(), // TODO: Pool this to avoid GC
+                        index = renderRequests.Count
                         // TODO: store DecalCullResult
                     };
                     if (cameraSettings.Count > 1)
@@ -1043,23 +1092,22 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                         var face = (CubemapFace)j;
                         request.target = new RenderRequest.Target
                         {
-                            copyToTarget = probe.realtimeTexture,
+                            copyToTarget = visibleProbe.realtimeTexture,
                             face = face
                         };
                     }
                     else
                         request.target = new RenderRequest.Target
                         {
-                            id = probe.realtimeTexture,
+                            id = visibleProbe.realtimeTexture,
                             face = CubemapFace.Unknown
                         };
                     renderRequests.Add(request);
+
+                    foreach (var visibleInIndex in visibleInIndices)
+                        renderRequests[visibleInIndex].dependsOnRenderRequestIndices.Add(request.index);
                 }
             }
-
-            // Descending ordering of priority
-            // So probes are rendered before main cameras
-            renderRequests.Sort((l, r) => -(l.priority - r.priority));
 
             // TODO: Refactor into a method. If possible remove the intermediate target
             // Find max size for Cubemap face targets and resize/allocate if required the intermediate render target
@@ -1105,9 +1153,32 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 }
             }
 
-            for (int i = 0; i < renderRequests.Count; ++i)
+            // Flatten the render requests graph in an array that guarantee dependency constraints
+            // TODO: pool this to avoid GC
+            var renderRequestIndicesToRender = new List<int>();
             {
-                var renderRequest = renderRequests[i];
+                // TODO: pool this to avoid GC
+                var stack = new Stack<int>();
+                for (int i = 0; i < rootRenderRequestIndices.Count; ++i)
+                {
+                    stack.Push(rootRenderRequestIndices[i]);
+                    while (stack.Count > 0)
+                    {
+                        var index = stack.Pop();
+                        if (!renderRequestIndicesToRender.Contains(index))
+                            renderRequestIndicesToRender.Add(index);
+
+                        var request = renderRequests[index];
+                        for (int j = 0; j < request.dependsOnRenderRequestIndices.Count; ++j)
+                            stack.Push(request.dependsOnRenderRequestIndices[j]);
+                    }
+                }
+            }
+            // Execute render request graph
+            for (int i = 0; i < renderRequestIndicesToRender.Count; ++i)
+            {
+                var renderRequestIndex = renderRequestIndicesToRender[i];
+                var renderRequest = renderRequests[renderRequestIndex];
 
                 var cmd = CommandBufferPool.Get("");
 
