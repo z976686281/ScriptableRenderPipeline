@@ -171,6 +171,38 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             invertFaceCulling = false
         };
 
+        public static CameraSettings From(HDCamera hdCamera)
+        {
+            var settings = @default;
+            settings.culling.cullingMask = hdCamera.camera.cullingMask;
+            settings.culling.useOcclusionCulling = hdCamera.camera.useOcclusionCulling;
+            settings.frustum.aspect = hdCamera.camera.aspect;
+            settings.frustum.farClipPlane = hdCamera.camera.farClipPlane;
+            settings.frustum.nearClipPlane = hdCamera.camera.nearClipPlane;
+            settings.frustum.fieldOfView = hdCamera.camera.fieldOfView;
+            settings.frustum.mode = Frustum.Mode.UseProjectionMatrixField;
+            settings.frustum.projectionMatrix = hdCamera.camera.projectionMatrix;
+            settings.invertFaceCulling = false;
+            settings.postProcessLayer = hdCamera.camera.GetComponent<PostProcessLayer>();
+
+            var add = hdCamera.camera.GetComponent<HDAdditionalCameraData>();
+            if (add != null && !add.Equals(null))
+            {
+                settings.renderingPath = add.renderingPath;
+                settings.bufferClearing.backgroundColorHDR = add.backgroundColorHDR;
+                settings.bufferClearing.clearColorMode = add.clearColorMode;
+                settings.bufferClearing.clearDepth = add.clearDepth;
+                settings.flipYMode = add.flipYMode;
+                settings.frameSettings = add.GetFrameSettings();
+                settings.volumes = new Volumes
+                {
+                    anchorOverride = add.volumeAnchorOverride,
+                    layerMask = add.volumeLayerMask
+                };
+            }
+            return settings;
+        }
+
         /// <summary>Rendering path to use.</summary>
         public HDAdditionalCameraData.RenderingPath renderingPath;
         /// <summary>Frame settings to use.</summary>

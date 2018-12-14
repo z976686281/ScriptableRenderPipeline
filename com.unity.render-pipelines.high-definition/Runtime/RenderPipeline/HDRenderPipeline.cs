@@ -789,6 +789,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             public int index;
             // Indices of render request to render before this one
             public List<int> dependsOnRenderRequestIndices;
+            public CameraSettings cameraSettings;
         }
         struct HDCullingResults
         {
@@ -925,13 +926,15 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                         face = CubemapFace.Unknown
                     },
                     dependsOnRenderRequestIndices = new List<int>(), // TODO: Pool this to avoid GC
-                    index = renderRequests.Count
+                    index = renderRequests.Count,
+                    cameraSettings = CameraSettings.From(hdCamera)
                     // TODO: store DecalCullResult
                 };
                 renderRequests.Add(request);
                 // This is a root render request
                 rootRenderRequestIndices.Add(request.index);
 
+                // TODO: add culling mask to cull the influence of specific probes
                 // Add visible probes to list
                 for (int i = 0; i < cullingResults.cullingResults.visibleReflectionProbes.Length; ++i)
                 {
@@ -959,7 +962,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                         visibleInIndices = new List<int>();// TODO: Pool this to avoid GC
                         visibleProbes.Add(probe, visibleInIndices);
                     }
-                    visibleInIndices.Add(visibleInIndex);
+                    if (!visibleInIndices.Contains(visibleInIndex))
+                        visibleInIndices.Add(visibleInIndex);
                 }
             }
 
@@ -1064,10 +1068,19 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                         continue;
                     }
                     camera.GetComponent<HDAdditionalCameraData>().flipYMode
-                        = HDAdditionalCameraData.FlipYMode.ForceFlipY;
+                        = visibleProbe.type == ProbeSettings.ProbeType.ReflectionProbe
+                            ? HDAdditionalCameraData.FlipYMode.ForceFlipY
+                            : HDAdditionalCameraData.FlipYMode.Automatic;
 
                     if (!visibleProbe.realtimeTexture.IsCreated())
                         visibleProbe.realtimeTexture.Create();
+
+                    visibleProbe.SetRenderData(ProbeSettings.Mode.Realtime, new HDProbe.RenderData
+                    {
+                        capturePosition = camera.transform.position,
+                        projectionMatrix = camera.projectionMatrix,
+                        worldToCameraRHS = camera.worldToCameraMatrix
+                    });
 
                     // TODO: Assign the actual final target to render to.
                     //   Currently, we use a target for each probe, and then copy it into the cache before using it
@@ -1084,7 +1097,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                         postProcessLayer = postProcessLayer,
                         destroyCamera = true,
                         dependsOnRenderRequestIndices = new List<int>(), // TODO: Pool this to avoid GC
-                        index = renderRequests.Count
+                        index = renderRequests.Count,
+                        cameraSettings = cameraSettings[j]
                         // TODO: store DecalCullResult
                     };
                     if (cameraSettings.Count > 1)
@@ -1174,8 +1188,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     }
                 }
             }
-            // Execute render request graph
-            for (int i = 0; i < renderRequestIndicesToRender.Count; ++i)
+            // Execute render request graph, in reverse order
+            for (int i = renderRequestIndicesToRender.Count - 1; i >= 0 ; --i)
             {
                 var renderRequestIndex = renderRequestIndicesToRender[i];
                 var renderRequest = renderRequests[renderRequestIndex];
@@ -1201,7 +1215,9 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     CustomSamplerId.HDRenderPipelineRender.GetSampler())
                 )
                 {
+                    cmd.SetInvertCulling(renderRequest.cameraSettings.invertFaceCulling);
                     ExecuteRenderRequest(renderRequest, renderContext, cmd);
+                    cmd.SetInvertCulling(false);
 
                     var target = renderRequest.target;
                     // Handle the copy if requested
