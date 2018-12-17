@@ -1374,10 +1374,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     {
                         if (!hdCamera.frameSettings.enableRealtimePlanarReflection)
                             break;
-                        // WIP (force cache to upload realtime targets)
-                        //if (probe.texture is RenderTexture rt)
-                        //    rt.IncrementUpdateCount();
-                        // ENDWIP
                         var fetchIndex = m_ReflectionPlanarProbeCache.FetchSlice(cmd, probe.texture);
                         envIndex = (fetchIndex << 1) | (int)EnvCacheType.Texture2D;
 
