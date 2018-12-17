@@ -575,8 +575,12 @@ float2 DirectionToLatLongCoordinate(float3 unDir)
     return float2(1.0 - 0.5 * INV_PI * atan2(dir.x, -dir.z), asin(dir.y) * INV_PI + 0.5);
 }
 
+// Input coord is in UV space (0.0) at the top left corner.
 float3 LatlongToDirectionCoordinate(float2 coord)
 {
+    // UV space is inverted compared to world space
+    coord.y = 1.0f - coord.y;
+
     float theta = coord.y * PI;
     float phi = (coord.x * 2.f * PI - PI*0.5f);
 

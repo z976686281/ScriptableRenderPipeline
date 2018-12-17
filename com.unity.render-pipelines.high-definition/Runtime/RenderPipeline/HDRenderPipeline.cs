@@ -682,6 +682,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
                 // Set up UnityPerView CBuffer.
                 hdCamera.SetupGlobalParams(cmd, m_Time, m_LastTime, m_FrameCount);
+                hdCamera.SetupLegacyMatrices(cmd, hdCamera, true);
 
                 cmd.SetGlobalVector(HDShaderIDs._IndirectLightingMultiplier, new Vector4(VolumeManager.instance.stack.GetComponent<IndirectLightingController>().indirectDiffuseIntensity, 0, 0, 0));
 
@@ -1054,6 +1055,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
                     PushGlobalParams(hdCamera, cmd, diffusionProfileSettings);
 
+                    cmd.SetInvertCulling(true);
+
                     // TODO: Find a correct place to bind these material textures
                     // We have to bind the material specific global parameters in this mode
                     m_MaterialList.ForEach(material => material.Bind());
@@ -1148,11 +1151,9 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     // TODO: Try to arrange code so we can trigger this call earlier and use async compute here to run sky convolution during other passes (once we move convolution shader to compute).
                     UpdateSkyEnvironment(hdCamera, cmd);
 
-
                     if (m_CurrentDebugDisplaySettings.IsDebugMaterialDisplayEnabled())
                     {
                         RenderDebugViewMaterial(cullingResults, hdCamera, renderContext, cmd);
-
                         PushColorPickerDebugTexture(cmd, m_CameraColorBuffer, hdCamera);
                     }
                     else
@@ -1238,8 +1239,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                         StopStereoRendering(cmd, renderContext, camera);
 
                         HDGPUAsyncTask buildLightListTask = new HDGPUAsyncTask("Build light list", ComputeQueueType.Background);
-                        // It is important that this task is in the same queue as the build light list due to dependency it has on it. If really need to move it, put an extra fence to make sure buildLightListTask has finished. 
-                        HDGPUAsyncTask volumeVoxelizationTask = new HDGPUAsyncTask("Volumetric voxelization", ComputeQueueType.Background); 
+                        // It is important that this task is in the same queue as the build light list due to dependency it has on it. If really need to move it, put an extra fence to make sure buildLightListTask has finished.
+                        HDGPUAsyncTask volumeVoxelizationTask = new HDGPUAsyncTask("Volumetric voxelization", ComputeQueueType.Background);
                         HDGPUAsyncTask SSRTask = new HDGPUAsyncTask("Screen Space Reflection", ComputeQueueType.Background);
                         HDGPUAsyncTask SSAOTask = new HDGPUAsyncTask("SSAO", ComputeQueueType.Background);
                         HDGPUAsyncTask contactShadowsTask = new HDGPUAsyncTask("Screen Space Shadows", ComputeQueueType.Background);
@@ -1302,6 +1303,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                             // Overwrite camera properties set during the shadow pass with the original camera properties.
                             renderContext.SetupCameraProperties(camera, camera.stereoEnabled);
                             hdCamera.SetupGlobalParams(cmd, m_Time, m_LastTime, m_FrameCount);
+                            hdCamera.SetupLegacyMatrices(cmd, hdCamera, true);
                         }
 
 
@@ -1421,7 +1423,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
                         StartStereoRendering(cmd, renderContext, camera);
 
-                        if (currentFrameSettings.enablePostprocess)
+                        if (false /*currentFrameSettings.enablePostprocess*/)
                         {
                             // Post-processes output straight to the backbuffer
                             m_PostProcessSystem.Render(
@@ -1449,7 +1451,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                                 }
                                 else
                                 {
-                                    HDUtils.BlitCameraTexture(cmd, hdCamera, m_CameraColorBuffer, BuiltinRenderTextureType.CameraTarget, hdCamera.flipYMode == HDAdditionalCameraData.FlipYMode.ForceFlipY);
+                                    HDUtils.BlitCameraTexture(cmd, hdCamera, m_CameraColorBuffer, BuiltinRenderTextureType.CameraTarget);
                                 }
                             }
                         }
@@ -1460,9 +1462,10 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                             renderContext.StereoEndRender(camera);
                     }
 
+
                     // Due to our RT handle system we don't write into the backbuffer depth buffer (as our depth buffer can be bigger than the one provided)
                     // So need to do a copy of the corresponding part of RT depth buffer in the target depth buffer in various situation:
-                    // - RenderTexture (camera.targetTexture != null) have a depth buffer (camera.targetTexture.depth != 0)
+                    // - RenderTexture (camera.targetTexture != null) has a depth buffer (camera.targetTexture.depth != 0)
                     // - We are the main game view (i.e not a RenderTexture camera.cameraType == CameraType.Game && hdCamera.camera.targetTexture == null) in the editor for allowing usage of Debug.DrawLine and Debug.Ray.
                     // - We draw Gizmo/Icons in the editor (hdCamera.camera.targetTexture != null && camera.targetTexture.depth != 0 - The Scene view have a targetTexture and a depth texture)
                     // TODO: If at some point we get proper render target aliasing, we will be able to use the provided depth texture directly with our RT handle system
@@ -1480,22 +1483,49 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                         {
                             cmd.SetRenderTarget(BuiltinRenderTextureType.CameraTarget);
                             m_CopyDepthPropertyBlock.SetTexture(HDShaderIDs._InputDepth, m_SharedRTManager.GetDepthStencilBuffer());
-                            // When we are Main Game View we need to flip the depth buffer ourselves as we are after postprocess / blit that have already flip the screen
-                            m_CopyDepthPropertyBlock.SetInt("_FlipY", isMainGameView ? 1 : 0);
+                            m_CopyDepthPropertyBlock.SetInt("_FlipY", 0);
                             CoreUtils.DrawFullScreen(cmd, m_CopyDepth, m_CopyDepthPropertyBlock);
                         }
                     }
 
-                    // Caution: RenderDebug need to take into account that we have flip the screen (so anything capture before the flip will be flipped)
                     RenderDebug(hdCamera, cmd, cullingResults);
 
 #if UNITY_EDITOR
-                    // We need to make sure the viewport is correctly set for the editor rendering. It might have been changed by debug overlay rendering just before.
-                    cmd.SetViewport(new Rect(0.0f, 0.0f, hdCamera.actualWidth, hdCamera.actualHeight));
 
-                    // Render overlay Gizmos
+                    if (hdCamera.camera.cameraType == CameraType.SceneView || hdCamera.camera.cameraType == CameraType.Preview || hdCamera.camera.name == "Preview Camera")
+                    {
+                        using (new ProfilingSample(cmd, "Blit And Flip SceneView"))
+                        {
+                            int temporarySceneViewRT = Shader.PropertyToID("TempSceneViewRT");
+                            cmd.GetTemporaryRT(temporarySceneViewRT, hdCamera.actualWidth, hdCamera.actualHeight, 24, FilterMode.Point, GraphicsFormat.R8G8B8A8_SRGB);
+
+                            // Copy Color and Depth to a temporary RT
+                            cmd.Blit(BuiltinRenderTextureType.CameraTarget, temporarySceneViewRT);
+                            cmd.SetRenderTarget(temporarySceneViewRT);
+                            cmd.SetGlobalTexture(HDShaderIDs._InputDepth, BuiltinRenderTextureType.CameraTarget);
+                            m_CopyDepthPropertyBlock.SetInt("_FlipY", 0);
+                            CoreUtils.DrawFullScreen(cmd, m_CopyDepth, m_CopyDepthPropertyBlock);
+
+                            // Copy back to back buffer and flip
+                            cmd.Blit(temporarySceneViewRT, BuiltinRenderTextureType.CameraTarget, new Vector2(1.0f, -1.0f), new Vector2(0.0f, 1.0f));
+                            cmd.SetRenderTarget(BuiltinRenderTextureType.CameraTarget);
+                            m_CopyDepthPropertyBlock.SetInt("_FlipY", 1);
+                            cmd.SetGlobalTexture(HDShaderIDs._InputDepth, temporarySceneViewRT);
+                            CoreUtils.DrawFullScreen(cmd, m_CopyDepth, m_CopyDepthPropertyBlock);
+                        }
+
+                        hdCamera.Update(currentFrameSettings, m_VolumetricLightingSystem, m_MSAASamples, true);
+                        hdCamera.SetupGlobalParams(cmd, m_Time, m_LastTime, m_FrameCount);
+                    }
+
+                    // Ideally we should also render gizmos before the SceneView flip.
+                    // Unfortunately, some of the gizmo code like light/probes icons, etc do not use the builtin projection matrix so we have no way to override it.
+                    // Here they will correctly render for scene view because it's already flipped, and game view does not flip anything.
+                    hdCamera.SetupLegacyMatrices(cmd, hdCamera, false);
                     RenderGizmos(cmd, camera, renderContext, GizmoSubset.PostImageEffects);
 #endif
+
+                    cmd.SetInvertCulling(false);
                 }
 
                 // Caution: ExecuteCommandBuffer must be outside of the profiling bracket
@@ -1514,12 +1544,13 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             {
                 bool renderPrePostprocessGizmos = (gizmoSubset == GizmoSubset.PreImageEffects);
 
-                using (new ProfilingSample(cmd, 
-                    renderPrePostprocessGizmos ? "PrePostprocessGizmos" : "Gizmos", 
+                using (new ProfilingSample(cmd,
+                    renderPrePostprocessGizmos ? "PrePostprocessGizmos" : "Gizmos",
                     renderPrePostprocessGizmos ? CustomSamplerId.GizmosPrePostprocess.GetSampler() : CustomSamplerId.Gizmos.GetSampler()))
                 {
                     renderContext.ExecuteCommandBuffer(cmd);
                     cmd.Clear();
+
                     renderContext.DrawGizmos(camera, gizmoSubset);
                 }
             }
@@ -1893,7 +1924,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             {
                 using (new ProfilingSample(cmd, "Blit DebugView Material Debug", CustomSamplerId.BlitDebugViewMaterialDebug.GetSampler()))
                 {
-                    // This Blit will flip the screen anything other than openGL
                     HDUtils.BlitCameraTexture(cmd, hdCamera, m_CameraColorBuffer, BuiltinRenderTextureType.CameraTarget);
                 }
             }
@@ -2394,7 +2424,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 float x = 0;
                 float overlayRatio = m_CurrentDebugDisplaySettings.data.debugOverlayRatio;
                 float overlaySize = Math.Min(hdCamera.actualHeight, hdCamera.actualWidth) * overlayRatio;
-                float y = hdCamera.actualHeight - overlaySize;
+                float y = 0;
 
                 var lightingDebug = m_CurrentDebugDisplaySettings.data.lightingDebugSettings;
 
@@ -2404,7 +2434,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     m_SharedPropertyBlock.SetTexture(HDShaderIDs._InputCubemap, skyReflection);
                     m_SharedPropertyBlock.SetFloat(HDShaderIDs._Mipmap, lightingDebug.skyReflectionMipmap);
                     m_SharedPropertyBlock.SetFloat(HDShaderIDs._DebugExposure, lightingDebug.debugExposure);
-                    cmd.SetViewport(new Rect(x, y, overlaySize, overlaySize));
+                    HDUtils.SetViewport(cmd, hdCamera, new Rect(x, y, overlaySize, overlaySize));
                     cmd.DrawProcedural(Matrix4x4.identity, m_DebugDisplayLatlong, 0, MeshTopology.Triangles, 3, 1, m_SharedPropertyBlock);
                     HDUtils.NextOverlayCoord(ref x, ref y, overlaySize, overlaySize, hdCamera.actualWidth);
                 }
