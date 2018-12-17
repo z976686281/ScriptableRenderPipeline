@@ -26,7 +26,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             return value.localToWorldMatrix.GetColumn(0);
         }
     }
-    
+
     //-----------------------------------------------------------------------------
     // structure definition
     //-----------------------------------------------------------------------------
@@ -731,8 +731,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             var nrTilesX = (width + LightDefinitions.s_TileSizeFptl - 1) / LightDefinitions.s_TileSizeFptl;
             var nrTilesY = (height + LightDefinitions.s_TileSizeFptl - 1) / LightDefinitions.s_TileSizeFptl;
             var nrTiles = nrTilesX * nrTilesY * nrStereoLayers;
-            const int capacityUShortsPerTile = 32;
-            const int dwordsPerTile = (capacityUShortsPerTile + 1) >> 1;        // room for 31 lights and a nrLights value.
+            int capacityUShortsPerTile = 32;
+            int dwordsPerTile = (capacityUShortsPerTile + 1) >> 1;        // room for 31 lights and a nrLights value.
 
             s_LightList = new ComputeBuffer((int)LightCategory.Count * dwordsPerTile * nrTiles, sizeof(uint));       // enough list memory for a 4k x 4k display
             s_TileList = new ComputeBuffer((int)LightDefinitions.s_NumFeatureVariants * nrTiles, sizeof(uint));
@@ -823,7 +823,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             // Clamp light list to the maximum allowed lights on screen to avoid ComputeBuffer overflow
             if (m_lightList.directionalLights.Count >= m_MaxDirectionalLightsOnScreen)
                 return false;
-            
+
             bool contributesToLighting = ((additionalLightData.lightDimmer > 0) && (additionalLightData.affectDiffuse || additionalLightData.affectSpecular)) || (additionalLightData.volumetricDimmer > 0);
 
             if (!contributesToLighting)
@@ -960,7 +960,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
             if (!contributesToLighting)
                 return false;
-            
+
             var lightData = new LightData();
 
             lightData.lightLayers = additionalLightData.GetLightLayers();
@@ -1577,7 +1577,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         public void UpdateCullingParameters(ref ScriptableCullingParameters cullingParams)
         {
             m_ShadowManager.UpdateCullingParameters(ref cullingParams);
-            
+
             // In HDRP we don't need per object light/probe info so we disable the native code that handles it.
             cullingParams.cullingOptions |= CullingOptions.DisablePerObjectCulling;
         }
@@ -1592,7 +1592,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 light.bakingOutput.mixedLightingMode == MixedLightingMode.Shadowmask &&
                 light.bakingOutput.occlusionMaskChannel != -1;     // We need to have an occlusion mask channel assign, else we have no shadow mask
         }
-        
+
         HDProbe SelectProbe(VisibleReflectionProbe probe, PlanarReflectionProbe planarProbe)
         {
             if (probe.reflectionProbe != null)
@@ -1649,7 +1649,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     worldToView = WorldToViewStereo(camera, Camera.StereoscopicEye.Left);
                     rightEyeWorldToView = WorldToViewStereo(camera, Camera.StereoscopicEye.Right);
                 }
-                
+
                 // We must clear the shadow requests before checking if they are any visible light because we would have requests from the last frame executed in the case where we don't see any lights
                 m_ShadowManager.Clear();
 
@@ -1673,7 +1673,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
                         // Light should always have additional data, however preview light right don't have, so we must handle the case by assigning HDUtils.s_DefaultHDAdditionalLightData
                         var additionalData = GetHDAdditionalLightData(lightComponent);
-                    
+
                         // Reserve shadow map resolutions and check if light needs to render shadows
                         additionalData.ReserveShadows(camera, m_ShadowManager, m_ShadowInitParameters, cullResults, m_FrameSettings, lightIndex);
 
@@ -1870,7 +1870,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                             }
                         }
                     }
-                    
+
                     // Update the compute buffer with the shadow request datas
                     m_ShadowManager.PrepareGPUShadowDatas(cullResults, camera);
 
@@ -2762,15 +2762,15 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
                     for (int shadowIndex = startShadowIndex; shadowIndex < startShadowIndex + shadowRequestCount; shadowIndex++)
                     {
-                        m_ShadowManager.DisplayShadowMap(shadowIndex, cmd, m_DebugHDShadowMapMaterial, x, y, overlaySize, overlaySize, lightingDebug.shadowMinValue, lightingDebug.shadowMaxValue, hdCamera.camera.cameraType != CameraType.SceneView);
+                        m_ShadowManager.DisplayShadowMap(shadowIndex, cmd, hdCamera, m_DebugHDShadowMapMaterial, x, y, overlaySize, overlaySize, lightingDebug.shadowMinValue, lightingDebug.shadowMaxValue, false);
                         HDUtils.NextOverlayCoord(ref x, ref y, overlaySize, overlaySize, hdCamera.actualWidth);
                     }
                 }
                 else if (lightingDebug.shadowDebugMode == ShadowMapDebugMode.VisualizeAtlas)
                 {
-                    m_ShadowManager.DisplayShadowAtlas(cmd, m_DebugHDShadowMapMaterial, x, y, overlaySize, overlaySize, lightingDebug.shadowMinValue, lightingDebug.shadowMaxValue, hdCamera.camera.cameraType != CameraType.SceneView);
+                    m_ShadowManager.DisplayShadowAtlas(cmd, hdCamera, m_DebugHDShadowMapMaterial, x, y, overlaySize, overlaySize, lightingDebug.shadowMinValue, lightingDebug.shadowMaxValue, false);
                     HDUtils.NextOverlayCoord(ref x, ref y, overlaySize, overlaySize, hdCamera.actualWidth);
-                    m_ShadowManager.DisplayShadowCascadeAtlas(cmd, m_DebugHDShadowMapMaterial, x, y, overlaySize, overlaySize, lightingDebug.shadowMinValue, lightingDebug.shadowMaxValue, hdCamera.camera.cameraType != CameraType.SceneView);
+                    m_ShadowManager.DisplayShadowCascadeAtlas(cmd, hdCamera, m_DebugHDShadowMapMaterial, x, y, overlaySize, overlaySize, lightingDebug.shadowMinValue, lightingDebug.shadowMaxValue, false);
                     HDUtils.NextOverlayCoord(ref x, ref y, overlaySize, overlaySize, hdCamera.actualWidth);
                 }
             }

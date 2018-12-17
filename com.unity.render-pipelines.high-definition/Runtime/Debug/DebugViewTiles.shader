@@ -82,10 +82,7 @@ Shader "Hidden/HDRenderPipeline/DebugViewTiles"
                 uint2 pixelCoord = (tileCoord + uint2((quadVertex+1) & 1, (quadVertex >> 1) & 1)) * tileSize;
 
                 float2 clipCoord = (pixelCoord * _ScreenSize.zw) * 2.0 - 1.0;
-                if (!ShouldFlipDebugTexture()) // Need to do this negative test to have it work correctly on windows in scene view and game view
-                {
-                    clipCoord.y *= -1;
-                }
+                clipCoord.y *= -1; // Clip space is flipped compared to Screen Space (which is what pixelCoord here is)
 
                 Varyings output;
                 output.positionCS = float4(clipCoord, 0, 1.0);
@@ -146,11 +143,6 @@ Shader "Hidden/HDRenderPipeline/DebugViewTiles"
 
             float4 Frag(Varyings input) : SV_Target
             {
-                if (ShouldFlipDebugTexture())
-                {
-                    input.positionCS.y = _ScreenSize.y - input.positionCS.y;
-                }
-
                 // positionCS is SV_Position
                 float depth = LOAD_TEXTURE2D(_CameraDepthTexture, input.positionCS.xy).x;
                 PositionInputs posInput = GetPositionInput(input.positionCS.xy, _ScreenSize.zw, depth, UNITY_MATRIX_I_VP, UNITY_MATRIX_V, uint2(input.positionCS.xy) / GetTileSize());

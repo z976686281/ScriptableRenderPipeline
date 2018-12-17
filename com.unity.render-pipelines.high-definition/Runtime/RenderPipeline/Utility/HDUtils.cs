@@ -127,7 +127,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             // V = -(X, Y, Z), s.t. Z = 1,
             // X = (2x / resX - 1) * tan(vFoV / 2) * ar = x * [(2 / resX) * tan(vFoV / 2) * ar] + [-tan(vFoV / 2) * ar] = x * [-m00] + [-m20]
             // Y = (2y / resY - 1) * tan(vFoV / 2)      = y * [(2 / resY) * tan(vFoV / 2)]      + [-tan(vFoV / 2)]      = y * [-m11] + [-m21]
-            
+
             float tanHalfVertFoV = Mathf.Tan(0.5f * verticalFoV);
             float aspectRatio = screenSize.x * screenSize.w;
 
@@ -138,12 +138,9 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             float m20 = (1.0f - 2.0f * lensShift.x) * tanHalfVertFoV * aspectRatio;
             float m00 = -2.0f * screenSize.z * tanHalfVertFoV * aspectRatio;
 
-            if (renderToCubemap)
-            {
-                // Flip Y.
-                m11 = -m11;
-                m21 = -m21;
-            }
+            // Flip Y.
+            m11 = -m11;
+            m21 = -m21;
 
             var viewSpaceRasterTransform = new Matrix4x4(new Vector4(m00, 0.0f, 0.0f, 0.0f),
                     new Vector4(0.0f, m11, 0.0f, 0.0f),
@@ -267,6 +264,16 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             }
         }
 
+        // Internal SetViewport code will flip viewport Y for anything but scene view so we need to counteract it here...
+        public static void SetViewport(CommandBuffer cmd, HDCamera camera, Rect viewport)
+        {
+            Rect correctedViewport = viewport;
+            if (camera.camera.cameraType != CameraType.SceneView)
+                correctedViewport.y = camera.actualHeight - correctedViewport.yMax - correctedViewport.y;
+
+            cmd.SetViewport(correctedViewport);
+        }
+
         public static void BlitQuad(CommandBuffer cmd, Texture source, Vector4 scaleBiasTex, Vector4 scaleBiasRT, int mipLevelTex, bool bilinear)
         {
             s_PropertyBlock.SetTexture(HDShaderIDs._BlitTexture, source);
@@ -321,6 +328,19 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 scale.y *= -1;
             }
             cmd.Blit(source, destination, scale, offset);
+            cmd.SetRenderTarget(destination);
+            cmd.SetViewport(new Rect(0.0f, 0.0f, camera.actualWidth, camera.actualHeight));
+        }
+
+        public static void BlitCameraTexture(CommandBuffer cmd, HDCamera camera, RTHandleSystem.RTHandle source, RenderTargetIdentifier destination)
+        {
+            cmd.SetRenderTarget(destination);
+            cmd.SetViewport(new Rect(0.0f, 0.0f, camera.actualWidth, camera.actualHeight));
+
+            s_PropertyBlock.SetTexture(HDShaderIDs._BlitTexture, source);
+            s_PropertyBlock.SetVector(HDShaderIDs._BlitScaleBias, camera.viewportScale);
+            s_PropertyBlock.SetFloat(HDShaderIDs._BlitMipLevel, 0.0f);
+            cmd.DrawProcedural(Matrix4x4.identity, GetBlitMaterial(), 0, MeshTopology.Triangles, 3, 1, s_PropertyBlock);
         }
 
         // This particular case is for blitting a non-scaled texture into a scaled texture. So we setup the partial viewport but don't scale the input UVs.

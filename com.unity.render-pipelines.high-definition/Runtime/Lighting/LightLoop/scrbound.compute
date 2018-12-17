@@ -385,8 +385,8 @@ void SCRAABBGEN(uint threadID : SV_GroupIndex, uint3 u3GroupID : SV_GroupID)
 
 #endif
 
-            g_vBoundsBuffer[boundsIndices.min] = float4(0.5*vMin.x + 0.5, 0.5*vMin.y + 0.5, vMin.z*VIEWPORT_SCALE_Z, linMiZ);
-            g_vBoundsBuffer[boundsIndices.max] = float4(0.5*vMax.x + 0.5, 0.5*vMax.y + 0.5, vMax.z*VIEWPORT_SCALE_Z, linMaZ);
+            g_vBoundsBuffer[boundsIndices.min] = float4(0.5*vMin.x + 0.5, 1.0f - (0.5*vMax.y + 0.5), vMin.z*VIEWPORT_SCALE_Z, linMiZ);
+            g_vBoundsBuffer[boundsIndices.max] = float4(0.5*vMax.x + 0.5, 1.0f - (0.5*vMin.y + 0.5), vMax.z*VIEWPORT_SCALE_Z, linMaZ);
         }
     }
 }

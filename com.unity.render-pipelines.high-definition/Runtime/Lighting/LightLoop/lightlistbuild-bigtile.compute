@@ -78,7 +78,7 @@ float3 GetViewPosFromLinDepth(float2 v2ScrPos, float fLinDepth, uint eyeIndex)
 #endif
 
     float s = useLeftHandVersion ? 1 : (-1);
-    float2 p = float2( (s*v2ScrPos.x-fCx)/fSx, (s*v2ScrPos.y-fCy)/fSy);
+    float2 p = float2( (s*v2ScrPos.x-fCx)/fSx, -(s*v2ScrPos.y-fCy)/fSy);
 
     return float3(isOrthographic ? p.xy : (fLinDepth*p.xy), fLinDepth);
 }

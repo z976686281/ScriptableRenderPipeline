@@ -62,7 +62,7 @@ Shader "Debug/ReflectionProbePreview"
             {
                 //float3 view = normalize(i.worldpos - _CameraWorldPosition);
                 float3 V = normalize(i.positionWS - GetPrimaryCameraPosition());
-                float3 R = reflect(V, i.normalWS);
+                float3 R = reflect(i.normalWS, V);
                 float4 color = SAMPLE_TEXTURECUBE_LOD(_Cubemap, sampler_Cubemap, R, _MipLevel).rgba;
                 color = color * exp2(_Exposure);
 

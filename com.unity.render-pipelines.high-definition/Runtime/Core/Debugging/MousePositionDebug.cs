@@ -132,7 +132,7 @@ namespace UnityEngine.Experimental.Rendering
         {
 #if UNITY_EDITOR
 #if UNITY_2019_1_OR_NEWER
-            UnityEditor.SceneView.duringSceneGui -= OnSceneGUI;            
+            UnityEditor.SceneView.duringSceneGui -= OnSceneGUI;
 #else
             UnityEditor.SceneView.onSceneGUIDelegate -= OnSceneGUI;
 #endif
@@ -150,7 +150,6 @@ namespace UnityEngine.Experimental.Rendering
             {
                 // In play mode, m_mousePosition the one in the scene view
                 Vector2 mousePixelCoord = m_mousePosition;
-                mousePixelCoord.y = (ScreenHeight - 1.0f) - mousePixelCoord.y;
                 return mousePixelCoord;
             }
             else
@@ -162,8 +161,8 @@ namespace UnityEngine.Experimental.Rendering
                 }
                 else
                 {
-                    // In non-play mode, only m_mousePosition is valid. 
-                    // We force -1, -1 as a game view pixel pos to avoid 
+                    // In non-play mode, only m_mousePosition is valid.
+                    // We force -1, -1 as a game view pixel pos to avoid
                     // rendering un-wanted effects
                     return new Vector2(-1.0f, -1.0f);
                 }

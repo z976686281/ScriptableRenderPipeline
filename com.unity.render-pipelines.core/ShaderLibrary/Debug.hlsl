@@ -65,7 +65,7 @@ bool SampleDebugFont(int2 pixCoord, uint digit)
 #undef _
 #undef x
 #undef PACK_BITS25
-    return (fontData[8 - pixCoord.y][digit >= 5] >> ((digit % 5) * 5 + pixCoord.x)) & 1;
+    return (fontData[pixCoord.y][digit >= 5] >> ((digit % 5) * 5 + pixCoord.x)) & 1;
 }
 
 bool SampleDebugFontNumber(int2 pixCoord, uint number)

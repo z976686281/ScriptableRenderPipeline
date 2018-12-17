@@ -217,9 +217,23 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             Reset();
         }
 
+        // We don't use legacy C++ GL.GetGPUProjectionMatrix function because now that we don't support OpenGL style devices anymore, we can remove the Y flip.
+        // We only need to perform Y flip for some special cases in the editor such as selection rendering that uses our matrices
+        Matrix4x4 ComputeGPUProjectionMatrix(Matrix4x4 proj, bool flipY)
+        {
+            Matrix4x4 result = proj;
+
+            if (flipY)
+                result.SetRow(1, -result.GetRow(1));
+            // Always invert Z (we only support Z inverted devices
+            result.SetRow(2, result.GetRow(2) * -0.5f + result.GetRow(3) * 0.5f);
+
+            return result;
+        }
+
         // Pass all the systems that may want to update per-camera data here.
         // That way you will never update an HDCamera and forget to update the dependent system.
-        public void Update(FrameSettings currentFrameSettings, VolumetricLightingSystem vlSys, MSAASamples msaaSamples)
+        public void Update(FrameSettings currentFrameSettings, VolumetricLightingSystem vlSys, MSAASamples msaaSamples, bool flipY = false)
         {
             // store a shortcut on HDAdditionalCameraData (done here and not in the constructor as
             // we don't create HDCamera at every frame and user can change the HDAdditionalData later (Like when they create a new scene).
@@ -279,9 +293,10 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
             // The actual projection matrix used in shaders is actually massaged a bit to work across all platforms
             // (different Z value ranges etc.)
-            var gpuProj = GL.GetGPUProjectionMatrix(cameraProj, true); // Had to change this from 'false'
+            Matrix4x4 gpuProj = ComputeGPUProjectionMatrix(cameraProj, flipY);
+
             var gpuView = camera.worldToCameraMatrix;
-            var gpuNonJitteredProj = GL.GetGPUProjectionMatrix(nonJitteredCameraProj, true);
+            Matrix4x4 gpuNonJitteredProj = ComputeGPUProjectionMatrix(nonJitteredCameraProj, flipY);
 
             // Update viewport sizes.
             m_ViewportSizePrevFrame = new Vector2Int(m_ActualWidth, m_ActualHeight);
@@ -301,7 +316,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 {
                     // For VR, TAA proj matrices don't need to be jittered
                     var currProjStereo = camera.GetStereoProjectionMatrix((Camera.StereoscopicEye)eyeIndex);
-                    var gpuCurrProjStereo = GL.GetGPUProjectionMatrix(currProjStereo, true);
+                    var gpuCurrProjStereo = ComputeGPUProjectionMatrix(currProjStereo, flipY);
                     var gpuCurrViewStereo = camera.GetStereoViewMatrix((Camera.StereoscopicEye)eyeIndex);
 
                     if (ShaderConfig.s_CameraRelativeRendering != 0)
@@ -365,7 +380,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 isFirstFrame = false;
             }
 
-            // In stereo, this corresponds to the center eye position	
+            // In stereo, this corresponds to the center eye position
             worldSpaceCameraPos = camera.transform.position;
 
             taaFrameRotation = new Vector2(Mathf.Sin(taaFrameIndex * (0.5f * Mathf.PI)),
@@ -552,7 +567,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         }
 
         // Stopgap method used to extract stereo combined matrix state.
-        public void UpdateStereoDependentState(ref ScriptableCullingParameters cullingParams)
+        public void UpdateStereoDependentState(ref ScriptableCullingParameters cullingParams, bool flipY = false)
         {
             if (!camera.stereoEnabled)
                 return;
@@ -585,7 +600,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
             viewMatrix = stereoCombinedViewMatrix;
             var stereoCombinedProjMatrix = cullingParams.stereoProjectionMatrix;
-            projMatrix = GL.GetGPUProjectionMatrix(stereoCombinedProjMatrix, true);
+            projMatrix = ComputeGPUProjectionMatrix(stereoCombinedProjMatrix, flipY);
 
             Frustum.Create(frustum, viewProjMatrix, true, true);
 
@@ -614,7 +629,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             {
                 float vertical = camera.orthographicSize;
                 float horizontal = vertical * camera.aspect;
-                
+
                 var offset = taaJitter;
                 offset.x *= horizontal / (0.5f * camera.pixelWidth);
                 offset.y *= vertical / (0.5f * camera.pixelHeight);
@@ -795,6 +810,14 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             }
 
             s_Cleanup.Clear();
+        }
+
+        public void SetupLegacyMatrices(CommandBuffer cmd, HDCamera hdCamera, bool flipY)
+        {
+            Matrix4x4 legacyProjMatrix = hdCamera.camera.projectionMatrix;
+            if (flipY)
+                legacyProjMatrix.SetRow(1, -legacyProjMatrix.GetRow(1));
+            cmd.SetProjectionMatrix(legacyProjMatrix);
         }
 
         // Set up UnityPerView CBuffer.
