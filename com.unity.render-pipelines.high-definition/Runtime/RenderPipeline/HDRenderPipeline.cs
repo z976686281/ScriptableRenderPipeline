@@ -1059,8 +1059,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
                     for (int j = 0; j < cameraSettings.Count; ++j)
                     {
-                        // TODO: Pool these cameras for performance
-                        // TODO: when pooling, recycle them if they were used last frame (avoid flooding with new camera when an error occured during rendering)
                         Camera camera = m_ProbeCameraPool.Count == 0
                             ? camera = new GameObject().AddComponent<Camera>()
                             : camera = m_ProbeCameraPool.Pop();
@@ -1196,7 +1194,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 {
                     // Flatten the render requests graph in an array that guarantee dependency constraints
                     {
-                        // TODO: pool this to avoid GC
                         using (GenericPool<Stack<int>>.Get(out Stack<int> stack))
                         {
                             stack.Clear();
