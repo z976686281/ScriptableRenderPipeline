@@ -65,6 +65,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         public float iso = 400f;
         public FlipYMode flipYMode;
 
+        public LayerMask probeLayerMask = ~0;
+
         // Event used to override HDRP rendering for this particular camera.
         public event Action<ScriptableRenderContext, HDCamera> customRender;
         public bool hasCustomRender { get { return customRender != null; } }

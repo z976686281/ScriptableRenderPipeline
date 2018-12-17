@@ -20,6 +20,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         static readonly GUIContent cullingMaskContent = CoreEditorUtils.GetContent("Culling Mask");
         static readonly GUIContent volumeLayerMaskContent = CoreEditorUtils.GetContent("Volume Layer Mask");
         static readonly GUIContent volumeAnchorOverrideContent = CoreEditorUtils.GetContent("Volume Anchor Override");
+        static readonly GUIContent probeLayerMaskContent = CoreEditorUtils.GetContent("Probe Layer Mask");
         static readonly GUIContent occlusionCullingContent = CoreEditorUtils.GetContent("Occlusion Culling");
 
         static readonly GUIContent projectionContent = CoreEditorUtils.GetContent("Projection|How the Camera renders perspective.\n\nChoose Perspective to render objects with perspective.\n\nChoose Orthographic to render objects uniformly, with no sense of perspective.");

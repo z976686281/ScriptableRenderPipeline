@@ -175,6 +175,11 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             }
         }
 
+        public LayerMask probeLayerMask
+            => m_AdditionalCameraData != null
+            ? m_AdditionalCameraData.probeLayerMask
+            : (LayerMask)~0;
+
         static Dictionary<Camera, HDCamera> s_Cameras = new Dictionary<Camera, HDCamera>();
         static List<Camera> s_Cleanup = new List<Camera>(); // Recycled to reduce GC pressure
 

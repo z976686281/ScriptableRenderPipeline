@@ -1046,6 +1046,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     // TODO: Pool these cameras for performance
                     // TODO: when pooling, recycle them if they were used last frame (avoid flooding with new camera when an error occured during rendering)
                     var camera = new GameObject($"HDProbe RenderCamera ({visibleProbe.name}:{j} for {viewerTransform})").AddComponent<Camera>();
+                    camera.hideFlags = HideFlags.HideAndDontSave;
                     camera.ApplySettings(cameraSettings[j]);
                     camera.ApplySettings(cameraPositionSettings[j]);
                     camera.cameraType = CameraType.Reflection;

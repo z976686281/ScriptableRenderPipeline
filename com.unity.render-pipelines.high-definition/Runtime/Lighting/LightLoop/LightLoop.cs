@@ -1911,6 +1911,10 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                             if (probe.reflectionProbe == null || probe.reflectionProbe.Equals(null))
                                 continue;
 
+                            // Exclude env lights based on hdCamera.probeLayerMask
+                            if ((hdCamera.probeLayerMask.value & (1 << probe.reflectionProbe.gameObject.layer)) == 0)
+                                continue;
+
                             var additional = probe.reflectionProbe.GetComponent<HDAdditionalReflectionData>();
 
                             // probe.texture can be null when we are adding a reflection probe in the editor
@@ -1944,6 +1948,10 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
                             // probe.texture can be null when we are adding a reflection probe in the editor
                             if (probe.texture == null || envLightCount >= k_MaxEnvLightsOnScreen)
+                                continue;
+
+                            // Exclude env lights based on hdCamera.probeLayerMask
+                            if ((hdCamera.probeLayerMask.value & (1 << probe.gameObject.layer)) == 0)
                                 continue;
 
                             var lightVolumeType = LightVolumeType.Box;

@@ -23,7 +23,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         cullingInvertFaceCulling = 1 << 14,
         renderingPath = 1 << 15,
         flipYMode = 1 << 16,
-        frameSettings = 1 << 17
+        frameSettings = 1 << 17,
+        probeLayerMask = 1 << 18
     }
 
     [Serializable]
@@ -168,7 +169,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             renderingPath = HDAdditionalCameraData.RenderingPath.UseGraphicsSettings,
             volumes = Volumes.@default,
             flipYMode = HDAdditionalCameraData.FlipYMode.Automatic,
-            invertFaceCulling = false
+            invertFaceCulling = false,
+            probeLayerMask = ~0
         };
 
         public static CameraSettings From(HDCamera hdCamera)
@@ -199,6 +201,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     anchorOverride = add.volumeAnchorOverride,
                     layerMask = add.volumeLayerMask
                 };
+                settings.probeLayerMask = add.probeLayerMask;
             }
             return settings;
         }
@@ -219,6 +222,9 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         public Culling culling;
         /// <summary>True to invert face culling, false otherwise.</summary>
         public bool invertFaceCulling;
+        /// <summary>The mode to use when we want to flip the Y axis.</summary>
         public HDAdditionalCameraData.FlipYMode flipYMode;
+        /// <summary>The layer mask to use to filter probes that can influence this camera.</summary>
+        public LayerMask probeLayerMask;
     }
 }

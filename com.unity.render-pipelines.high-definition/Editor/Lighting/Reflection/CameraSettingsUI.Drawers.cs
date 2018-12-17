@@ -83,9 +83,10 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                 }
                 EditorGUILayout.Space();
             }
-
+            
             PropertyFieldWithFlagToggleIfDisplayed(CameraSettingsFields.flipYMode, serialized.flipYMode, _.GetContent("Flip Y"), @override.camera, displayedFields.camera, overridableFields.camera);
             PropertyFieldWithFlagToggleIfDisplayed(CameraSettingsFields.renderingPath, serialized.renderingPath, _.GetContent("Rendering Path"), @override.camera, displayedFields.camera, overridableFields.camera);
+            PropertyFieldWithFlagToggleIfDisplayed(CameraSettingsFields.probeLayerMask, serialized.probeLayerMask, _.GetContent("Probe Layer Mask"), @override.camera, displayedFields.camera, overridableFields.camera);
 
             if ((displayedFields.camera & CameraSettingsFields.frameSettings) != 0)
             {

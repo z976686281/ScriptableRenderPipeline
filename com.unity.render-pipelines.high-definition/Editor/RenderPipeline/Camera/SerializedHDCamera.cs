@@ -24,6 +24,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         public SerializedFrameSettings frameSettings;
         public CameraEditor.Settings baseCameraSettings { get; private set; }
 
+        public SerializedProperty probeLayerMask;
 
         public SerializedHDCamera(SerializedObject serializedObject)
         {
@@ -50,6 +51,8 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             volumeLayerMask = serializedAdditionalDataObject.Find((HDAdditionalCameraData d) => d.volumeLayerMask);
             volumeAnchorOverride = serializedAdditionalDataObject.Find((HDAdditionalCameraData d) => d.volumeAnchorOverride);
             frameSettings = new SerializedFrameSettings(serializedAdditionalDataObject.FindProperty("m_FrameSettings"));
+
+            probeLayerMask = serializedAdditionalDataObject.Find((HDAdditionalCameraData d) => d.probeLayerMask);
 
             baseCameraSettings = new CameraEditor.Settings(serializedObject);
             baseCameraSettings.OnEnable();
