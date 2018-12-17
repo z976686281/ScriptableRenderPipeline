@@ -1065,7 +1065,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                             ? camera = new GameObject().AddComponent<Camera>()
                             : camera = m_ProbeCameraPool.Pop();
 
-                        camera.hideFlags = HideFlags.HideAndDontSave;
+                        camera.gameObject.hideFlags = HideFlags.HideAndDontSave;
                         camera.gameObject.SetActive(false);
                         camera.name = $"HDProbe RenderCamera ({visibleProbe.name}:{j} for {viewerTransform})";
                         camera.ApplySettings(cameraSettings[j]);
