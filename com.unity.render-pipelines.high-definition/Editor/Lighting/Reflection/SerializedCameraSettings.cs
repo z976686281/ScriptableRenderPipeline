@@ -37,7 +37,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         internal SerializedProperty cullingUseOcclusionCulling;
         internal SerializedProperty cullingCullingMask;
         internal SerializedProperty cullingInvertFaceCulling;
-        internal SerializedProperty renderingPath;
+        internal SerializedProperty customRenderingSettings;
         internal SerializedProperty flipYMode;
         internal SerializedProperty probeLayerMask;
 
@@ -61,7 +61,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             cullingUseOcclusionCulling = root.FindPropertyRelative("culling.useOcclusionCulling");
             cullingCullingMask = root.FindPropertyRelative("culling.cullingMask");
             cullingInvertFaceCulling = root.FindPropertyRelative("invertFaceCulling");
-            renderingPath = root.FindPropertyRelative("renderingPath");
+            customRenderingSettings = root.FindPropertyRelative("customRenderingSettings");
             flipYMode = root.FindPropertyRelative("flipYMode");
             probeLayerMask = root.FindPropertyRelative("probeLayerMask");
         }

@@ -1,5 +1,6 @@
 using System;
 using UnityEngine.Rendering.PostProcessing;
+using UnityEngine.Serialization;
 
 namespace UnityEngine.Experimental.Rendering.HDPipeline
 {
@@ -21,7 +22,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         cullingUseOcclusionCulling = 1 << 12,
         cullingCullingMask = 1 << 13,
         cullingInvertFaceCulling = 1 << 14,
-        renderingPath = 1 << 15,
+        customRenderingSettings = 1 << 15,
         flipYMode = 1 << 16,
         frameSettings = 1 << 17,
         probeLayerMask = 1 << 18
@@ -166,7 +167,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             frameSettings = new FrameSettings(),
             frustum = Frustum.@default,
             postProcessLayer = null,
-            renderingPath = HDAdditionalCameraData.RenderingPath.UseGraphicsSettings,
+            customRenderingSettings = false,
             volumes = Volumes.@default,
             flipYMode = HDAdditionalCameraData.FlipYMode.Automatic,
             invertFaceCulling = false,
@@ -206,8 +207,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             return settings;
         }
 
-        /// <summary>Rendering path to use.</summary>
-        public HDAdditionalCameraData.RenderingPath renderingPath;
+        /// <summary>Override rendering settings if true.</summary>
+        public bool customRenderingSettings;
         /// <summary>Frame settings to use.</summary>
         public FrameSettings frameSettings;
         /// <summary>Post process layer to use.</summary>
@@ -226,5 +227,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         public HDAdditionalCameraData.FlipYMode flipYMode;
         /// <summary>The layer mask to use to filter probes that can influence this camera.</summary>
         public LayerMask probeLayerMask;
+
+        [SerializeField, FormerlySerializedAs("renderingPath"), Obsolete("For data migration")]
+        internal int m_ObsoleteRenderingPath;
     }
 }
