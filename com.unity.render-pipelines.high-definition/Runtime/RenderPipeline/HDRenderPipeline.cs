@@ -1424,7 +1424,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
                         StartStereoRendering(cmd, renderContext, camera);
 
-                        if (false /*currentFrameSettings.enablePostprocess*/)
+                        if (currentFrameSettings.enablePostprocess)
                         {
                             // Post-processes output straight to the backbuffer
                             m_PostProcessSystem.Render(
