@@ -89,12 +89,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
     [RequireComponent(typeof(Camera))]
     public partial class HDAdditionalCameraData : MonoBehaviour, ISerializationCallbackReceiver, IDebugData
     {
-        public enum FlipYMode
-        {
-            Automatic,
-            ForceFlipY
-        }
-
         // The light culling use standard projection matrices (non-oblique)
         // If the user overrides the projection matrix with an oblique one
         // He must also provide a callback to get the equivalent non oblique for the culling
@@ -120,7 +114,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         [ColorUsage(true, true)]
         public Color backgroundColorHDR = new Color(0.025f, 0.07f, 0.19f, 0.0f);
         public bool clearDepth = true;
-        
+
         [Tooltip("Layer Mask used for the volume interpolation for this camera.")]
         public LayerMask volumeLayerMask = -1;
         [Tooltip("Transform used for the volume interpolation for this camera.")]
@@ -132,8 +126,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         // Physical parameters
         public HDPhysicalCamera physicalParameters = new HDPhysicalCamera();
 
-        public FlipYMode flipYMode;
-        
         [Tooltip("This will skip rendering settings to directly rendering in fullscreen (for instance: Useful for video)")]
         public bool fullscreenPassthrough = false;
 
@@ -143,7 +135,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         // Event used to override HDRP rendering for this particular camera.
         public event Action<ScriptableRenderContext, HDCamera> customRender;
         public bool hasCustomRender { get { return customRender != null; } }
-        
+
         // To be able to turn on/off FrameSettings properties at runtime for debugging purpose without affecting the original one
         // we create a runtime copy (m_ActiveFrameSettings that is used, and any parametrization is done on serialized frameSettings)
         [SerializeField]

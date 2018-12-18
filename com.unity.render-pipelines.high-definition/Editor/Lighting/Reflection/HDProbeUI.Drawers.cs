@@ -94,7 +94,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                     k_ListContent[i] = listContent.ToArray();
                     k_ListModes[i] = listMode.ToArray();
                 }
-                
+
             }
 
             // Tool bars
@@ -160,7 +160,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                     serialized.probeSettings.mode.intValue = (int)ProbeSettings.Mode.Realtime;
                 }
                 else
-                { 
+                {
 #endif
 
                 // Probe Mode
@@ -382,8 +382,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                     );
                     HDProbeSystem.Render(
                         probe, null, target,
-                        out HDProbe.RenderData renderData,
-                        forceFlipY: probe.type == ProbeSettings.ProbeType.ReflectionProbe
+                        out HDProbe.RenderData renderData
                     );
                     HDTextureUtilities.WriteTextureFileToDisk(target, assetPath);
                     AssetDatabase.ImportAsset(assetPath);

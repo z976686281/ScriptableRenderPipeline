@@ -1055,7 +1055,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
                     PushGlobalParams(hdCamera, cmd, diffusionProfileSettings);
 
-                    cmd.SetInvertCulling(true);
+                    // TODO: Should always be true. Check with RenderDoc what's happening here once we can debug real time probes.
+                    cmd.SetInvertCulling(hdCamera.camera.cameraType != CameraType.Reflection);
 
                     // TODO: Find a correct place to bind these material textures
                     // We have to bind the material specific global parameters in this mode

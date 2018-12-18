@@ -38,7 +38,6 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         internal SerializedProperty cullingCullingMask;
         internal SerializedProperty cullingInvertFaceCulling;
         internal SerializedProperty customRenderingSettings;
-        internal SerializedProperty flipYMode;
 
         internal SerializedCameraSettings(SerializedProperty root)
         {
@@ -61,7 +60,6 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             cullingCullingMask = root.FindPropertyRelative("culling.cullingMask");
             cullingInvertFaceCulling = root.FindPropertyRelative("invertFaceCulling");
             customRenderingSettings = root.FindPropertyRelative("customRenderingSettings");
-            flipYMode = root.FindPropertyRelative("flipYMode");
         }
     }
 }

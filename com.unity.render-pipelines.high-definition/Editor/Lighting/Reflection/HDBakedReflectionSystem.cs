@@ -46,7 +46,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
         HDProbeBakedState[] m_HDProbeBakedStates = new HDProbeBakedState[0];
         float m_DateSinceLastLegacyWarning = float.MinValue;
-        Dictionary<UnityEngine.Rendering.RenderPipeline, float> m_DateSinceLastInvalidSRPWarning 
+        Dictionary<UnityEngine.Rendering.RenderPipeline, float> m_DateSinceLastInvalidSRPWarning
             = new Dictionary<UnityEngine.Rendering.RenderPipeline, float>();
 
         HDBakedReflectionSystem() : base(1)
@@ -87,7 +87,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             // On the C# side, we don't have non blocking asset import APIs, and we don't want to block the
             //   UI when the user is editing the world.
             //   So, we skip the baking when the user is editing any UI control.
-            if (GUIUtility.hotControl != 0) 
+            if (GUIUtility.hotControl != 0)
                 return;
 
             if (!IsCurrentSRPValid(out HDRenderPipeline hdPipeline))
@@ -504,7 +504,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 case ProbeSettings.ProbeType.ReflectionProbe:
                     {
                         var positionSettings = ProbeCapturePositionSettings.ComputeFrom(probe, null);
-                        HDRenderUtilities.Render(probe.settings, positionSettings, cubeRT, forceFlipY: true);
+                        HDRenderUtilities.Render(probe.settings, positionSettings, cubeRT);
                         HDBakingUtilities.CreateParentDirectoryIfMissing(targetFile);
                         HDTextureUtilities.WriteTextureFileToDisk(cubeRT, targetFile);
                         break;

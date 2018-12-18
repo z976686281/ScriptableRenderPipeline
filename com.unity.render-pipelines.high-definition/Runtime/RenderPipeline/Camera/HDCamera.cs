@@ -163,16 +163,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             }
         }
 
-        public HDAdditionalCameraData.FlipYMode flipYMode
-        {
-            get
-            {
-                if (m_AdditionalCameraData != null)
-                    return m_AdditionalCameraData.flipYMode;
-                return HDAdditionalCameraData.FlipYMode.Automatic;
-            }
-        }
-
         public HDAdditionalCameraData.AntialiasingMode antialiasing => m_AdditionalCameraData != null
             ? m_AdditionalCameraData.antialiasing
             : HDAdditionalCameraData.AntialiasingMode.None;

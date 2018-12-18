@@ -22,7 +22,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         cullingCullingMask = 1 << 13,
         cullingInvertFaceCulling = 1 << 14,
         customRenderingSettings = 1 << 15,
-        flipYMode = 1 << 16,
+        unused = 1 << 16,
         frameSettings = 1 << 17
     }
 
@@ -166,7 +166,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             frustum = Frustum.@default,
             customRenderingSettings = false,
             volumes = Volumes.@default,
-            flipYMode = HDAdditionalCameraData.FlipYMode.Automatic,
             invertFaceCulling = false
         };
 
@@ -184,7 +183,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         public Culling culling;
         /// <summary>True to invert face culling, false otherwise.</summary>
         public bool invertFaceCulling;
-        public HDAdditionalCameraData.FlipYMode flipYMode;
 
         [SerializeField, FormerlySerializedAs("renderingPath"), Obsolete("For data migration")]
         internal int m_ObsoleteRenderingPath;

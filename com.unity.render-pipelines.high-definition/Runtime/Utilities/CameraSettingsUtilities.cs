@@ -35,7 +35,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             add.volumeAnchorOverride = settings.volumes.anchorOverride;
             // HD Specific
             add.customRenderingSettings = settings.customRenderingSettings;
-            add.flipYMode = settings.flipYMode;
 
             add.OnAfterDeserialize();
         }

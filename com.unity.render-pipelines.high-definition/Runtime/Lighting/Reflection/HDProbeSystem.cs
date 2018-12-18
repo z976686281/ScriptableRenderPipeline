@@ -23,10 +23,10 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         public static IList<HDProbe> realtimeViewDependentProbes => s_Instance.realtimeViewDependentProbes;
         public static IList<HDProbe> realtimeViewIndependentProbes => s_Instance.realtimeViewIndependentProbes;
         public static IList<HDProbe> bakedProbes => s_Instance.bakedProbes;
-    
+
         public static void RegisterProbe(HDProbe probe) => s_Instance.RegisterProbe(probe);
         public static void UnregisterProbe(HDProbe probe) => s_Instance.UnregisterProbe(probe);
-         
+
         public static void RenderAndUpdateRealtimeRenderDataIfRequired(
             IList<HDProbe> probes,
             Transform viewerTransform
@@ -55,17 +55,14 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
         public static void Render(
             HDProbe probe, Transform viewerTransform,
-            Texture outTarget, out HDProbe.RenderData outRenderData,
-            bool forceFlipY = false
-        )
+            Texture outTarget, out HDProbe.RenderData outRenderData)
         {
             var positionSettings = ProbeCapturePositionSettings.ComputeFrom(probe, viewerTransform);
             HDRenderUtilities.Render(
                 probe.settings,
                 positionSettings,
                 outTarget,
-                out CameraSettings cameraSettings, out CameraPositionSettings cameraPosition,
-                forceFlipY: forceFlipY
+                out CameraSettings cameraSettings, out CameraPositionSettings cameraPosition
             );
 
             outRenderData = new HDProbe.RenderData(cameraSettings, cameraPosition);
@@ -249,7 +246,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         internal void PrepareCull(Camera camera, ReflectionProbeCullResults results)
         {
             // Can happens right before a domain reload
-            // The CullingGroup is disposed at that point 
+            // The CullingGroup is disposed at that point
             if (m_PlanarProbeCullingGroup == null)
                 return;
 

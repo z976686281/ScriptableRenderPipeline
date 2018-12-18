@@ -123,14 +123,12 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         public static void Render(
             ProbeSettings settings,
             ProbeCapturePositionSettings position,
-            Texture target,
-            bool forceFlipY = false
+            Texture target
         )
         {
             Render(
                 settings, position, target,
-                out CameraSettings cameraSettings, out CameraPositionSettings cameraPosition,
-                forceFlipY: forceFlipY
+                out CameraSettings cameraSettings, out CameraPositionSettings cameraPosition
             );
         }
 
@@ -158,8 +156,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             ProbeCapturePositionSettings position,
             Texture target,
             out CameraSettings cameraSettings,
-            out CameraPositionSettings cameraPositionSettings,
-            bool forceFlipY = false
+            out CameraPositionSettings cameraPositionSettings
         )
         {
             // Copy settings
@@ -167,9 +164,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 settings, position, target,
                 out cameraSettings, out cameraPositionSettings
             );
-
-            if (forceFlipY)
-                cameraSettings.flipYMode = HDAdditionalCameraData.FlipYMode.ForceFlipY;
 
             // Perform rendering
             Render(cameraSettings, cameraPositionSettings, target);
@@ -210,25 +204,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             go.AddComponent<HDAdditionalCameraData>();
 
             return camera;
-        }
-
-        static void FixSettings(
-            Texture target,
-            ref ProbeSettings settings, ref ProbeCapturePositionSettings position,
-            ref CameraSettings cameraSettings, ref CameraPositionSettings cameraPositionSettings
-        )
-        {
-            // Fix a specific case
-            // When rendering into a cubemap with Camera.RenderToCubemap
-            // Unity will flip the image during the read back before writing into the cubemap
-            // But in the end, the cubemap is flipped
-            // So we force in the HDRP to flip the last blit so we have the proper flipping.
-            RenderTexture rt = null;
-            if ((rt = target as RenderTexture) != null
-                && rt.dimension == TextureDimension.Cube
-                && settings.type == ProbeSettings.ProbeType.ReflectionProbe
-                && SystemInfo.graphicsUVStartsAtTop)
-                cameraSettings.flipYMode = HDAdditionalCameraData.FlipYMode.ForceFlipY;
         }
     }
 }
