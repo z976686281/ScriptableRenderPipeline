@@ -191,7 +191,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             var add = hdCamera.camera.GetComponent<HDAdditionalCameraData>();
             if (add != null && !add.Equals(null))
             {
-                settings.renderingPath = add.renderingPath;
+                settings.customRenderingSettings = add.customRenderingSettings;
                 settings.bufferClearing.backgroundColorHDR = add.backgroundColorHDR;
                 settings.bufferClearing.clearColorMode = add.clearColorMode;
                 settings.bufferClearing.clearDepth = add.clearDepth;
