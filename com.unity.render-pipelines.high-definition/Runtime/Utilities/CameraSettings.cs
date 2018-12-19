@@ -203,6 +203,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     layerMask = add.volumeLayerMask
                 };
                 settings.probeLayerMask = add.probeLayerMask;
+                settings.invertFaceCulling = add.invertFaceCulling;
             }
             return settings;
         }

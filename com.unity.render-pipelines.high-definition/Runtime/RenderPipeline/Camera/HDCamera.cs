@@ -175,6 +175,9 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             }
         }
 
+        public bool invertFaceCulling
+            => m_AdditionalCameraData != null ? m_AdditionalCameraData.invertFaceCulling : false;
+
         public LayerMask probeLayerMask
             => m_AdditionalCameraData != null
             ? m_AdditionalCameraData.probeLayerMask

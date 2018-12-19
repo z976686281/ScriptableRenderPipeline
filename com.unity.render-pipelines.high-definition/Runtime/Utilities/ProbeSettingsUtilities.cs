@@ -59,6 +59,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                         var proxyMatrix = Matrix4x4.TRS(probePosition.proxyPosition, probePosition.proxyRotation, Vector3.one);
                         cameraPosition.position = proxyMatrix.MultiplyPoint(settings.proxySettings.capturePositionProxySpace);
                         cameraPosition.rotation = proxyMatrix.rotation * settings.proxySettings.captureRotationProxySpace;
+
+                        
                         break;
                     }
                 case PositionMode.MirrorReferenceTransformWithProbePlane:

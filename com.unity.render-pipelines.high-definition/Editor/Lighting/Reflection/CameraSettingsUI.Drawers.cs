@@ -85,8 +85,8 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             }
             
             PropertyFieldWithFlagToggleIfDisplayed(CameraSettingsFields.flipYMode, serialized.flipYMode, _.GetContent("Flip Y"), @override.camera, displayedFields.camera, overridableFields.camera);
-            PropertyFieldWithFlagToggleIfDisplayed(CameraSettingsFields.customRenderingSettings, serialized.customRenderingSettings, _.GetContent("Custom Frame Settings"), @override.camera, displayedFields.camera, overridableFields.camera);
             PropertyFieldWithFlagToggleIfDisplayed(CameraSettingsFields.probeLayerMask, serialized.probeLayerMask, _.GetContent("Probe Layer Mask"), @override.camera, displayedFields.camera, overridableFields.camera);
+            PropertyFieldWithFlagToggleIfDisplayed(CameraSettingsFields.customRenderingSettings, serialized.customRenderingSettings, _.GetContent("Custom Frame Settings"), @override.camera, displayedFields.camera, overridableFields.camera);
 
             if ((displayedFields.camera & CameraSettingsFields.frameSettings) != 0)
             {
