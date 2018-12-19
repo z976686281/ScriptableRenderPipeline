@@ -14,8 +14,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added Wizard helping to configure HDRP project.
 - Added new UI for decal material to allow remapping and scaling of some properties
 - Added cascade shadow visualisation toggle in HD shadow settings
+- Added new Rendering Pass in materials.
 - Added icons for assets.
 - Added replace blending mode for distortion
+- Added post-processing features (work in progress)
+- Post-processing now uses the generic volume framework
+- New depth-of-field, bloom, panini projection effects (motion blur is currently missing)
+- Exposure is now done as a pre-exposition pass, the whole system has been revamped
+- Added physical camera support where applicable
+- Added more color grading tools
 
 ### Fixed
 - Fixed logic to disable FPTL with stereo rendering
