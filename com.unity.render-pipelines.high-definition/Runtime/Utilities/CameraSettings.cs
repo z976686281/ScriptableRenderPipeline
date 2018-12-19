@@ -184,7 +184,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             settings.frustum.mode = Frustum.Mode.UseProjectionMatrixField;
             settings.frustum.projectionMatrix = hdCamera.camera.projectionMatrix;
             settings.invertFaceCulling = false;
-            settings.postProcessLayer = hdCamera.camera.GetComponent<PostProcessLayer>();
 
             var add = hdCamera.camera.GetComponent<HDAdditionalCameraData>();
             if (add != null && !add.Equals(null))

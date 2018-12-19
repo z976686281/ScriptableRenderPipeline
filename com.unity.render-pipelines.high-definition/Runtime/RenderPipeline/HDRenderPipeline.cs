@@ -787,7 +787,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 public RenderTexture copyToTarget;
             }
             public HDCamera hdCamera;
-            public PostProcessLayer postProcessLayer;
             public bool destroyCamera;
             public Target target;
             public HDCullingResults cullingResults;
@@ -907,7 +906,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                             camera, assetFrameSettingsIsDirty,
                             out HDAdditionalCameraData additionalCameraData,
                             out HDCamera hdCamera,
-                            out PostProcessLayer postProcessLayer,
                             out ScriptableCullingParameters cullingParameters
                         )
                         // Note: In case of a custom render, we have false here and 'TryCull' is not executed
@@ -942,7 +940,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     {
                         hdCamera = hdCamera,
                         cullingResults = cullingResults,
-                        postProcessLayer = postProcessLayer,
                         target = new RenderRequest.Target
                 {
                             id = camera.targetTexture ?? new RenderTargetIdentifier(BuiltinRenderTextureType.CameraTarget),
@@ -1082,7 +1079,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                             camera, assetFrameSettingsIsDirty,
                             out HDAdditionalCameraData additionalCameraData,
                             out HDCamera hdCamera,
-                            out PostProcessLayer postProcessLayer,
                             out ScriptableCullingParameters cullingParameters
                         )
                         && TryCull(
@@ -1121,7 +1117,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                         {
                             hdCamera = hdCamera,
                             cullingResults = _cullingResults,
-                            postProcessLayer = postProcessLayer,
                             destroyCamera = true,
                             dependsOnRenderRequestIndices = ListPool<int>.Get(),
                             index = renderRequests.Count,
@@ -1281,7 +1276,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             var camera = hdCamera.camera;
             var cullingResults = renderRequest.cullingResults.cullingResults;
             var hdProbeCullingResults = renderRequest.cullingResults.hdProbeCullingResults;
-            var postProcessLayer = renderRequest.postProcessLayer;
             var target = renderRequest.target;
 
                     m_DbufferManager.enableDecals = false;
@@ -1690,7 +1684,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
                         StartStereoRendering(cmd, renderContext, camera);
 
-                        if (currentFrameSettings.enablePostprocess)
+                        if (hdCamera.frameSettings.enablePostprocess)
                         {
                             // Post-processes output straight to the backbuffer
                             m_PostProcessSystem.Render(
@@ -1822,7 +1816,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             Camera camera, bool assetFrameSettingsIsDirty,
             out HDAdditionalCameraData additionalCameraData,
             out HDCamera hdCamera,
-            out PostProcessLayer postProcessLayer,
             out ScriptableCullingParameters cullingParams
         )
         {
@@ -1830,7 +1823,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             // Note: the SceneView camera will never have additionalCameraData
             additionalCameraData = camera.GetComponent<HDAdditionalCameraData>();
             hdCamera = default;
-            postProcessLayer = default;
             cullingParams = default;
 
             // Compute Frame Settings
@@ -1866,7 +1858,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 return false;
 
             hdCamera = null;
-            postProcessLayer = default;
             // If we render a reflection view or a preview we should not display any debug information
             // This need to be call before ApplyDebugDisplaySettings()
             if (camera.cameraType == CameraType.Reflection || camera.cameraType == CameraType.Preview)
@@ -1882,9 +1873,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 m_MSAASamples = m_DebugDisplaySettings.data.msaaSamples;
                 m_SharedRTManager.SetNumMSAASamples(m_MSAASamples);
             }
-
-            // Caution: Component.GetComponent() generate 0.6KB of garbage at each frame here !
-            postProcessLayer = camera.GetComponent<PostProcessLayer>();
 
             // Disable post process if we enable debug mode or if the post process layer is disabled
             if (m_CurrentDebugDisplaySettings.IsDebugDisplayRemovePostprocess())
