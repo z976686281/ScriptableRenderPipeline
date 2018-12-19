@@ -18,6 +18,12 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 #endif
         }
 
+        static ReflectionSystemParameters Parameters
+        {
+            get => s_Instance.Parameters;
+            set => s_Instance.Parameters = value;
+        }
+
         // Don't set the reference to null
         // Only dispose resources
         static void DisposeStaticInstance() => s_Instance.Dispose();
@@ -189,6 +195,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         public IList<HDProbe> realtimeViewIndependentProbes
         { get { RemoveDestroyedProbes(m_RealtimeViewIndependentProbes); return m_RealtimeViewIndependentProbes; } }
 
+        public ReflectionSystemParameters Parameters;
+
         public void Dispose()
         {
             m_PlanarProbeCullingGroup.Dispose();
@@ -275,6 +283,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             return new HDProbeCullState(m_PlanarProbeCullingGroup, m_PlanarProbes, stateHash);
         }
 
+        int[] m_QueryCullResults_Indices;
         internal void QueryCullResults(HDProbeCullState state, ref HDProbeCullingResults results)
         {
             Assert.IsNotNull(state.cullingGroup, "Culling was not prepared, please prepare cull before performing it.");
@@ -285,11 +294,13 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             results.Reset();
             var probes = results.writeableVisibleProbes;
 
-            // TODO: Pool this array to avoid GC (length must be provided with ReflectionSystemParameters from HDRenderPipeline)
-            var indices = new int[1024];
-            var indexCount = state.cullingGroup.QueryIndices(true, indices, 0);
+            Array.Resize(
+                ref m_QueryCullResults_Indices,
+                Parameters.maxActivePlanarReflectionProbe + Parameters.maxActiveReflectionProbe
+            );
+            var indexCount = state.cullingGroup.QueryIndices(true, m_QueryCullResults_Indices, 0);
             for (int i = 0; i < indexCount; ++i)
-                probes.Add(state.hdProbes[indices[i]]);
+                probes.Add(state.hdProbes[m_QueryCullResults_Indices[i]]);
         }
 
         static void RemoveDestroyedProbes(List<HDProbe> probes)
