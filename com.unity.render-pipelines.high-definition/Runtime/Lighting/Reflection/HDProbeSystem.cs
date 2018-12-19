@@ -18,15 +18,15 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 #endif
         }
 
-        static ReflectionSystemParameters Parameters
+        // Don't set the reference to null
+        // Only dispose resources
+        static void DisposeStaticInstance() => s_Instance.Dispose();
+
+        public static ReflectionSystemParameters Parameters
         {
             get => s_Instance.Parameters;
             set => s_Instance.Parameters = value;
         }
-
-        // Don't set the reference to null
-        // Only dispose resources
-        static void DisposeStaticInstance() => s_Instance.Dispose();
 
         public static IList<HDProbe> realtimeViewDependentProbes => s_Instance.realtimeViewDependentProbes;
         public static IList<HDProbe> realtimeViewIndependentProbes => s_Instance.realtimeViewIndependentProbes;

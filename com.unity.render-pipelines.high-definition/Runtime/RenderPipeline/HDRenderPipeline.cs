@@ -236,6 +236,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         public HDRenderPipeline(HDRenderPipelineAsset asset)
         {
             m_Asset = asset;
+            HDProbeSystem.Parameters = asset.reflectionSystemParameters;
 
             DebugManager.instance.RefreshEditor();
 
@@ -885,7 +886,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
             using (ListPool<RenderRequest>.Get(out List<RenderRequest> renderRequests))
             using (ListPool<int>.Get(out List<int> rootRenderRequestIndices))
-            using (DictionaryPool<HDProbe, List<int>>.Get(out Dictionary<HDProbe, List<int>> visibleProbes))
+            using (DictionaryPool<HDProbe, List<int>>.Get(out Dictionary<HDProbe, List<int>> renderRequestIndicesWhereTheProbeIsVisible))
             using (ListPool<CameraSettings>.Get(out List<CameraSettings> cameraSettings))
             using (ListPool<CameraPositionSettings>.Get(out List<CameraPositionSettings> cameraPositionSettings))
             {
@@ -905,7 +906,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     // Reset pooled variables
                     renderRequests.Clear();
                     rootRenderRequestIndices.Clear();
-                    visibleProbes.Clear();
+                    renderRequestIndicesWhereTheProbeIsVisible.Clear();
                     cameraSettings.Clear();
                     cameraPositionSettings.Clear();
 
@@ -921,6 +922,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                             out PostProcessLayer postProcessLayer,
                             out ScriptableCullingParameters cullingParameters
                         )
+                        // Note: In case of a custom render, we have false here and 'TryCull' is not executed
                         && TryCull(
                             camera, hdCamera, renderContext, cullingParameters,
                             ref cullingResults
@@ -931,9 +933,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                         skipRequest = true;
                     }
 
-                    if (!skipRequest
-                        && additionalCameraData != null
-                        && additionalCameraData.hasCustomRender)
+                    if (additionalCameraData != null && additionalCameraData.hasCustomRender)
                     {
                         skipRequest = true;
                         // Execute custom render
@@ -960,7 +960,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                             id = camera.targetTexture ?? new RenderTargetIdentifier(BuiltinRenderTextureType.CameraTarget),
                             face = CubemapFace.Unknown
                         },
-                        dependsOnRenderRequestIndices = new List<int>(), // TODO: Pool this to avoid GC
+                        dependsOnRenderRequestIndices = ListPool<int>.Get(),
                         index = renderRequests.Count,
                         cameraSettings = CameraSettings.From(hdCamera)
                         // TODO: store DecalCullResult
@@ -991,17 +991,17 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                         if (probe.mode != ProbeSettings.Mode.Realtime)
                             return;
 
-                        if (!visibleProbes.TryGetValue(probe, out List<int> visibleInIndices))
+                        if (!renderRequestIndicesWhereTheProbeIsVisible.TryGetValue(probe, out List<int> visibleInIndices))
                         {
-                            visibleInIndices = new List<int>();// TODO: Pool this to avoid GC
-                            visibleProbes.Add(probe, visibleInIndices);
+                            visibleInIndices = ListPool<int>.Get();
+                            renderRequestIndicesWhereTheProbeIsVisible.Add(probe, visibleInIndices);
                         }
                         if (!visibleInIndices.Contains(visibleInIndex))
                             visibleInIndices.Add(visibleInIndex);
                     }
                 }
 
-                foreach (var probeToRenderAndDependencies in visibleProbes)
+                foreach (var probeToRenderAndDependencies in renderRequestIndicesWhereTheProbeIsVisible)
                 {
                     var visibleProbe = probeToRenderAndDependencies.Key;
                     var visibleInIndices = probeToRenderAndDependencies.Value;
@@ -1027,6 +1027,9 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     else
                         AddHDProbeRenderRequests(visibleProbe, null, visibleInIndices);
                 }
+                foreach (var pair in renderRequestIndicesWhereTheProbeIsVisible)
+                    ListPool<int>.Release(pair.Value);
+                renderRequestIndicesWhereTheProbeIsVisible.Clear();
 
                 // Local function to share common code between view dependent and view independent requests
                 void AddHDProbeRenderRequests(
@@ -1078,7 +1081,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
                         camera.gameObject.hideFlags = HideFlags.HideAndDontSave;
                         camera.gameObject.SetActive(false);
-                        camera.name = $"HDProbe RenderCamera ({visibleProbe.name}:{j} for {viewerTransform})";
+                        camera.name = ComputeProbeCameraName(visibleProbe.name, j, viewerTransform?.name);
                         camera.ApplySettings(cameraSettings[j]);
                         camera.ApplySettings(cameraPositionSettings[j]);
                         camera.cameraType = CameraType.Reflection;
@@ -1132,7 +1135,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                             cullingResults = _cullingResults,
                             postProcessLayer = postProcessLayer,
                             destroyCamera = true,
-                            dependsOnRenderRequestIndices = new List<int>(), // TODO: Pool this to avoid GC
+                            dependsOnRenderRequestIndices = ListPool<int>.Get(),
                             index = renderRequests.Count,
                             cameraSettings = cameraSettings[j]
                             // TODO: store DecalCullResult
@@ -1269,7 +1272,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                             // Destroy the camera if requested
                             if (renderRequest.destroyCamera)
                                 m_ProbeCameraPool.Push(renderRequest.hdCamera.camera);
-                                
+
+                            ListPool<int>.Release(renderRequest.dependsOnRenderRequestIndices);
                             GenericPool<HDCullingResults>.Release(renderRequest.cullingResults);
                         }
 
@@ -1763,7 +1767,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             {
                 using (new ProfilingSample(cmd, "Copy Depth in Target Texture", CustomSamplerId.CopyDepth.GetSampler()))
                 {
-                    cmd.SetRenderTarget(BuiltinRenderTextureType.CameraTarget);
+                    cmd.SetRenderTarget(target.id);
                     m_CopyDepthPropertyBlock.SetTexture(HDShaderIDs._InputDepth, m_SharedRTManager.GetDepthStencilBuffer());
                     // When we are Main Game View we need to flip the depth buffer ourselves as we are after postprocess / blit that have already flip the screen
                     m_CopyDepthPropertyBlock.SetInt("_FlipY", isMainGameView ? 1 : 0);
@@ -1782,6 +1786,56 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             if (showGizmos)
                 RenderGizmos(cmd, camera, renderContext, GizmoSubset.PostImageEffects);
 #endif
+        }
+
+        // $"HDProbe RenderCamera ({probeName}: {face:00} for viewer '{viewerName}')"
+        unsafe string ComputeProbeCameraName(string probeName, int face, string viewerName)
+        {
+            // Interpolate the camera name with as few allocation as possible
+            const string pattern1 = "HDProbe RenderCamera (";
+            const string pattern2 = ": ";
+            const string pattern3 = " for viewer '";
+            const string pattern4 = "')";
+            const int maxCharCountPerName = 40;
+            const int charCountPerNumber = 2;
+
+            probeName = probeName ?? string.Empty;
+            viewerName = viewerName ?? "null";
+
+            var probeNameSize = Mathf.Min(probeName.Length, maxCharCountPerName);
+            var viewerNameSize = Mathf.Min(viewerName.Length, maxCharCountPerName);
+            int size = pattern1.Length + probeNameSize
+                + pattern2.Length + charCountPerNumber
+                + pattern3.Length + viewerNameSize
+                + pattern4.Length;
+
+            var buffer = stackalloc char[size];
+            var p = buffer;
+            int i, c, s = 0;
+            for (i = 0; i < pattern1.Length; ++i, ++p)
+                *p = pattern1[i];
+            for (i = 0, c = Mathf.Min(probeName.Length, maxCharCountPerName); i < c; ++i, ++p)
+                *p = probeName[i];
+            s += c;
+            for (i = 0; i < pattern2.Length; ++i, ++p)
+                *p = pattern2[i];
+
+            // Fast, no-GC index.ToString("2")
+            var temp = (face * 205) >> 11;  // 205/2048 is nearly the same as /10
+            *(p++) = (char)(temp + '0');
+            *(p++) = (char)((face - temp * 10) + '0');
+            s += charCountPerNumber;
+
+            for (i = 0; i < pattern3.Length; ++i, ++p)
+                *p = pattern3[i];
+            for (i = 0, c = Mathf.Min(viewerName.Length, maxCharCountPerName); i < c; ++i, ++p)
+                *p = viewerName[i];
+            s += c;
+            for (i = 0; i < pattern4.Length; ++i, ++p)
+                *p = pattern4[i];
+
+            s += pattern1.Length + pattern2.Length + pattern3.Length + pattern4.Length;
+            return new string(buffer, 0, s);
         }
 
         bool TryCalculateFrameParameters(
@@ -1828,8 +1882,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             }
 
             // Specific pass to simply display the content of the camera buffer if users have fill it themselves (like video player)
-            if (additionalCameraData
-                && additionalCameraData.fullscreenPassthrough)
+            if (additionalCameraData && additionalCameraData.fullscreenPassthrough)
                 return false;
 
             hdCamera = null;
@@ -1868,6 +1921,10 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             hdCamera = HDCamera.Get(camera) ?? HDCamera.Create(camera);
             // From this point, we should only use frame settings from the camera
             hdCamera.Update(currentFrameSettings, postProcessLayer, m_VolumetricLightingSystem, m_MSAASamples);
+
+            // Custom Render requires a proper HDCamera, so we return after the HDCamera was setup
+            if (additionalCameraData != null && additionalCameraData.hasCustomRender)
+                return false;
 
             if (!camera.TryGetCullingParameters(
                 camera.stereoEnabled,
