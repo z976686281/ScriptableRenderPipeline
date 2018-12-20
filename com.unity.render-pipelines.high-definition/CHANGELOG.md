@@ -57,6 +57,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fixed material debug view with stereo rendering
 
 ### Changed
+- Refactored render loop to render realtime probes visible per camera
 - ColorPyramid compute shader passes is swapped to pixel shader passes on platforms where the later is faster (Nintendo Switch).
 - Removing the simple lightloop used by the simple lit shader
 - Whole refactor of reflection system: Workflow and performance improvement.
