@@ -82,7 +82,6 @@ void LightLoop( float3 V, PositionInputs posInput, PreLightData preLightData, BS
         AccumulateDirectLighting(lighting, aggregateLighting);
     }
 
-/*
     // Indices of the subranges to process
     uint lightStart = 0, lightEnd = 0;
 
@@ -173,6 +172,6 @@ void LightLoop( float3 V, PositionInputs posInput, PreLightData preLightData, BS
     float val = 0.0f;
     IndirectLighting lighting = EvaluateBSDF_Env(context, V, posInput, preLightData, envLightSky, bsdfData, envLightSky.influenceShapeType, 0, val);
     AccumulateIndirectLighting(lighting, aggregateLighting);
-    */
+    
     PostEvaluateBSDF(context, V, posInput, preLightData, bsdfData, builtinData, aggregateLighting, diffuseLighting, specularLighting);
 }
