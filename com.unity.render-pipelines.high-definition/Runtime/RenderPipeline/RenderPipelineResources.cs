@@ -91,6 +91,17 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             public Shader depthValuesPS;
             public Shader aoResolvePS;
             public Shader colorResolvePS;
+
+#if ENABLE_RAYTRACING
+            // Raytracing shaders
+            public RaytracingShader aoRaytracing;
+            public RaytracingShader reflectionRaytracing;
+            public RaytracingShader shadowsRaytracing;
+            public ComputeShader areaBillateralFilterCS;
+            public ComputeShader reflectionBilateralFilterCS;
+            public ComputeShader lightClusterBuildCS;
+            public ComputeShader lightClusterDebugCS;
+#endif
         }
 
         [Serializable]
@@ -109,6 +120,18 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             // Debug
             public Texture2D debugFontTex;
             public Texture2D colorGradient;
+            
+#if ENABLE_RAYTRACING
+            // Raytracing noise
+            public Texture2D rgNoiseTex0;
+            public Texture2D rgNoiseTex1;
+            public Texture2D rgNoiseTex2;
+            public Texture2D rgNoiseTex3;
+            public Texture2D rgNoiseTex4;
+            public Texture2D rgNoiseTex5;
+            public Texture2D rgNoiseTex6;
+            public Texture2D rgNoiseTex7;
+#endif
         }
 
         [Serializable]
