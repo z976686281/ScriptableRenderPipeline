@@ -98,15 +98,9 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             using (new EditorGUI.DisabledScope(!msaaAllowed))
             {
                 ++EditorGUI.indentLevel;
-                d.supportMSAA.boolValue = EditorGUILayout.Toggle(k_SupportMSAAContent, d.supportMSAA.boolValue && msaaAllowed);
-                using (new EditorGUI.DisabledScope(!d.supportMSAA.boolValue))
-                {
-                    ++EditorGUI.indentLevel;
                     EditorGUILayout.PropertyField(d.MSAASampleCount, k_MSAASampleCountContent);
                     --EditorGUI.indentLevel;
                 }
-                --EditorGUI.indentLevel;
-            }
             
             EditorGUILayout.PropertyField(d.supportDecals, k_SupportDecalContent);
             EditorGUILayout.PropertyField(d.supportMotionVectors, k_SupportMotionVectorContent);

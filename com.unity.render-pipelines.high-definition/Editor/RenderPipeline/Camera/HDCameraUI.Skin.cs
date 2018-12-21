@@ -52,7 +52,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
         static readonly GUIContent viewportContent = EditorGUIUtility.TrTextContent("Viewport Rect", "TFour values that indicate where on the screen this camera view will be drawn. Measured in Viewport Coordinates (values 0–1).");
         static readonly GUIContent depthContent = EditorGUIUtility.TrTextContent("Depth");
-      
+
 #if ENABLE_MULTIPLE_DISPLAYS
         static readonly GUIContent targetDisplayContent = EditorGUIUtility.TrTextContent("Target Display");
 #endif

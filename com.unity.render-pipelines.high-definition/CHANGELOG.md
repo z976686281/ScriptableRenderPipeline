@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added new Rendering Pass in materials.
 - Added icons for assets.
 - Added replace blending mode for distortion
+- Added basic distance fade for density volumes
 - Added post-processing features (work in progress)
 - Post-processing now uses the generic volume framework
 - New depth-of-field, bloom, panini projection effects (motion blur is currently missing)
@@ -35,6 +36,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fixed usage of SSR with transparent on all master node
 - Fixed SSR and microshadowing on fabric material
 - Fixed blit pass for stereo rendering
+- Fixed lightlist bounds for stereo rendering
 - Fixed windows and in-game DebugMenu sync.
 - Fixed FrameSettings' LitShaderMode sync when opening DebugMenu.
 - Fixed Metal specific issues with decals, hitting a sampler limit and compiling AxF shader
@@ -55,6 +57,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fixed slowdow when enabling Fabric convolution in HDRP asset
 - Fixed specularAA not compiling in StackLit Master node
 - Fixed material debug view with stereo rendering
+- Fixed material's RenderQueue edition in default view.
+- Fixed banding issues within volumetric density buffer
 
 ### Changed
 - Refactored render loop to render realtime probes visible per camera
