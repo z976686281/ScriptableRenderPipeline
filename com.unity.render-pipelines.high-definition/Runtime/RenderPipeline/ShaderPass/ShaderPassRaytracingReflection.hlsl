@@ -32,7 +32,7 @@ void ClosestHitMain(inout RayIntersection rayIntersection : SV_RayPayload, Attri
     GetSurfaceDataFromIntersection(fragInput, viewWS, posInput, currentvertex, rayIntersection.cone, surfaceData, builtinData);
 
     // Compute the bsdf data
-    BSDFData bsdfData =  ConvertSurfaceDataToBSDFData(uint2(0, 0), surfaceData);
+    BSDFData bsdfData =  ConvertSurfaceDataToBSDFData(posInput.positionSS, surfaceData);
 
 #ifdef HAS_LIGHTLOOP
     // Compute the prelight data

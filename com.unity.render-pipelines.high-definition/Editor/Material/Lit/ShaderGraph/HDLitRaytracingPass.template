@@ -248,6 +248,7 @@ Pass
 
         builtinData.distortion = float2(0.0, 0.0);
         builtinData.distortionBlur = 0.0;
+        PostInitBuiltinData(V, posInput, surfaceData, builtinData);
     }
 
     //-------------------------------------------------------------------------------------

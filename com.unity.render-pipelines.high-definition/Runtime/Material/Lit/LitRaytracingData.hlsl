@@ -113,13 +113,17 @@ void GetSurfaceDataFromIntersection(FragInputs input, float3 V, PositionInputs p
     surfaceData.anisotropy *= _Anisotropy;
 
     // Default specular color
-    surfaceData.diffusionProfile = 0;
+    surfaceData.diffusionProfile = _DiffusionProfile;
 
     // Default subsurface mask
     surfaceData.subsurfaceMask = 0.0;
 
-    // Default thickness
+#ifdef _THICKNESSMAP_IDX
+    surfaceData.thickness = SAMPLE_TEXTURE2D_LOD(_ThicknessMap, SAMPLER_THICKNESSMAP_IDX, uvBase, 0.0f).r;
+    surfaceData.thickness = _ThicknessRemap.x + _ThicknessRemap.y * surfaceData.thickness;
+#else
     surfaceData.thickness = _Thickness;
+#endif
 
     // Default tangentWS
     surfaceData.tangentWS = normalize(input.worldToTangent[0].xyz);
