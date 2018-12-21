@@ -124,10 +124,10 @@ void BuildFragInputsFromIntersection(IntersectionVertice currentVertex, out Frag
 	outFragInputs.isFrontFace = true;
 
 	// Let's compute the object space binormal
-	float3 binormal = cross(currentVertex.tangentOS, currentVertex.normalOS);
+	float3 bitangent = cross(currentVertex.normalOS, currentVertex.tangentOS);
 	float3x3 objectToWorld = (float3x3)WorldToObject3x4();
-	outFragInputs.worldToTangent[0] = normalize(mul(binormal, objectToWorld));
-	outFragInputs.worldToTangent[1] = normalize(mul(currentVertex.tangentOS, objectToWorld));
+	outFragInputs.worldToTangent[0] = normalize(mul(currentVertex.tangentOS, objectToWorld));
+	outFragInputs.worldToTangent[1] = normalize(mul(bitangent, objectToWorld));
 	outFragInputs.worldToTangent[2] = normalize(mul(currentVertex.normalOS, objectToWorld));
 }
 #endif

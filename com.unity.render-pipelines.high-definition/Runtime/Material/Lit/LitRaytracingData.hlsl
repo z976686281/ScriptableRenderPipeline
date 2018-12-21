@@ -42,6 +42,14 @@ void GetSurfaceDataFromIntersection(FragInputs input, float3 V, PositionInputs p
     surfaceData.baseColor = SAMPLE_TEXTURE2D_LOD(_BaseColorMap, sampler_BaseColorMap, uvBase, 0).rgb * _BaseColor.rgb;
     #endif
 
+    // Specular Color
+    surfaceData.specularColor = _SpecularColor.rgb;
+#ifdef _MATERIAL_FEATURE_SPECULAR_COLOR
+    // Require to have setup baseColor
+    // Reproduce the energy conservation done in legacy Unity. Not ideal but better for compatibility and users can unchek it
+    surfaceData.baseColor *= _EnergyConservingSpecularColor > 0.0 ? (1.0 - Max3(surfaceData.specularColor.r, surfaceData.specularColor.g, surfaceData.specularColor.b)) : 1.0;
+#endif
+
     // Default specular occlusion
     surfaceData.specularOcclusion = 1.0;
 
@@ -75,11 +83,34 @@ void GetSurfaceDataFromIntersection(FragInputs input, float3 V, PositionInputs p
     surfaceData.metallic = _Metallic;
     #endif
 
-    // Default coatMask
+#ifdef _MATERIAL_FEATURE_CLEAR_COAT
+    surfaceData.coatMask = _CoatMask;
+    // To shader feature for keyword to limit the variant
+    surfaceData.coatMask *= SAMPLE_TEXTURE2D_LOD(_CoatMaskMap, sampler_CoatMaskMap, uvBase, 0.0f).r;
+#else
     surfaceData.coatMask = 0.0;
+#endif
 
-    // Default specular color
-    surfaceData.specularColor = _SpecularColor.xyz;
+#ifdef _MATERIAL_FEATURE_IRIDESCENCE
+    #ifdef _IRIDESCENCE_THICKNESSMAP
+    surfaceData.iridescenceThickness = SAMPLE_TEXTURE2D_LOD(_IridescenceThicknessMap, sampler_IridescenceThicknessMap, uvBase, 0.0f).r;
+    surfaceData.iridescenceThickness = saturate(_IridescenceThicknessRemap.x + _IridescenceThicknessRemap.y * surfaceData.iridescenceThickness);
+    #else
+    surfaceData.iridescenceThickness = _IridescenceThickness;
+    #endif
+    surfaceData.iridescenceMask = _IridescenceMask;
+    surfaceData.iridescenceMask *= SAMPLE_TEXTURE2D_LOD(_IridescenceMaskMap, sampler_IridescenceMaskMap, uvBase, 0.0f).r;
+#else
+    surfaceData.iridescenceThickness = 0.0;
+    surfaceData.iridescenceMask = 0.0;
+#endif
+
+#ifdef _ANISOTROPYMAP
+    surfaceData.anisotropy = SAMPLE_TEXTURE2D_LOD(_AnisotropyMap, sampler_AnisotropyMap, uvBase, 0.0f).r;
+#else
+    surfaceData.anisotropy = 1.0;
+#endif
+    surfaceData.anisotropy *= _Anisotropy;
 
     // Default specular color
     surfaceData.diffusionProfile = 0;
@@ -92,13 +123,6 @@ void GetSurfaceDataFromIntersection(FragInputs input, float3 V, PositionInputs p
 
     // Default tangentWS
     surfaceData.tangentWS = normalize(input.worldToTangent[0].xyz);
-
-    // Default anisotropy
-    surfaceData.anisotropy = _Anisotropy;
-
-    // Iridesence data
-    surfaceData.iridescenceThickness = 0.0;
-    surfaceData.iridescenceMask = 0.0;
 
     // Transparency
     surfaceData.ior = 1.0;
