@@ -101,6 +101,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         Material m_currentDebugViewMaterialGBuffer;
         Material m_DebugDisplayLatlong;
         Material m_DebugFullScreen;
+        MaterialPropertyBlock m_DebugFullScreenPropertyBlock = new MaterialPropertyBlock();
         Material m_DebugColorPicker;
         Material m_Blit;
         Material m_ErrorMaterial;
@@ -1278,6 +1279,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             var cullingResults = renderRequest.cullingResults.cullingResults;
             var hdProbeCullingResults = renderRequest.cullingResults.hdProbeCullingResults;
             var target = renderRequest.target;
+            bool isMainGameView = (camera.cameraType == CameraType.Game && hdCamera.camera.targetTexture == null);
 
             m_DbufferManager.enableDecals = false;
             if (hdCamera.frameSettings.enableDecals)
@@ -1709,7 +1711,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                         }
                         else
                         {
-                            HDUtils.BlitCameraTexture(cmd, hdCamera, m_CameraColorBuffer, target.id, hdCamera.flipYMode == HDAdditionalCameraData.FlipYMode.ForceFlipY);
+                            HDUtils.BlitCameraTexture(cmd, hdCamera, m_CameraColorBuffer, target.id, hdCamera.flipYMode == HDAdditionalCameraData.FlipYMode.ForceFlipY || isMainGameView);
                         }
                     }
                 }
@@ -1729,7 +1731,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             // TODO: If at some point we get proper render target aliasing, we will be able to use the provided depth texture directly with our RT handle system
             // Note: Debug.DrawLine and Debug.Ray only work in editor, not in player
             bool copyDepth = (hdCamera.camera.targetTexture != null ? hdCamera.camera.targetTexture.depth != 0 : false);
-            bool isMainGameView = (camera.cameraType == CameraType.Game && hdCamera.camera.targetTexture == null);
 #if UNITY_EDITOR
             copyDepth = copyDepth || isMainGameView; // Specific case of Debug.DrawLine and Debug.Ray
 #endif
@@ -1740,6 +1741,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 using (new ProfilingSample(cmd, "Copy Depth in Target Texture", CustomSamplerId.CopyDepth.GetSampler()))
                 {
                     cmd.SetRenderTarget(target.id);
+                    cmd.SetViewport(hdCamera.viewport);
                     m_CopyDepthPropertyBlock.SetTexture(HDShaderIDs._InputDepth, m_SharedRTManager.GetDepthStencilBuffer());
                     // When we are Main Game View we need to flip the depth buffer ourselves as we are after postprocess / blit that have already flip the screen
                     m_CopyDepthPropertyBlock.SetInt("_FlipY", isMainGameView ? 1 : 0);
@@ -1752,7 +1754,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
 #if UNITY_EDITOR
             // We need to make sure the viewport is correctly set for the editor rendering. It might have been changed by debug overlay rendering just before.
-            cmd.SetViewport(new Rect(0.0f, 0.0f, hdCamera.actualWidth, hdCamera.actualHeight));
+            cmd.SetViewport(hdCamera.viewport);
 
             // Render overlay Gizmos
             if (showGizmos)
@@ -2362,7 +2364,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     else
                     {
                         // This Blit will flip the screen anything other than openGL
-                        HDUtils.BlitCameraTexture(cmd, hdCamera, m_CameraColorBuffer, BuiltinRenderTextureType.CameraTarget);
+                        HDUtils.BlitCameraTexture(cmd, hdCamera, m_CameraColorBuffer, BuiltinRenderTextureType.CameraTarget, hdCamera.camera.cameraType == CameraType.Game);
                     }
                 }
             }
@@ -2840,30 +2842,33 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             if (hdCamera.camera.cameraType == CameraType.Reflection || hdCamera.camera.cameraType == CameraType.Preview)
                 return;
 
+
             using (new ProfilingSample(cmd, "Debug", CustomSamplerId.RenderDebug.GetSampler()))
             {
                 // First render full screen debug texture
                 if (NeedsFullScreenDebugMode() && m_FullScreenDebugPushed)
                 {
                     m_FullScreenDebugPushed = false;
-                    cmd.SetGlobalTexture(HDShaderIDs._DebugFullScreenTexture, m_DebugFullScreenTempBuffer);
-                    // TODO: Replace with command buffer call when available
-                    m_DebugFullScreen.SetFloat(HDShaderIDs._FullScreenDebugMode, (float)m_CurrentDebugDisplaySettings.data.fullScreenDebugMode);
+                    m_DebugFullScreenPropertyBlock.SetTexture(HDShaderIDs._DebugFullScreenTexture, m_DebugFullScreenTempBuffer);
+                    m_DebugFullScreenPropertyBlock.SetFloat(HDShaderIDs._FullScreenDebugMode, (float)m_CurrentDebugDisplaySettings.data.fullScreenDebugMode);
                     HDUtils.PackedMipChainInfo info = m_SharedRTManager.GetDepthBufferMipChainInfo();
-                    m_DebugFullScreen.SetInt(HDShaderIDs._DebugDepthPyramidMip, (int)(m_CurrentDebugDisplaySettings.data.fullscreenDebugMip * info.mipLevelCount));
-                    m_DebugFullScreen.SetBuffer(HDShaderIDs._DebugDepthPyramidOffsets, info.GetOffsetBufferData(m_DepthPyramidMipLevelOffsetsBuffer));
-                    // Everything we have capture is flipped (as it happen before FinalPass/postprocess/Blit. So if we are not in SceneView
-                    // (i.e. we have perform a flip, we need to flip the input texture)
-                    HDUtils.DrawFullScreen(cmd, hdCamera, m_DebugFullScreen, (RenderTargetIdentifier)BuiltinRenderTextureType.CameraTarget);
+                    m_DebugFullScreenPropertyBlock.SetInt(HDShaderIDs._DebugDepthPyramidMip, (int)(m_CurrentDebugDisplaySettings.data.fullscreenDebugMip * info.mipLevelCount));
+                    m_DebugFullScreenPropertyBlock.SetBuffer(HDShaderIDs._DebugDepthPyramidOffsets, info.GetOffsetBufferData(m_DepthPyramidMipLevelOffsetsBuffer));
+
+                    CoreUtils.SetRenderTarget(cmd, BuiltinRenderTextureType.CameraTarget);
+                    cmd.SetViewport(hdCamera.viewport);
+                    cmd.SetGlobalVector(HDShaderIDs._ScreenToTargetScale, hdCamera.doubleBufferedViewportScale);
+                    cmd.DrawProcedural(Matrix4x4.identity, m_DebugFullScreen, 0, MeshTopology.Triangles, 3, 1, m_DebugFullScreenPropertyBlock);
 
                     PushColorPickerDebugTexture(hdCamera, cmd, (RenderTargetIdentifier)BuiltinRenderTextureType.CameraTarget);
                 }
 
                 // Then overlays
-                float x = 0;
+                HDUtils.ResetOverlay();
+                float x = hdCamera.viewport.x;
                 float overlayRatio = m_CurrentDebugDisplaySettings.data.debugOverlayRatio;
                 float overlaySize = Math.Min(hdCamera.actualHeight, hdCamera.actualWidth) * overlayRatio;
-                float y = hdCamera.actualHeight - overlaySize;
+                float y = hdCamera.viewport.y + hdCamera.actualHeight - overlaySize;
 
                 var lightingDebug = m_CurrentDebugDisplaySettings.data.lightingDebugSettings;
 
@@ -2875,7 +2880,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     m_SharedPropertyBlock.SetFloat(HDShaderIDs._DebugExposure, lightingDebug.debugExposure);
                     cmd.SetViewport(new Rect(x, y, overlaySize, overlaySize));
                     cmd.DrawProcedural(Matrix4x4.identity, m_DebugDisplayLatlong, 0, MeshTopology.Triangles, 3, 1, m_SharedPropertyBlock);
-                    HDUtils.NextOverlayCoord(ref x, ref y, overlaySize, overlaySize, hdCamera.actualWidth);
+                    HDUtils.NextOverlayCoord(ref x, ref y, overlaySize, overlaySize, hdCamera);
                 }
 
                 m_LightLoop.RenderDebugOverlay(hdCamera, cmd, m_CurrentDebugDisplaySettings, ref x, ref y, overlaySize, hdCamera.actualWidth, cullResults);
@@ -2898,12 +2903,16 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     m_DebugColorPicker.SetColor(HDShaderIDs._ColorPickerFontColor, colorPickerDebugSettings.fontColor);
                     m_DebugColorPicker.SetInt(HDShaderIDs._FalseColorEnabled, falseColorDebugSettings.falseColor ? 1 : 0);
                     m_DebugColorPicker.SetVector(HDShaderIDs._FalseColorThresholds, falseColorThresholds);
-                    // The material display debug perform sRGBToLinear conversion as the final blit currently hardcode a linearToSrgb conversion. As when we read with color picker this is not done,
+                    // The material display debug perform sRGBToLinear conversion as the final blit currently hardcodes a linearToSrgb conversion. As when we read with color picker this is not done,
                     // we perform it inside the color picker shader. But we shouldn't do it for HDR buffer.
                     m_DebugColorPicker.SetFloat(HDShaderIDs._ApplyLinearToSRGB, m_CurrentDebugDisplaySettings.IsDebugMaterialDisplayEnabled() ? 1.0f : 0.0f);
                     // Everything we have capture is flipped (as it happen before FinalPass/postprocess/Blit. So if we are not in SceneView
                     // (i.e. we have perform a flip, we need to flip the input texture) + we need to handle the case were we debug a fullscreen pass that have already perform the flip
-                    HDUtils.DrawFullScreen(cmd, hdCamera, m_DebugColorPicker, (RenderTargetIdentifier)BuiltinRenderTextureType.CameraTarget);
+
+                    CoreUtils.SetRenderTarget(cmd, BuiltinRenderTextureType.CameraTarget);
+                    cmd.SetViewport(hdCamera.viewport);
+                    cmd.SetGlobalVector(HDShaderIDs._ScreenToTargetScale, hdCamera.doubleBufferedViewportScale);
+                    cmd.DrawProcedural(Matrix4x4.identity, m_DebugColorPicker, 0, MeshTopology.Triangles, 3, 1, m_DebugFullScreenPropertyBlock);
                 }
             }
         }
