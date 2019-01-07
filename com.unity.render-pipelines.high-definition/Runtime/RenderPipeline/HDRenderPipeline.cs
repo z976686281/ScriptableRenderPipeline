@@ -868,7 +868,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 #if ENABLE_RAYTRACING
             m_RayTracingManager.UpdateAccelerationStructures();
 #endif
- 
+
             // We first update the state of asset frame settings as they can be use by various camera
             // but we keep the dirty state to correctly reset other camera that use RenderingPath.Default.
             bool assetFrameSettingsIsDirty = m_Asset.frameSettingsIsDirty;
@@ -1721,6 +1721,9 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             // Pushes to XR headset and/or display mirror
             if (camera.stereoEnabled)
                 renderContext.StereoEndRender(camera);
+
+            // Send all required graphics buffer to client systems.
+            SendGraphicsBuffers(cmd, hdCamera);
 
             // Due to our RT handle system we don't write into the backbuffer depth buffer (as our depth buffer can be bigger than the one provided)
             // So need to do a copy of the corresponding part of RT depth buffer in the target depth buffer in various situation:
@@ -3053,5 +3056,69 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 renderContext.StopMultiEye(cam);
             }
         }
+
+        void SendGraphicsBuffers(CommandBuffer cmd, HDCamera hdCamera)
+        {
+            bool needNormalBuffer = false;
+            Texture normalBuffer = null;
+            bool needDepthBuffer = false;
+            Texture depthBuffer = null;
+
+            // Figure out which client systems need which buffers
+            // Only VFX systems for now
+            VFX.VFXCameraBufferTypes neededVFXBuffers = VFX.VFXManager.IsCameraBufferNeeded(hdCamera.camera);
+            needNormalBuffer |= (neededVFXBuffers & VFX.VFXCameraBufferTypes.Normal) != 0;
+            needDepthBuffer |= (neededVFXBuffers & VFX.VFXCameraBufferTypes.Depth) != 0;
+
+            // Here if needed for this particular camera, we allocate history buffers.
+            // Only one is needed here because the main buffer used for rendering is separate.
+            // Ideally, we should double buffer the main rendering buffer but since we don't know in advance if history is going to be needed, it would be a big waste of memory.
+            if (needNormalBuffer)
+            {
+                RTHandleSystem.RTHandle mainNormalBuffer = m_SharedRTManager.GetNormalBuffer();
+                RTHandleSystem.RTHandle Allocator(string id, int frameIndex, RTHandleSystem rtHandleSystem)
+                {
+                    return rtHandleSystem.Alloc(Vector2.one, colorFormat: mainNormalBuffer.rt.format,
+                        sRGB: mainNormalBuffer.rt.sRGB, enableRandomWrite: false, name: $"Normal History Buffer"
+                    );
+                }
+
+                normalBuffer = hdCamera.GetCurrentFrameRT((int)HDCameraFrameHistoryType.Normal) ?? hdCamera.AllocHistoryFrameRT((int)HDCameraFrameHistoryType.Normal, Allocator, 1);
+                cmd.CopyTexture(mainNormalBuffer, 0, 0, 0, 0, hdCamera.actualWidth, hdCamera.actualHeight, normalBuffer, 0, 0, 0, 0);
+            }
+
+            if (needDepthBuffer)
+            {
+                RTHandleSystem.RTHandle mainDepthBuffer = m_SharedRTManager.GetDepthTexture();
+                RTHandleSystem.RTHandle Allocator(string id, int frameIndex, RTHandleSystem rtHandleSystem)
+                {
+                    return rtHandleSystem.Alloc(Vector2.one, colorFormat: mainDepthBuffer.rt.format,
+                        sRGB: mainDepthBuffer.rt.sRGB, enableRandomWrite: false, name: $"Depth History Buffer"
+                    );
+                }
+
+                depthBuffer = hdCamera.GetCurrentFrameRT((int)HDCameraFrameHistoryType.Depth) ?? hdCamera.AllocHistoryFrameRT((int)HDCameraFrameHistoryType.Depth, Allocator, 1);
+                cmd.CopyTexture(mainDepthBuffer, 0, 0, 0, 0, hdCamera.actualWidth, hdCamera.actualHeight, depthBuffer, 0, 0, 0, 0);
+            }
+
+            // Send buffers to client.
+            // For now, only VFX systems
+            if ((neededVFXBuffers & VFX.VFXCameraBufferTypes.Depth) != 0)
+            {
+                VFX.VFXManager.SetCameraBuffer(hdCamera.camera, VFX.VFXCameraBufferTypes.Depth, depthBuffer, 0, 0, hdCamera.actualWidth, hdCamera.actualHeight);
+            }
+
+            if ((neededVFXBuffers & VFX.VFXCameraBufferTypes.Normal) != 0)
+            {
+                VFX.VFXManager.SetCameraBuffer(hdCamera.camera, VFX.VFXCameraBufferTypes.Normal, normalBuffer, 0, 0, hdCamera.actualWidth, hdCamera.actualHeight);
+            }
+
+            if ((neededVFXBuffers & VFX.VFXCameraBufferTypes.Color) != 0)
+            {
+                var colorBuffer = hdCamera.GetCurrentFrameRT((int)HDCameraFrameHistoryType.ColorBufferMipChain);
+                VFX.VFXManager.SetCameraBuffer(hdCamera.camera, VFX.VFXCameraBufferTypes.Color, colorBuffer, 0, 0, hdCamera.actualWidth, hdCamera.actualHeight);
+            }
+        }
+
     }
 }
