@@ -71,8 +71,9 @@ namespace UnityEngine.Rendering.LWRP
 
     public enum RendererType
     {
-        ForwardRenderer,
-        Custom,
+        ForwardRenderer = 0,
+        _2DRenderer = 1,
+        Custom = 99,
     }
 
     public class LightweightRenderPipelineAsset : RenderPipelineAsset, ISerializationCallbackReceiver
@@ -152,6 +153,10 @@ namespace UnityEngine.Rendering.LWRP
         {
             switch (m_RendererType)
             {
+                case RendererType._2DRenderer:
+                    m_RendererData = LoadResourceFile<Experimental.Rendering.LightweightPipeline.Default2DRendererData>();
+                    break;
+
                 // Forward Renderer is the fallback renderer that works on all platforms
                 default:
                     m_RendererData = LoadResourceFile<ForwardRendererData>();

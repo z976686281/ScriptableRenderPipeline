@@ -113,8 +113,11 @@ namespace UnityEngine.Rendering.LWRP
             EditorGUILayout.PropertyField(m_RendererTypeProp, Styles.rendererTypeText);
             if (EditorGUI.EndChangeCheck())
             {
-                if (m_RendererTypeProp.intValue != (int) RendererType.Custom)
+                if (m_RendererTypeProp.intValue != (int)RendererType.Custom)
+                {
+                    serializedObject.ApplyModifiedProperties();
                     m_RendererDataProp.objectReferenceValue = LightweightRenderPipeline.asset.LoadBuiltinRendererData();
+                }
             }
 
             if (m_RendererTypeProp.intValue == (int) RendererType.Custom)
