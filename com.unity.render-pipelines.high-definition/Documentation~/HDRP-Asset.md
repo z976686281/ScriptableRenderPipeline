@@ -152,7 +152,7 @@ Higher values use more memory.
 
 | Property| Description |
 |:---|:---|
-| **Shadow Quality** | The filtering quality for Punctual Lights. Higher values increase the shadow quality in HDRP as better filtering near the edges of shadows reduce aliasing effects. HDRP 2018.3: Shadow quality only works when you set **Lit Shader Mode** to **Forward** in frame settings. **Deferred** mode uses Low. |
+| **Shadow Quality** | The filtering quality for punctual lights. Higher values increase the shadow quality in HDRP as better filtering near the edges of shadows reduce aliasing effects. HDRP 2018.3: Shadow quality only works when you set **Lit Shader Mode** to **Forward** in frame settings. **Deferred** mode uses Low. |
 
 
 
