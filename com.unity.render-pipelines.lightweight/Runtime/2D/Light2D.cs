@@ -871,17 +871,7 @@ namespace UnityEngine.Experimental.Rendering.LightweightPipeline
 
         public bool IsLightVisible(Camera camera)
         {
-            BoundingSphere[] boundingSpheres = new BoundingSphere[1];
-            boundingSpheres[0] = GetBoundingSphere();
-
-            if (m_CullingGroup == null)
-                m_CullingGroup = new CullingGroup();
-
-            m_CullingGroup.targetCamera = camera;
-            m_CullingGroup.SetBoundingSpheres(boundingSpheres);
-
-            bool isVisible = m_CullingGroup.IsVisible(0);
-            return isVisible;
+            return true;
         }
 
         void OnDrawGizmos()
