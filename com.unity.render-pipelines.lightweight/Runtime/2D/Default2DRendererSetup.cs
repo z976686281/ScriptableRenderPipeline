@@ -14,7 +14,10 @@ namespace UnityEngine.Experimental.Rendering.LightweightPipeline
         private Render2DLightingPass m_Render2DLightingPass;
         private SetupForwardRenderingPass m_SetupForwardRenderingPass;
         //Render2DFallbackPass   m_Render2DFallbackPass;
-
+#if UNITY_EDITOR
+        private GizmoRenderingPass m_LitGizmoRenderingPass;
+        private GizmoRenderingPass m_UnlitGizmoRenderingPass;
+#endif
         private RenderTargetHandle m_DepthTexture;
 
         [NonSerialized]
@@ -38,6 +41,11 @@ namespace UnityEngine.Experimental.Rendering.LightweightPipeline
 
             m_DrawSkyboxPass = new DrawSkyboxPass();
 
+#if UNITY_EDITOR
+            m_LitGizmoRenderingPass = new GizmoRenderingPass();
+            m_UnlitGizmoRenderingPass = new GizmoRenderingPass();
+#endif
+
             m_Initialized = true;
         }
 
@@ -58,6 +66,17 @@ namespace UnityEngine.Experimental.Rendering.LightweightPipeline
             );
 
             renderer.EnqueuePass(m_Render2DLightingPass);
+
+#if UNITY_EDITOR
+            if (renderingData.cameraData.isSceneViewCamera)
+            {
+                m_LitGizmoRenderingPass.Setup(true);
+                renderer.EnqueuePass(m_LitGizmoRenderingPass);
+
+                m_UnlitGizmoRenderingPass.Setup(false);
+                renderer.EnqueuePass(m_UnlitGizmoRenderingPass);
+            }
+#endif
         }
     }
 }
