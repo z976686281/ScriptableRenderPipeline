@@ -163,6 +163,7 @@ Higher values use more memory.
 | **Low** | Point/Spot: PCF 3x3 (4 taps). Directional: PCF Tent  5x5  (9 taps). |
 | **Medium** | Point/Spot: PCF 5x5 (9 taps). Directional: PCF Tent  7x7  (16 taps). |
 | **High** | Point/Spot: PCSS. Directional: PCSS. |
+| **Very High** | Improved Moment Shadows. |
 
 
 
