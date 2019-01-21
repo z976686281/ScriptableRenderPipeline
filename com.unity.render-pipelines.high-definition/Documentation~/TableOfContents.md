@@ -40,7 +40,6 @@
   * [Volumetric Lighting](Volumetric-Lighting)
   * [Physical Light Units and Intensities](Physical-Light-Units)
 * Object Sorting
-  * [Material Rendering Priority](Material-Rendering-Priority)
 * Camera
   * [Multisampling Anti-Aliasing](MSAA)
 * [HDRP Glossary](Glossary)
