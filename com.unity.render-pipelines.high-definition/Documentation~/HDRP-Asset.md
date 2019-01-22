@@ -169,16 +169,18 @@ Higher values use more memory.
 
 Select __PCSS__ filtering to enable additional high quality filtering settings in the Light component.
 
+<a name="Decals"></a>
+
 ## Decals
 
-These settings control the draw distance and resolution of the decals atlas HDRP uses when it renders decals projected on transparent objects.
+These settings control the draw distance and resolution of the decals atlas HDRP uses when it renders decals projected onto transparent surfaces.
 
 | Property| Description |
 |:---|:---|
 | **Draw Distance** | The maximum distance from the Camera at which Unity draws Decals. |
-| **Atlas Width** | The Decal Atlas width. |
-| **Atlas Height** | The Decal Atlas height. |
-| **Enable Metal and AO properties** | Allows Decals to affect Metal and AO material properties. Enabling this option has a performance impact. |
+| **Atlas Width** | The Decal Atlas width. This atlas stores all decals that project onto transparent surfaces. |
+| **Atlas Height** | The Decal Atlas height. This atlas stores all decals that project onto transparent surfaces. |
+| **Enable Metal and AO properties** | Allows Decals to affect Metal and AO Material properties. Enabling this option has a performance impact. |
 
 
 
