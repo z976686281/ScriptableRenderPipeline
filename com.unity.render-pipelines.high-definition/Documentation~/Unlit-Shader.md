@@ -14,7 +14,7 @@ New Materials in HDRP use the [Lit Shader](Lit-Shader.html) by default. To creat
 
 ![](Images/UnlitShader1.png)
 
-## Unlit Shader Parameters
+## Properties
 
 ### Surface Options
 
