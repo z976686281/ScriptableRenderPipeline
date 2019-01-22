@@ -283,6 +283,23 @@ void ApplyDebugToSurfaceData(float3x3 worldToTangent, inout SurfaceData surfaceD
     {
         surfaceData.normalWS = worldToTangent[2];
     }
+
+    // There is no metallic with SSS and specular color mode
+    float metallic = HasFlag(surfaceData.materialFeatures, MATERIALFEATUREFLAGS_LIT_SPECULAR_COLOR | MATERIALFEATUREFLAGS_LIT_SUBSURFACE_SCATTERING | MATERIALFEATUREFLAGS_LIT_TRANSMISSION) ? 0.0 : surfaceData.metallic;
+
+    float3 diffuseColor = ComputeDiffuseColor(surfaceData.baseColor, metallic);
+    bool specularWorkflow = HasFlag(surfaceData.materialFeatures, MATERIALFEATUREFLAGS_LIT_SPECULAR_COLOR);
+    float3 specularColor =  specularWorkflow ? surfaceData.specularColor : ComputeFresnel0(surfaceData.baseColor, surfaceData.metallic, DEFAULT_SPECULAR_VALUE);
+
+    if (_DebugFullScreenMode == FULLSCREENDEBUGMODE_VALIDATE_DIFFUSE_COLOR)
+    {
+        surfaceData.baseColor = pbrDiffuseColorValidate(diffuseColor, specularColor, metallic > 0.0, !specularWorkflow).xyz;
+    }
+    else if (_DebugFullScreenMode == FULLSCREENDEBUGMODE_VALIDATE_SPECULAR_COLOR)
+    {
+        surfaceData.baseColor = pbrSpecularColorValidate(diffuseColor, specularColor, metallic > 0.0, !specularWorkflow).xyz;
+    }
+
 #endif
 }
 
@@ -354,12 +371,18 @@ void ClampRoughness(inout BSDFData bsdfData, float minRoughness)
 
 float ComputeMicroShadowing(BSDFData bsdfData, float NdotL)
 {
-#if (SHADERPASS == SHADERPASS_FORWARD) || defined(LIGHT_LAYERS)
-    return ComputeMicroShadowing(bsdfData.ambientOcclusion, NdotL, _MicroShadowOpacity);
+    float sourceAO;
+#if (SHADERPASS == SHADERPASS_DEFERRED_LIGHTING)
+    // Note: In deferred pass we don't have space in GBuffer to store ambientOcclusion unless LIGHT_LAYERS is enabled
+    // so we use specularOcclusion instead
+    // The define LIGHT_LAYERS only exist for the GBuffer and the Forward pass. To avoid to add another
+    // variant to deferred.compute, we use dynamic branching instead with _EnableLightLayers.
+    sourceAO = _EnableLightLayers ? bsdfData.ambientOcclusion : bsdfData.specularOcclusion;
 #else
-    // No extra G-Buffer for AO, so 'bsdfData.ambientOcclusion' does not hold a meaningful value.
-    return ComputeMicroShadowing(bsdfData.specularOcclusion, NdotL, _MicroShadowOpacity);
+    sourceAO = bsdfData.ambientOcclusion;
 #endif
+
+    return ComputeMicroShadowing(sourceAO, NdotL, _MicroShadowOpacity);
 }
 
 bool MaterialSupportsTransmission(BSDFData bsdfData)
@@ -904,6 +927,11 @@ void GetBSDFDataDebug(uint paramId, BSDFData bsdfData, inout float3 result, inou
         result = saturate((bsdfData.ior - 1.0) / 1.5).xxx;
         break;
     }
+}
+
+void GetPBRValidatorDebug(SurfaceData surfaceData, inout float3 result)
+{
+    result = surfaceData.baseColor;
 }
 
 //-----------------------------------------------------------------------------

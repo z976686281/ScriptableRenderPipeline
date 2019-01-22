@@ -42,6 +42,45 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline.Drawing
                 });
             });
 
+            ++indentLevel;
+            switch (m_Node.surfaceType)
+            {
+                case SurfaceType.Opaque:
+                    ps.Add(new PropertyRow(CreateLabel("Rendering Pass", indentLevel)), (row) =>
+                    {
+                        row.Add(new EnumField(HDRenderQueue.OpaqueRenderQueue.Default), (field) =>
+                        {
+                            field.value = HDRenderQueue.ConvertToOpaqueRenderQueue(HDRenderQueue.GetOpaqueEquivalent(m_Node.renderingPass));
+                            field.RegisterValueChangedCallback(ChangeRenderingPass);
+                        });
+                    });
+                    break;
+                case SurfaceType.Transparent:
+                    ps.Add(new PropertyRow(CreateLabel("Rendering Pass", indentLevel)), (row) =>
+                    {
+                        Enum defaultValue;
+                        switch (m_Node.renderingPass)
+                        {
+                            default: //when deserializing without issue, we still need to init the default to something even if not used.
+                            case HDRenderQueue.RenderQueueType.Transparent:
+                                defaultValue = HDRenderQueue.TransparentRenderQueue.Default;
+                                break;
+                            case HDRenderQueue.RenderQueueType.PreRefraction:
+                                defaultValue = HDRenderQueue.TransparentRenderQueue.BeforeRefraction;
+                                break;
+                        }
+                        row.Add(new EnumField(defaultValue), (field) =>
+                        {
+                            field.value = HDRenderQueue.ConvertToTransparentRenderQueue(HDRenderQueue.GetTransparentEquivalent(m_Node.renderingPass));
+                            field.RegisterValueChangedCallback(ChangeRenderingPass);
+                        });
+                    });
+                    break;
+                default:
+                    throw new ArgumentException("Unknown SurfaceType");
+            }
+            --indentLevel;
+
             if (m_Node.surfaceType == SurfaceType.Transparent)
             {
                 ++indentLevel;
@@ -70,15 +109,6 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline.Drawing
                     {
                         toggle.value = m_Node.transparencyFog.isOn;
                         toggle.OnToggleChanged(ChangeTransparencyFog);
-                    });
-                });
-
-                ps.Add(new PropertyRow(CreateLabel("Appear in Refraction", indentLevel)), (row) =>
-                {
-                    row.Add(new Toggle(), (toggle) =>
-                    {
-                        toggle.value = m_Node.drawBeforeRefraction.isOn;
-                        toggle.OnToggleChanged(ChangeDrawBeforeRefraction);
                     });
                 });
 
@@ -152,6 +182,8 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline.Drawing
 
             m_Node.owner.owner.RegisterCompleteObjectUndo("Surface Type Change");
             m_Node.surfaceType = (SurfaceType)evt.newValue;
+
+            UpdateRenderingPassValue(m_Node.renderingPass);
         }
 
         void ChangeDoubleSided(ChangeEvent<bool> evt)
@@ -182,13 +214,39 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline.Drawing
             td.isOn = evt.newValue;
             m_Node.transparencyFog = td;
         }
-
-        void ChangeDrawBeforeRefraction(ChangeEvent<bool> evt)
+            
+        void ChangeRenderingPass(ChangeEvent<Enum> evt)
         {
-            m_Node.owner.owner.RegisterCompleteObjectUndo("Draw Before Refraction Change");
-            ToggleData td = m_Node.drawBeforeRefraction;
-            td.isOn = evt.newValue;
-            m_Node.drawBeforeRefraction = td;
+            HDRenderQueue.RenderQueueType renderQueueType = HDRenderQueue.RenderQueueType.Unknown;
+            if (evt.newValue is HDRenderQueue.OpaqueRenderQueue)
+                renderQueueType = HDRenderQueue.ConvertFromOpaqueRenderQueue((HDRenderQueue.OpaqueRenderQueue)evt.newValue);
+            else if (evt.newValue is HDRenderQueue.TransparentRenderQueue)
+                renderQueueType = HDRenderQueue.ConvertFromTransparentRenderQueue((HDRenderQueue.TransparentRenderQueue)evt.newValue);
+            else
+                throw new ArgumentException("Unknown kind of RenderQueue, was " + evt.newValue);
+            UpdateRenderingPassValue(renderQueueType);
+        }
+
+        void UpdateRenderingPassValue(HDRenderQueue.RenderQueueType newValue)
+        {
+            HDRenderQueue.RenderQueueType renderingPass;
+            switch (m_Node.surfaceType)
+            {
+                case SurfaceType.Opaque:
+                    renderingPass = HDRenderQueue.GetOpaqueEquivalent(newValue);
+                    break;
+                case SurfaceType.Transparent:
+                    renderingPass = HDRenderQueue.GetTransparentEquivalent(newValue);
+                    break;
+                default:
+                    throw new ArgumentException("Unknown SurfaceType");
+            }
+
+            if (Equals(m_Node.renderingPass, renderingPass))
+                return;
+
+            m_Node.owner.owner.RegisterCompleteObjectUndo("Rendering Pass Change");
+            m_Node.renderingPass = renderingPass;
         }
 
         void ChangeDistortion(ChangeEvent<bool> evt)

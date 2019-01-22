@@ -12,9 +12,9 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
     // lighting/surface effect like SSR/AO
     public sealed class PostProcessSystem
     {
-        const RenderTextureFormat k_ColorFormat    = RenderTextureFormat.RGB111110Float;
-        const RenderTextureFormat k_CoCFormat      = RenderTextureFormat.RHalf;
-        const RenderTextureFormat k_ExposureFormat = RenderTextureFormat.RGFloat;
+        const GraphicsFormat k_ColorFormat         = GraphicsFormat.B10G11R11_UFloatPack32;
+        const GraphicsFormat k_CoCFormat           = GraphicsFormat.R16_SFloat;
+        const GraphicsFormat k_ExposureFormat      = GraphicsFormat.R32G32_SFloat;
 
         readonly RenderPipelineResources m_Resources;
         bool m_ResetHistory;
@@ -100,7 +100,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             // user-provided LUTs will have to be this size
             var settings = hdAsset.renderPipelineSettings.postProcessSettings;
             m_LutSize = settings.lutSize;
-            var lutFormat = (RenderTextureFormat)settings.lutFormat;
+            var lutFormat = (GraphicsFormat)settings.lutFormat;
 
             // Feature maps
             // Must be kept in sync with variants defined in UberPost.compute
@@ -127,8 +127,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 wrapMode: TextureWrapMode.Clamp,
                 anisoLevel: 0,
                 useMipMap: false,
-                enableRandomWrite: true,
-                sRGB: false
+                enableRandomWrite: true
             );
 
             // Setup a default exposure textures and clear it to neutral values so that the exposure
@@ -136,10 +135,10 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             // Beware that 0 in EV100 maps to a multiplier of 0.833 so the EV100 value in this
             // neutral exposure texture isn't 0
             m_EmptyExposureTexture = RTHandles.Alloc(1, 1, colorFormat: k_ExposureFormat,
-                sRGB: false, enableRandomWrite: true, name: "Empty EV100 Exposure"
+                enableRandomWrite: true, name: "Empty EV100 Exposure"
             );
 
-            var tex = new Texture2D(1, 1, TextureFormat.RGFloat, false, true);
+            var tex = new Texture2D(1, 1, TextureFormat.RGHalf, false, true);
             tex.SetPixel(0, 0, new Color(1f, ColorUtils.ConvertExposureToEV100(1f), 0f, 0f));
             tex.Apply();
             Graphics.Blit(tex, m_EmptyExposureTexture);
@@ -150,12 +149,12 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
             // Misc targets
             m_TempTexture1024 = RTHandles.Alloc(
-                1024, 1024, colorFormat: RenderTextureFormat.RGHalf, sRGB: false,
+                1024, 1024, colorFormat: GraphicsFormat.R16G16_SFloat,
                 enableRandomWrite: true, name: "Average Luminance Temp 1024"
             );
 
             m_TempTexture32 = RTHandles.Alloc(
-                32, 32, colorFormat: RenderTextureFormat.RGHalf, sRGB: false,
+                32, 32, colorFormat: GraphicsFormat.R16G16_SFloat,
                 enableRandomWrite: true, name: "Average Luminance Temp 32"
             );
 
@@ -232,7 +231,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             }
 
             // Handle fixed exposure & disabled pre-exposure by forcing an exposure multiplier of 1
-            if (!camera.frameSettings.enableExposureControl)
+            if (!camera.frameSettings.IsEnabled(FrameSettingsField.ExposureControl))
             {
                 cmd.SetGlobalTexture(HDShaderIDs._ExposureTexture, m_EmptyExposureTexture);
                 cmd.SetGlobalTexture(HDShaderIDs._PrevExposureTexture, m_EmptyExposureTexture);
@@ -282,7 +281,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 // TODO: Do we want user effects before post?
 
                 // Start with exposure - will be applied in the next frame
-                if (!IsExposureFixed() && camera.frameSettings.enableExposureControl)
+                if (!IsExposureFixed() && camera.frameSettings.IsEnabled(FrameSettingsField.ExposureControl))
                 {
                     using (new ProfilingSample(cmd, "Dynamic Exposure", CustomSamplerId.Exposure.GetSampler()))
                     {
@@ -497,7 +496,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             {
                 // r: multiplier, g: EV100
                 return rtHandleSystem.Alloc(1, 1, colorFormat: k_ExposureFormat,
-                    sRGB: false, enableRandomWrite: true, name: $"Exposure Texture ({id}) {frameIndex}"
+                    enableRandomWrite: true, name: $"Exposure Texture ({id}) {frameIndex}"
                 );
             }
 
@@ -1192,8 +1191,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             RTHandle Allocator(string id, int frameIndex, RTHandleSystem rtHandleSystem)
             {
                 return rtHandleSystem.Alloc(
-                    Vector2.one, depthBufferBits: DepthBits.None, filterMode: FilterMode.Point, sRGB: false,
-                    colorFormat: RenderTextureFormat.RHalf, enableRandomWrite: true, name: "CoC History"
+                    Vector2.one, depthBufferBits: DepthBits.None, filterMode: FilterMode.Point,
+                    colorFormat: GraphicsFormat.R16_SFloat, enableRandomWrite: true, name: "CoC History"
                 );
             }
 
@@ -1216,9 +1215,9 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             Vector2 tileTexScale = new Vector2((float)tileTexWidth / camera.actualWidth, (float)tileTexHeight / camera.actualHeight);
             Vector4 tileTargetSize = new Vector4(tileTexWidth, tileTexHeight, 1.0f / tileTexWidth, 1.0f / tileTexHeight);
 
-            RTHandle preppedVelocity = m_Pool.Get(Vector2.one, RenderTextureFormat.RGB111110Float);
-            RTHandle minMaxTileVel = m_Pool.Get(tileTexScale, RenderTextureFormat.RGB111110Float);
-            RTHandle maxTileNeigbourhood = m_Pool.Get(tileTexScale, RenderTextureFormat.RGB111110Float);
+            RTHandle preppedVelocity = m_Pool.Get(Vector2.one, GraphicsFormat.B10G11R11_UFloatPack32);
+            RTHandle minMaxTileVel = m_Pool.Get(tileTexScale, GraphicsFormat.B10G11R11_UFloatPack32);
+            RTHandle maxTileNeigbourhood = m_Pool.Get(tileTexScale, GraphicsFormat.B10G11R11_UFloatPack32);
 
             float screenMagnitude = (new Vector2(camera.actualWidth, camera.actualHeight).magnitude);
             Vector4 motionBlurParams0 = new Vector4(
@@ -1542,6 +1541,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             // Keep the aspect ratio correct & center the dirt texture, we don't want it to be
             // stretched or squashed
             var dirtTexture = m_Bloom.dirtTexture.value == null ? Texture2D.blackTexture : m_Bloom.dirtTexture.value;
+            int dirtEnabled = m_Bloom.dirtTexture.value != null && m_Bloom.dirtIntensity.value > 0f ? 1 : 0;
             float dirtRatio = (float)dirtTexture.width / (float)dirtTexture.height;
             float screenRatio = (float)camera.actualWidth / (float)camera.actualHeight;
             var dirtTileOffset = new Vector4(1f, 1f, 0f, 0f);
@@ -1560,7 +1560,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
             cmd.SetComputeTextureParam(uberCS, uberKernel, HDShaderIDs._BloomTexture, m_BloomTexture);
             cmd.SetComputeTextureParam(uberCS, uberKernel, HDShaderIDs._BloomDirtTexture, dirtTexture);
-            cmd.SetComputeVectorParam(uberCS, HDShaderIDs._BloomParams, new Vector4(intensity, dirtIntensity, 0f, 0f));
+            cmd.SetComputeVectorParam(uberCS, HDShaderIDs._BloomParams, new Vector4(intensity, dirtIntensity, 1f, dirtEnabled));
             cmd.SetComputeVectorParam(uberCS, HDShaderIDs._BloomTint, (Vector4)tint);
             cmd.SetComputeVectorParam(uberCS, HDShaderIDs._BloomBicubicParams, new Vector4(bloomSize.x, bloomSize.y, 1f / bloomSize.x, 1f / bloomSize.y));
             cmd.SetComputeVectorParam(uberCS, HDShaderIDs._BloomDirtScaleOffset, dirtTileOffset);
@@ -1672,7 +1672,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         #region Color Grading
 
         // TODO: User lut support
-        // TODO: Curves
         void DoColorGrading(CommandBuffer cmd, ComputeShader cs, int kernel)
         {
             // Prepare data
@@ -1719,6 +1718,19 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             cmd.SetComputeVectorParam(builderCS, HDShaderIDs._SplitShadows, splitShadows);
             cmd.SetComputeVectorParam(builderCS, HDShaderIDs._SplitHighlights, splitHighlights);
 
+            // YRGB
+            cmd.SetComputeTextureParam(builderCS, builderKernel, HDShaderIDs._CurveMaster, m_Curves.master.value.GetTexture());
+            cmd.SetComputeTextureParam(builderCS, builderKernel, HDShaderIDs._CurveRed, m_Curves.red.value.GetTexture());
+            cmd.SetComputeTextureParam(builderCS, builderKernel, HDShaderIDs._CurveGreen, m_Curves.green.value.GetTexture());
+            cmd.SetComputeTextureParam(builderCS, builderKernel, HDShaderIDs._CurveBlue, m_Curves.blue.value.GetTexture());
+
+            // Secondary curves
+            cmd.SetComputeTextureParam(builderCS, builderKernel, HDShaderIDs._CurveHueVsHue, m_Curves.hueVsHue.value.GetTexture());
+            cmd.SetComputeTextureParam(builderCS, builderKernel, HDShaderIDs._CurveHueVsSat, m_Curves.hueVsSat.value.GetTexture());
+            cmd.SetComputeTextureParam(builderCS, builderKernel, HDShaderIDs._CurveLumVsSat, m_Curves.lumVsSat.value.GetTexture());
+            cmd.SetComputeTextureParam(builderCS, builderKernel, HDShaderIDs._CurveSatVsSat, m_Curves.satVsSat.value.GetTexture());
+
+            // Artist-driven tonemap curve
             if (m_Tonemapping.mode.value == TonemappingMode.Custom)
             {
                 m_HableCurve.Init(
@@ -1971,7 +1983,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 m_Targets.Clear();
             }
 
-            public RTHandle Get(in Vector2 scaleFactor, RenderTextureFormat format, bool mipmap = false)
+            public RTHandle Get(in Vector2 scaleFactor, GraphicsFormat format, bool mipmap = false)
             {
                 var hashCode = ComputeHashCode(scaleFactor.x, scaleFactor.y, (int)format, mipmap);
 
@@ -1979,7 +1991,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     return stack.Pop();
 
                 var rt = RTHandles.Alloc(
-                    scaleFactor, depthBufferBits: DepthBits.None, sRGB: false,
+                    scaleFactor, depthBufferBits: DepthBits.None,
                     filterMode: FilterMode.Point, colorFormat: format, useMipMap: mipmap,
                     enableRandomWrite: true, name: "Post-processing Target Pool " + m_Tracker
                 );
@@ -1991,7 +2003,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             public void Recycle(RTHandle rt)
             {
                 Assert.IsNotNull(rt);
-                var hashCode = ComputeHashCode(rt.scaleFactor.x, rt.scaleFactor.y, (int)rt.rt.format, rt.rt.useMipMap);
+                var hashCode = ComputeHashCode(rt.scaleFactor.x, rt.scaleFactor.y, (int)rt.rt.graphicsFormat, rt.rt.useMipMap);
 
                 if (!m_Targets.TryGetValue(hashCode, out var stack))
                 {

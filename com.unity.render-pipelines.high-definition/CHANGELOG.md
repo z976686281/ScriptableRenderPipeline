@@ -4,7 +4,7 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [5.3.0-preview] - 2018-11-xx
+## [5.3.0-preview] - 2019-01-14
 
 ### Added
 - Added new API to perform a camera rendering
@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added more color grading tools
 - Added changelog level for Shader Variant stripping
 - Added an emissive color node and a slider to control the pre-exposure percentage of emission color
+- Added Debug mode for validation of material albedo and metalness/specularColor values
 
 ### Fixed
 - Fixed logic to disable FPTL with stereo rendering
@@ -41,7 +42,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fixed SSR and microshadowing on fabric material
 - Fixed blit pass for stereo rendering
 - Fixed lightlist bounds for stereo rendering
-- Fixed camera-relative support for stereo rendering
 - Fixed windows and in-game DebugMenu sync.
 - Fixed FrameSettings' LitShaderMode sync when opening DebugMenu.
 - Fixed Metal specific issues with decals, hitting a sampler limit and compiling AxF shader
@@ -65,12 +65,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fixed material's RenderQueue edition in default view.
 - Fixed banding issues within volumetric density buffer
 - Fixed missing multicompile for MSAA for AxF
+- Fixed camera-relative support for stereo rendering
+- Fixed remove sync with render thread when updating decal texture atlas.
 - Fixed max number of keyword reach [256] issue. Several shader feature are now local
 - Fixed Scene Color and Depth nodes
 - Fixed SSR in forward
 - Fixed custom editor of Unlit, HD Unlit and PBR shader graph master node
 - Fixed issue with NewFrame not correctly calcualted in Editor when switching scene
-
+- Fixed issue with TerrainLit not compiling with depth only pass and normal buffer
+- Fixed geometric normal use for shadow bias with PBR master node in forward
+- Fixed error message when having more than one directional light casting shadow
+- Fixed error when trying to display preview of Camera or PlanarReflectionProbe
 
 ### Changed
 - ColorPyramid compute shader passes is swapped to pixel shader passes on platforms where the later is faster (Nintendo Switch).
@@ -90,6 +95,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Shader code refactor: Rename LIGHTLOOP_SINGLE_PASS => LIGHTLOOP_DISABLE_TILE_AND_CLUSTER and clean all usage of LIGHTLOOP_TILE_PASS
 - Shader code refactor: Move pragma definition of vertex and pixel shader inside pass + Move SURFACE_GRADIENT definition in XXXData.hlsl
 - Micro-shadowing in Lit forward now use ambientOcclusion instead of SpecularOcclusion
+- Upgraded FrameSettings workflow, DebugMenu and Inspector part relative to it.
 
 ## [5.2.0-preview] - 2018-11-27
 

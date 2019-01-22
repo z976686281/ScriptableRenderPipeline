@@ -120,9 +120,9 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         private RTHandleSystem.RTHandle m_AtlasTexture = null;
         private int m_Width;
         private int m_Height;
-        private RenderTextureFormat m_Format;
+        private GraphicsFormat m_Format;
         private AtlasAllocator m_AtlasAllocator = null;
-        private Dictionary<IntPtr, Vector4> m_AllocationCache = new Dictionary<IntPtr, Vector4>();
+        private Dictionary<int, Vector4> m_AllocationCache = new Dictionary<int, Vector4>();
 
         public RTHandleSystem.RTHandle AtlasTexture
         {
@@ -132,7 +132,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             }
         }
 
-        public Texture2DAtlas(int width, int height, RenderTextureFormat format)
+        public Texture2DAtlas(int width, int height, GraphicsFormat format)
         {
             m_Width = width;
             m_Height = height;
@@ -145,7 +145,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     FilterMode.Point,
                     TextureWrapMode.Clamp,
                     TextureDimension.Tex2D,
-                    false,
                     false,
                     true,
                     false);
@@ -167,7 +166,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
         public bool AddTexture(CommandBuffer cmd, ref Vector4 scaleBias, Texture texture)
         {
-            IntPtr key = texture.GetNativeTexturePtr();
+            int key = texture.GetInstanceID();
             if (!m_AllocationCache.TryGetValue(key, out scaleBias))
             {
                 int width = texture.width;

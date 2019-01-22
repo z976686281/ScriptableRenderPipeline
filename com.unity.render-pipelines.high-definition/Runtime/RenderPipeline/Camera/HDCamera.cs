@@ -241,8 +241,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
             // Handle memory allocation.
             {
-                bool isColorPyramidHistoryRequired = m_frameSettings.enableSSR; // TODO: TAA as well
-                bool isVolumetricHistoryRequired   = m_frameSettings.enableVolumetrics && m_frameSettings.enableReprojectionForVolumetrics;
+                bool isColorPyramidHistoryRequired = m_frameSettings.IsEnabled(FrameSettingsField.SSR); // TODO: TAA as well
+                bool isVolumetricHistoryRequired   = m_frameSettings.IsEnabled(FrameSettingsField.Volumetrics) && m_frameSettings.IsEnabled(FrameSettingsField.ReprojectionForVolumetrics);
 
                 int numColorPyramidBuffersRequired = isColorPyramidHistoryRequired ? 2 : 1; // TODO: 1 -> 0
                 int numVolumetricBuffersRequired   = isVolumetricHistoryRequired   ? 2 : 0; // History + feedback
@@ -274,7 +274,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
             // If TAA is enabled projMatrix will hold a jittered projection matrix. The original,
             // non-jittered projection matrix can be accessed via nonJitteredProjMatrix.
-            bool taaEnabled = m_frameSettings.enablePostprocess
+            bool taaEnabled = m_frameSettings.IsEnabled(FrameSettingsField.Postprocess)
                 && antialiasing == HDAdditionalCameraData.AntialiasingMode.TemporalAntialiasing
                 && camera.cameraType == CameraType.Game;
 
@@ -746,8 +746,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         {
             frameIndex &= 1;
 
-            return rtHandleSystem.Alloc(Vector2.one, filterMode: FilterMode.Point, colorFormat: RenderTextureFormat.ARGBHalf,
-                                        sRGB: false, enableRandomWrite: true, useMipMap: true, autoGenerateMips: false,
+            return rtHandleSystem.Alloc(Vector2.one, filterMode: FilterMode.Point, colorFormat: GraphicsFormat.R16G16B16A16_SFloat,
+                                        enableRandomWrite: true, useMipMap: true, autoGenerateMips: false,
                                         name: string.Format("CameraColorBufferMipChain{0}", frameIndex));
         }
 
@@ -798,7 +798,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         // Set up UnityPerView CBuffer.
         public void SetupGlobalParams(CommandBuffer cmd, float time, float lastTime, uint frameCount)
         {
-            bool taaEnabled = m_frameSettings.enablePostprocess
+            bool taaEnabled = m_frameSettings.IsEnabled(FrameSettingsField.Postprocess)
                 && antialiasing == HDAdditionalCameraData.AntialiasingMode.TemporalAntialiasing
                 && camera.cameraType == CameraType.Game;
 
