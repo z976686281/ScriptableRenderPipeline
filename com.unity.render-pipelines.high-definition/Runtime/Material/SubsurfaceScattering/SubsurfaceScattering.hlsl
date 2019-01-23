@@ -75,7 +75,20 @@ TEXTURE2D(_SSSBufferTexture0);
 // Note: The SSS buffer used here is sRGB
 void EncodeIntoSSSBuffer(SSSData sssData, uint2 positionSS, out SSSBufferType0 outSSSBuffer0)
 {
-    outSSSBuffer0 = float4(sssData.diffuseColor, PackFloatInt8bit(sssData.subsurfaceMask, sssData.diffusionProfile, 16));
+    int diffusionProfileIndex = 0;
+    int i = 0;
+
+    // Fetch the 4 bit index number by looking for the diffusion profile unique ID:
+    for (i = 0; i < 16; i++)
+    {
+        if (_DiffusionProfileHashTable[i] == sssData.diffusionProfile)
+        {
+            diffusionProfileIndex = i;
+            break;
+        }
+    }
+    
+    outSSSBuffer0 = float4(sssData.diffuseColor, PackFloatInt8bit(sssData.subsurfaceMask, diffusionProfileIndex, 16));
 }
 
 // Note: The SSS buffer used here is sRGB

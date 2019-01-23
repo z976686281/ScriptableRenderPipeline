@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.Experimental.Rendering.HDPipeline;
 using UnityEngine.Rendering;
+using System;
 
 namespace UnityEditor.Experimental.Rendering.HDPipeline
 {
@@ -200,8 +201,8 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         protected MaterialProperty[] heightParametrization = new MaterialProperty[kMaxLayerCount];
         protected const string kHeightParametrization = "_HeightMapParametrization";
 
-        protected MaterialProperty[] diffusionProfileID = new MaterialProperty[kMaxLayerCount];
-        protected const string kDiffusionProfileID = "_DiffusionProfile";
+        protected MaterialProperty[] diffusionProfileHash = new MaterialProperty[kMaxLayerCount];
+        protected const string kDiffusionProfileHash = "_DiffusionProfileHash";
         protected MaterialProperty[] subsurfaceMask = new MaterialProperty[kMaxLayerCount];
         protected const string kSubsurfaceMask = "_SubsurfaceMask";
         protected MaterialProperty[] subsurfaceMaskMap = new MaterialProperty[kMaxLayerCount];
@@ -303,6 +304,9 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         protected const string kRefractionModel = "_RefractionModel";
         protected MaterialProperty ssrefractionProjectionModel = null;
         protected const string kSSRefractionProjectionModel = "_SSRefractionProjectionModel";
+        
+        protected MaterialProperty diffusionProfileAsset = null;
+        protected const string kDiffusionProfileAsset = "_DiffusionProfileAsset";
 
         protected override bool showBlendModePopup
         {
@@ -353,7 +357,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                 heightParametrization[i] = FindProperty(string.Format("{0}{1}", kHeightParametrization, m_PropertySuffixes[i]), props);
 
                 // Sub surface
-                diffusionProfileID[i] = FindProperty(string.Format("{0}{1}", kDiffusionProfileID, m_PropertySuffixes[i]), props);
+                diffusionProfileHash[i] = FindProperty(string.Format("{0}{1}", kDiffusionProfileHash, m_PropertySuffixes[i]), props);
                 subsurfaceMask[i] = FindProperty(string.Format("{0}{1}", kSubsurfaceMask, m_PropertySuffixes[i]), props);
                 subsurfaceMaskMap[i] = FindProperty(string.Format("{0}{1}", kSubsurfaceMaskMap, m_PropertySuffixes[i]), props);
                 thickness[i] = FindProperty(string.Format("{0}{1}", kThickness, m_PropertySuffixes[i]), props);
@@ -428,6 +432,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             atDistance = FindProperty(kATDistance, props, false);
             thicknessMultiplier = FindProperty(kThicknessMultiplier, props, false);
             ior = FindProperty(kIor, props, false);
+            diffusionProfileAsset = FindProperty(kDiffusionProfileAsset, props, false);
             // We reuse thickness from SSS
         }
 
@@ -439,6 +444,42 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             EditorGUI.indentLevel--;
         }
 
+        // These two convertion functions are used to store GUID assets inside materials,
+        // a unity asset GUID is exactly 16 bytes long which is also a Vector4 so by adding a
+        // Vector4 field inside the shader we can store references of an asset inside the material
+        // which is actually used to store the reference of the diffusion profile asset
+        Vector4 ConvertGUIDToVector4(string guid)
+        {
+            Vector4 vector;
+            byte[]  bytes = new byte[16];
+
+            for (int i = 0; i < 16; i++)
+                bytes[i] = byte.Parse(guid.Substring(i * 2, 2), System.Globalization.NumberStyles.HexNumber);
+            
+            unsafe
+            {
+                fixed (byte * b = bytes)
+                    vector = *(Vector4 *)b;
+            }
+
+            return vector;
+        }
+
+        string ConvertVector4ToGUID(Vector4 vector)
+        {
+            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            unsafe
+            {
+                byte * v = (byte *)&vector;
+                for (int i = 0; i < 16; i++)
+                    sb.Append(v[i].ToString("x2"));
+                var guidBytes = new byte[16];
+                System.Runtime.InteropServices.Marshal.Copy((IntPtr)v, guidBytes, 0, 16);
+            }
+
+            return sb.ToString();
+        }
+
         protected void ShaderSSSAndTransmissionInputGUI(Material material, int layerIndex)
         {
             var hdPipeline = RenderPipelineManager.currentPipeline as HDRenderPipeline;
@@ -446,47 +487,68 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             if (hdPipeline == null)
                 return;
 
-            var diffusionProfileSettings = hdPipeline.diffusionProfileSettings;
+            // TODO: remove this
+            // var diffusionProfileSettings = hdPipeline.diffusionProfileSettings;
 
-            if (hdPipeline.IsInternalDiffusionProfile(diffusionProfileSettings))
-            {
-                EditorGUILayout.HelpBox("No Diffusion Profile List have been assigned to the render pipeline asset.", MessageType.Warning);
-                return;
-            }
+            // if (hdPipeline.IsInternalDiffusionProfile(diffusionProfileSettings))
+            // {
+            //     EditorGUILayout.HelpBox("No Diffusion Profile List have been assigned to the render pipeline asset.", MessageType.Warning);
+            //     return;
+            // }
 
             // TODO: Optimize me
-            var profiles = diffusionProfileSettings.profiles;
-            var names = new GUIContent[profiles.Length + 1];
-            names[0] = new GUIContent("None");
+            // var profiles = diffusionProfileSettings.profiles;
+            // var names = new GUIContent[profiles.Length + 1];
+            // names[0] = new GUIContent("None");
 
-            var values = new int[names.Length];
-            values[0] = DiffusionProfileConstants.DIFFUSION_PROFILE_NEUTRAL_ID;
+            // var values = new int[names.Length];
+            // values[0] = DiffusionProfileConstants.DIFFUSION_PROFILE_NEUTRAL_ID;
 
-            for (int i = 0; i < profiles.Length; i++)
-            {
-                names[i + 1] = new GUIContent(profiles[i].name);
-                values[i + 1] = i + 1;
-            }
+            // for (int i = 0; i < profiles.Length; i++)
+            // {
+            //     names[i + 1] = new GUIContent(profiles[i].name);
+            //     values[i + 1] = i + 1;
+            // }
 
             using (var scope = new EditorGUI.ChangeCheckScope())
             {
-                int profileID = (int)diffusionProfileID[layerIndex].floatValue;
+                int profileID = (int)diffusionProfileHash[layerIndex].floatValue;
 
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    EditorGUILayout.PrefixLabel(Styles.diffusionProfileText);
-
-                    using (new EditorGUILayout.HorizontalScope())
+                    string diffusionProfileGUID = ConvertVector4ToGUID(diffusionProfileAsset.vectorValue);
+                    // is it okay to do this every frame ?
+                    var asset = AssetDatabase.LoadAssetAtPath<DiffusionProfileSettings>(AssetDatabase.GUIDToAssetPath(diffusionProfileGUID));
+                    EditorGUI.BeginChangeCheck();
+                    asset = (DiffusionProfileSettings)EditorGUILayout.ObjectField(Styles.diffusionProfileText, asset, typeof(DiffusionProfileSettings), false);
+                    if (EditorGUI.EndChangeCheck())
                     {
-                        profileID = EditorGUILayout.IntPopup(profileID, names, values);
+                        Vector4 guid = Vector4.zero;
+                        uint    hash = 0;
 
-                        if (GUILayout.Button("Goto", EditorStyles.miniButton, GUILayout.Width(50f)))
-                            Selection.activeObject = diffusionProfileSettings;
+                        if (asset != null)
+                        {
+                            guid = ConvertGUIDToVector4(AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(asset)));
+                            hash = asset.profiles[0].hash;
+                            // convert hex string to byte[]
+                        }
+
+                        // encode back GUID and it's hash
+                        diffusionProfileAsset.vectorValue = guid;
                     }
+                    // EditorGUILayout.PrefixLabel(Styles.diffusionProfileText);
+
+                    // using (new EditorGUILayout.HorizontalScope())
+                    // {
+                    //     profileID = EditorGUILayout.IntPopup(profileID, names, values);
+
+                    //     if (GUILayout.Button("Goto", EditorStyles.miniButton, GUILayout.Width(50f)))
+                    //         Selection.activeObject = diffusionProfileSettings;
+                    // }
                 }
 
                 if (scope.changed)
-                    diffusionProfileID[layerIndex].floatValue = profileID;
+                    diffusionProfileHash[layerIndex].floatValue = profileID;
             }
 
             if ((int)materialID.floatValue == (int)BaseLitGUI.MaterialId.LitSSS)

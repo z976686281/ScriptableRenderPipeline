@@ -5,7 +5,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
     [GenerateHLSL]
     public class DiffusionProfileConstants
     {
-        public const int DIFFUSION_PROFILE_COUNT      = 16; // Max. number of profiles, including the slot taken by the neutral profile
+        public const int DIFFUSION_PROFILE_COUNT      = 2;  // Max. number of profiles, including the slot taken by the neutral profile
         public const int DIFFUSION_PROFILE_NEUTRAL_ID = 0;  // Does not result in blurring
         public const int SSS_N_SAMPLES_NEAR_FIELD     = 55; // Used for extreme close ups; must be a Fibonacci number
         public const int SSS_N_SAMPLES_FAR_FIELD      = 21; // Used at a regular distance; must be a Fibonacci number
@@ -45,6 +45,9 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         public Vector2[]        filterKernelFarField { get; private set; }     // X = radius, Y = reciprocal of the PDF
         public Vector4          halfRcpWeightedVariances { get; private set; }
         public Vector4[]        filterKernelBasic { get; private set; }
+
+        // Unique hash used in shaders to identify the index in the diffusion profile array
+        public uint             hash = 0;
 
         public DiffusionProfile(string name)
         {

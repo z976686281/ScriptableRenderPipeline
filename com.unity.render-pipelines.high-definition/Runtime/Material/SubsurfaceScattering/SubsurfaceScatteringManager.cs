@@ -1,5 +1,6 @@
 using UnityEngine.Rendering;
 using System;
+using System.Collections.Generic;
 
 namespace UnityEngine.Experimental.Rendering.HDPipeline
 {
@@ -121,8 +122,12 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             RTHandles.Release(m_HTile);
         }
 
-        public void PushGlobalParams(HDCamera hdCamera, CommandBuffer cmd, DiffusionProfileSettings sssParameters)
+        public void PushGlobalParams(HDCamera hdCamera, CommandBuffer cmd, DiffusionProfileSettings unusedSssParameters)
         {
+            // TODO: fetch the current diffusion profile volume and upload to the shader
+            var volume = VolumeManager.instance.stack.GetComponent< DiffusionProfileVolume >();
+            var sssParameters = volume.diffusionProfile0.value;
+
             // Broadcast SSS parameters to all shaders.
             cmd.SetGlobalInt(HDShaderIDs._EnableSubsurfaceScattering, hdCamera.frameSettings.IsEnabled(FrameSettingsField.SubsurfaceScattering) ? 1 : 0);
             unsafe
@@ -139,6 +144,15 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             // To disable transmission, we simply nullify the transmissionTint
             cmd.SetGlobalVectorArray(HDShaderIDs._TransmissionTintsAndFresnel0, hdCamera.frameSettings.IsEnabled(FrameSettingsField.Transmission) ? sssParameters.transmissionTintsAndFresnel0 : sssParameters.disabledTransmissionTintsAndFresnel0);
             cmd.SetGlobalVectorArray(HDShaderIDs._WorldScales, sssParameters.worldScales);
+
+            unsafe
+            {
+                List< float > diffusionProfileHashTable = new List<float>();
+                diffusionProfileHashTable.Add(sssParameters.profiles[0].hash);
+                diffusionProfileHashTable.Add(sssParameters.profiles[0].hash);
+                diffusionProfileHashTable.Add(sssParameters.profiles[0].hash);
+                cmd.SetGlobalFloatArray(HDShaderIDs._DiffusionProfileHashTable, diffusionProfileHashTable);
+            }
         }
 
         bool NeedTemporarySubsurfaceBuffer()
@@ -155,9 +169,13 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         // Combines specular lighting and diffuse lighting with subsurface scattering.
         // In the case our frame is MSAA, for the moment given the fact that we do not have read/write access to the stencil buffer of the MSAA target; we need to keep this pass MSAA
         // However, the compute can't output and MSAA target so we blend the non-MSAA target into the MSAA one.
-        public void SubsurfaceScatteringPass(HDCamera hdCamera, CommandBuffer cmd, DiffusionProfileSettings sssParameters,
+        public void SubsurfaceScatteringPass(HDCamera hdCamera, CommandBuffer cmd, DiffusionProfileSettings unusedSssParameters,
             RTHandleSystem.RTHandle colorBufferRT, RTHandleSystem.RTHandle diffuseBufferRT, RTHandleSystem.RTHandle depthStencilBufferRT, RTHandleSystem.RTHandle depthTextureRT)
         {
+            // TODO !
+            var volume = VolumeManager.instance.stack.GetComponent< DiffusionProfileVolume >();
+            var sssParameters = volume.diffusionProfile0.value;
+
             if (sssParameters == null || !hdCamera.frameSettings.IsEnabled(FrameSettingsField.SubsurfaceScattering))
                 return;
 
