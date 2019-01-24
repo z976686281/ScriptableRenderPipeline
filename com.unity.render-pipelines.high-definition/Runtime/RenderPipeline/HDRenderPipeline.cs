@@ -796,7 +796,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             if (!m_ValidAPI)
                 return;
 
-            UnityEngine.Rendering.RenderPipeline.BeginFrameRendering(cameras);
+            UnityEngine.Rendering.RenderPipeline.BeginFrameRendering(renderContext, cameras);
 
             {
                 // SRP.Render() can be called several times per frame.
@@ -858,7 +858,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 if (camera == null)
                     continue;
 
-                UnityEngine.Rendering.RenderPipeline.BeginCameraRendering(camera);
+                UnityEngine.Rendering.RenderPipeline.BeginCameraRendering(renderContext, camera);
                 UnityEngine.Experimental.VFX.VFXManager.ProcessCamera(camera); //Visual Effect Graph is not yet a required package but calling this method when there isn't any VisualEffect component has no effect (but needed for Camera sorting in Visual Effect Graph context)
 
                 // First, get aggregate of frame settings base on global settings, camera frame settings and debug settings
@@ -898,6 +898,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     renderContext.ExecuteCommandBuffer(cmd);
                     CommandBufferPool.Release(cmd);
                     renderContext.Submit();
+                    UnityEngine.Rendering.RenderPipeline.EndCameraRendering(renderContext, camera);
                     continue;
                 }
 
@@ -986,6 +987,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                         additionalCameraData.ExecuteCustomRender(renderContext, hdCamera);
 
                         renderContext.Submit();
+                        UnityEngine.Rendering.RenderPipeline.EndCameraRendering(renderContext, camera);
                         continue;
                     }
 
@@ -1003,6 +1005,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     if (!camera.TryGetCullingParameters(camera.stereoEnabled, out cullingParams)) // Fixme remove stereo passdown?
                     {
                         renderContext.Submit();
+                        UnityEngine.Rendering.RenderPipeline.EndCameraRendering(renderContext, camera);
                         continue;
                     }
 
@@ -1522,8 +1525,12 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
                 CommandBufferPool.Release(cmd);
                 renderContext.Submit();
+                
+                UnityEngine.Rendering.RenderPipeline.EndCameraRendering(renderContext, camera);
 
             } // For each camera
+            
+            UnityEngine.Rendering.RenderPipeline.EndFrameRendering(renderContext, cameras);
         }
 
         void RenderGizmos(CommandBuffer cmd, Camera camera, ScriptableRenderContext renderContext, GizmoSubset gizmoSubset)
