@@ -214,6 +214,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         public static readonly int specularLightingUAV = Shader.PropertyToID("specularLightingUAV");
         public static readonly int diffuseLightingUAV = Shader.PropertyToID("diffuseLightingUAV");
         public static readonly int _DiffusionProfileHashTable = Shader.PropertyToID("_DiffusionProfileHashTable");
+        public static readonly int _DiffusionProfileCount = Shader.PropertyToID("_DiffusionProfileCount");
 
         public static readonly int g_TileListOffset = Shader.PropertyToID("g_TileListOffset");
 

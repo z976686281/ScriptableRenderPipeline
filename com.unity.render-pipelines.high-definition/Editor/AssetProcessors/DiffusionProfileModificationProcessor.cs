@@ -26,6 +26,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                 if (profile == null)
                     continue;
 
+                Debug.Log("load hash: " + profile.profiles[0].hash);
                 diffusionProfileHashes.Add(profile.profiles[0].hash);
             }
 
@@ -65,6 +66,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
     public class DiffusionProfileModificationProcessor : AssetModificationProcessor
     {
+        // WARNING: this callback is not called when an asset is duplicated
         static void OnWillCreateAsset(string assetName)
         {
             if (!assetName.EndsWith(".asset"))
@@ -72,10 +74,15 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             
             DiffusionProfileHashTable.GenerateUniqueHash(assetName);
         }
-        
-        static AssetDeleteResult OnWillDeleteAsset(string assetName, RemoveAssetOptions options)
+
+        private static AssetMoveResult OnWillMoveAsset(string sourcePath, string destinationPath)
         {
-            return AssetDeleteResult.DidNotDelete;
+            Debug.Log("Source path: " + sourcePath + ". Destination path: " + destinationPath + ".");
+            AssetMoveResult assetMoveResult = AssetMoveResult.DidMove;
+
+            // Perform operations on the asset and set the value of 'assetMoveResult' accordingly.
+
+            return assetMoveResult;
         }
     }
 }

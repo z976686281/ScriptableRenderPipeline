@@ -126,7 +126,34 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         {
             // TODO: fetch the current diffusion profile volume and upload to the shader
             var volume = VolumeManager.instance.stack.GetComponent< DiffusionProfileVolume >();
-            var sssParameters = volume.diffusionProfile0.value;
+            var sssParameters = volume.diffusionProfiles.value;
+
+            // TODO: add a "default" diffusion profile at index 0 in the hash table (so we dont have to check against 0 in the shader)
+
+            if (sssParameters == null || sssParameters.Length == 0)
+            {
+                Debug.Log("ABORT: " + volume.diffusionProfiles.value);
+                return ;
+            }
+
+            // TODO: Move these list inside the volume so we only load them at startup
+            // reconstruct every list we need to upload:
+            List<Vector4> thicknessRemaps = new List<Vector4>();
+            List<Vector4> shapeParams = new List<Vector4>();
+            List<Vector4> transmissionTintsAndFresnel0 = new List<Vector4>();
+            List<Vector4> disabledTransmissionTintsAndFresnel0 = new List<Vector4>();
+            List<Vector4> worldScales = new List<Vector4>();
+            List<float> hashes = new List<float>();
+
+            foreach (var v in volume.diffusionProfiles.value)
+            {
+                thicknessRemaps.Add(v.thicknessRemaps[1]);
+                shapeParams.Add(v.shapeParams[1]);
+                transmissionTintsAndFresnel0.Add(v.transmissionTintsAndFresnel0[1]);
+                disabledTransmissionTintsAndFresnel0.Add(v.disabledTransmissionTintsAndFresnel0[1]);
+                worldScales.Add(v.worldScales[1]);
+                hashes.Add((v.profiles[0].hash));
+            }
 
             // Broadcast SSS parameters to all shaders.
             cmd.SetGlobalInt(HDShaderIDs._EnableSubsurfaceScattering, hdCamera.frameSettings.IsEnabled(FrameSettingsField.SubsurfaceScattering) ? 1 : 0);
@@ -134,25 +161,19 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             {
                 // Warning: Unity is not able to losslessly transfer integers larger than 2^24 to the shader system.
                 // Therefore, we bitcast uint to float in C#, and bitcast back to uint in the shader.
-                uint texturingModeFlags = sssParameters.texturingModeFlags;
-                uint transmissionFlags = sssParameters.transmissionFlags;
+                uint texturingModeFlags = sssParameters[0].texturingModeFlags;
+                uint transmissionFlags = sssParameters[0].transmissionFlags; // TODO: move these to HDRP asset ?
                 cmd.SetGlobalFloat(HDShaderIDs._TexturingModeFlags, *(float*)&texturingModeFlags);
                 cmd.SetGlobalFloat(HDShaderIDs._TransmissionFlags, *(float*)&transmissionFlags);
             }
-            cmd.SetGlobalVectorArray(HDShaderIDs._ThicknessRemaps, sssParameters.thicknessRemaps);
-            cmd.SetGlobalVectorArray(HDShaderIDs._ShapeParams, sssParameters.shapeParams);
+            cmd.SetGlobalVectorArray(HDShaderIDs._ThicknessRemaps, thicknessRemaps);
+            cmd.SetGlobalVectorArray(HDShaderIDs._ShapeParams, shapeParams);
             // To disable transmission, we simply nullify the transmissionTint
-            cmd.SetGlobalVectorArray(HDShaderIDs._TransmissionTintsAndFresnel0, hdCamera.frameSettings.IsEnabled(FrameSettingsField.Transmission) ? sssParameters.transmissionTintsAndFresnel0 : sssParameters.disabledTransmissionTintsAndFresnel0);
-            cmd.SetGlobalVectorArray(HDShaderIDs._WorldScales, sssParameters.worldScales);
+            cmd.SetGlobalVectorArray(HDShaderIDs._TransmissionTintsAndFresnel0, hdCamera.frameSettings.IsEnabled(FrameSettingsField.Transmission) ? transmissionTintsAndFresnel0 : disabledTransmissionTintsAndFresnel0);
+            cmd.SetGlobalVectorArray(HDShaderIDs._WorldScales, worldScales);
 
-            unsafe
-            {
-                List< float > diffusionProfileHashTable = new List<float>();
-                diffusionProfileHashTable.Add(sssParameters.profiles[0].hash);
-                diffusionProfileHashTable.Add(sssParameters.profiles[0].hash);
-                diffusionProfileHashTable.Add(sssParameters.profiles[0].hash);
-                cmd.SetGlobalFloatArray(HDShaderIDs._DiffusionProfileHashTable, diffusionProfileHashTable);
-            }
+            cmd.SetGlobalFloatArray(HDShaderIDs._DiffusionProfileHashTable, hashes);
+            cmd.SetGlobalInt(HDShaderIDs._DiffusionProfileCount, hashes.Count);
         }
 
         bool NeedTemporarySubsurfaceBuffer()
@@ -174,7 +195,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         {
             // TODO !
             var volume = VolumeManager.instance.stack.GetComponent< DiffusionProfileVolume >();
-            var sssParameters = volume.diffusionProfile0.value;
+            var sssParameters = volume.diffusionProfiles.value;
 
             if (sssParameters == null || !hdCamera.frameSettings.IsEnabled(FrameSettingsField.SubsurfaceScattering))
                 return;
@@ -214,13 +235,13 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 {
                     // Warning: Unity is not able to losslessly transfer integers larger than 2^24 to the shader system.
                     // Therefore, we bitcast uint to float in C#, and bitcast back to uint in the shader.
-                    uint texturingModeFlags = sssParameters.texturingModeFlags;
+                    uint texturingModeFlags = sssParameters[0].texturingModeFlags;
                     cmd.SetComputeFloatParam(m_SubsurfaceScatteringCS, HDShaderIDs._TexturingModeFlags, *(float*)&texturingModeFlags);
                 }
 
-                cmd.SetComputeVectorArrayParam(m_SubsurfaceScatteringCS, HDShaderIDs._WorldScales,        sssParameters.worldScales);
-                cmd.SetComputeVectorArrayParam(m_SubsurfaceScatteringCS, HDShaderIDs._FilterKernels,      sssParameters.filterKernels);
-                cmd.SetComputeVectorArrayParam(m_SubsurfaceScatteringCS, HDShaderIDs._ShapeParams,        sssParameters.shapeParams);
+                cmd.SetComputeVectorArrayParam(m_SubsurfaceScatteringCS, HDShaderIDs._WorldScales,        sssParameters[0].worldScales);
+                cmd.SetComputeVectorArrayParam(m_SubsurfaceScatteringCS, HDShaderIDs._FilterKernels,      sssParameters[0].filterKernels);
+                cmd.SetComputeVectorArrayParam(m_SubsurfaceScatteringCS, HDShaderIDs._ShapeParams,        sssParameters[0].shapeParams);
 
                 int sssKernel = hdCamera.frameSettings.IsEnabled(FrameSettingsField.MSAA) ? m_SubsurfaceScatteringKernelMSAA : m_SubsurfaceScatteringKernel;
 

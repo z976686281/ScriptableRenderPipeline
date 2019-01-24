@@ -512,8 +512,6 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
             using (var scope = new EditorGUI.ChangeCheckScope())
             {
-                int profileID = (int)diffusionProfileHash[layerIndex].floatValue;
-
                 using (new EditorGUILayout.HorizontalScope())
                 {
                     string diffusionProfileGUID = ConvertVector4ToGUID(diffusionProfileAsset.vectorValue);
@@ -524,18 +522,23 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                     if (EditorGUI.EndChangeCheck())
                     {
                         Vector4 guid = Vector4.zero;
-                        uint    hash = 0;
+                        float    hash = 0;
 
                         if (asset != null)
                         {
                             guid = ConvertGUIDToVector4(AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(asset)));
-                            hash = asset.profiles[0].hash;
-                            // convert hex string to byte[]
+                            // Maybe move As* elsewhere
+                            hash = (asset.profiles[0].hash);
                         }
 
                         // encode back GUID and it's hash
+                        // TODO: layerize
                         diffusionProfileAsset.vectorValue = guid;
+                        diffusionProfileHash[layerIndex].floatValue = hash;
+                        Debug.Log("float: " + diffusionProfileHash[layerIndex].floatValue);
                     }
+                    // int profileID = (int)diffusionProfileHash[layerIndex].floatValue;
+
                     // EditorGUILayout.PrefixLabel(Styles.diffusionProfileText);
 
                     // using (new EditorGUILayout.HorizontalScope())
@@ -547,8 +550,8 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                     // }
                 }
 
-                if (scope.changed)
-                    diffusionProfileHash[layerIndex].floatValue = profileID;
+                // if (scope.changed)
+                //     diffusionProfileHash[layerIndex].floatValue = profileID;
             }
 
             if ((int)materialID.floatValue == (int)BaseLitGUI.MaterialId.LitSSS)
