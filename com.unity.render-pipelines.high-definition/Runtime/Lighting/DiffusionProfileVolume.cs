@@ -6,7 +6,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
     [Serializable, VolumeComponentMenu("Diffusion Profile")]
     public sealed class DiffusionProfileVolume : VolumeComponent
     {
-        [Tooltip("Diffusion profile test.")]
+        [Tooltip("List of diffusion profiles used inside the volume.")]
         public DiffusionProfileSettingsParameter diffusionProfiles = new DiffusionProfileSettingsParameter(default(DiffusionProfileSettings[]));
     }
 

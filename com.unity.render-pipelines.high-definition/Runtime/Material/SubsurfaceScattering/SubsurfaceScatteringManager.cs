@@ -32,6 +32,14 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
         bool m_MSAASupport = false;
 
+        // List of every diffusion profile data we need
+        List<Vector4>   thicknessRemaps = new List<Vector4>();
+        List<Vector4>   shapeParams = new List<Vector4>();
+        List<Vector4>   transmissionTintsAndFresnel0 = new List<Vector4>();
+        List<Vector4>   disabledTransmissionTintsAndFresnel0 = new List<Vector4>();
+        List<Vector4>   worldScales = new List<Vector4>();
+        List<float>     diffusionProfileHashes = new List<float>();
+
         public SubsurfaceScatteringManager()
         {
         }
@@ -70,6 +78,18 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
             // We use 8x8 tiles in order to match the native GCN HTile as closely as possible.
             m_HTile = RTHandles.Alloc(size => new Vector2Int((size.x + 7) / 8, (size.y + 7) / 8), filterMode: FilterMode.Point, colorFormat: GraphicsFormat.R8_UNorm, enableRandomWrite: true, xrInstancing: true, useDynamicScale: true, name: "SSSHtile"); // Enable UAV
+
+            // fill the list with the max number of diffusion profile so we dont have
+            // the error: exceeds previous array size (5 vs 3). Cap to previous size.
+            for (int i = 0; i < 17; i++) // TODO: constant
+            {
+                thicknessRemaps.Add(Vector4.zero);
+                shapeParams.Add(Vector4.zero);
+                transmissionTintsAndFresnel0.Add(Vector4.zero);
+                disabledTransmissionTintsAndFresnel0.Add(Vector4.zero);
+                worldScales.Add(Vector4.zero);
+                diffusionProfileHashes.Add(0);
+            }
         }
 
         public RTHandleSystem.RTHandle GetSSSBuffer(int index)
@@ -129,30 +149,24 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             var sssParameters = volume.diffusionProfiles.value;
 
             // TODO: add a "default" diffusion profile at index 0 in the hash table (so we dont have to check against 0 in the shader)
+            // TODO: merge overlapping diffusion profiles ?
 
             if (sssParameters == null || sssParameters.Length == 0)
             {
-                Debug.Log("ABORT: " + volume.diffusionProfiles.value);
+                cmd.SetGlobalInt(HDShaderIDs._DiffusionProfileCount, 0);
                 return ;
             }
 
-            // TODO: Move these list inside the volume so we only load them at startup
-            // reconstruct every list we need to upload:
-            List<Vector4> thicknessRemaps = new List<Vector4>();
-            List<Vector4> shapeParams = new List<Vector4>();
-            List<Vector4> transmissionTintsAndFresnel0 = new List<Vector4>();
-            List<Vector4> disabledTransmissionTintsAndFresnel0 = new List<Vector4>();
-            List<Vector4> worldScales = new List<Vector4>();
-            List<float> hashes = new List<float>();
-
+            int i = 0;
             foreach (var v in volume.diffusionProfiles.value)
             {
-                thicknessRemaps.Add(v.thicknessRemaps[1]);
-                shapeParams.Add(v.shapeParams[1]);
-                transmissionTintsAndFresnel0.Add(v.transmissionTintsAndFresnel0[1]);
-                disabledTransmissionTintsAndFresnel0.Add(v.disabledTransmissionTintsAndFresnel0[1]);
-                worldScales.Add(v.worldScales[1]);
-                hashes.Add((v.profiles[0].hash));
+                thicknessRemaps[i] = v.thicknessRemaps[1];
+                shapeParams[i] = v.shapeParams[1];
+                transmissionTintsAndFresnel0[i] = v.transmissionTintsAndFresnel0[1];
+                disabledTransmissionTintsAndFresnel0[i] = v.disabledTransmissionTintsAndFresnel0[1];
+                worldScales[i] = v.worldScales[1];
+                diffusionProfileHashes[i] = v.profiles[0].hash;
+                i++;
             }
 
             // Broadcast SSS parameters to all shaders.
@@ -172,8 +186,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             cmd.SetGlobalVectorArray(HDShaderIDs._TransmissionTintsAndFresnel0, hdCamera.frameSettings.IsEnabled(FrameSettingsField.Transmission) ? transmissionTintsAndFresnel0 : disabledTransmissionTintsAndFresnel0);
             cmd.SetGlobalVectorArray(HDShaderIDs._WorldScales, worldScales);
 
-            cmd.SetGlobalFloatArray(HDShaderIDs._DiffusionProfileHashTable, hashes);
-            cmd.SetGlobalInt(HDShaderIDs._DiffusionProfileCount, hashes.Count);
+            cmd.SetGlobalFloatArray(HDShaderIDs._DiffusionProfileHashTable, diffusionProfileHashes);
+            cmd.SetGlobalInt(HDShaderIDs._DiffusionProfileCount, diffusionProfileHashes.Count);
         }
 
         bool NeedTemporarySubsurfaceBuffer()

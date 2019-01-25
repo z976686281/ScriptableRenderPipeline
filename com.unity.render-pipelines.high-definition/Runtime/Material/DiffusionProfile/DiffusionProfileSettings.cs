@@ -51,6 +51,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
         public DiffusionProfile(string name)
         {
+            Debug.Log("New diffusion profile !");
             this.name          = name;
 
             scatteringDistance = Color.grey;
@@ -179,7 +180,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         }
     }
 
-    public sealed class DiffusionProfileSettings : ScriptableObject
+    public sealed class DiffusionProfileSettings : ScriptableObject, ISerializationCallbackReceiver
     {
         public DiffusionProfile[] profiles;
 
@@ -191,7 +192,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         [NonSerialized] public Vector4[] transmissionTintsAndFresnel0; // RGB = color, A = fresnel0
         [NonSerialized] public Vector4[] disabledTransmissionTintsAndFresnel0; // RGB = black, A = fresnel0 - For debug to remove the transmission
         [NonSerialized] public Vector4[] filterKernels;             // XY = near field, ZW = far field; 0 = radius, 1 = reciprocal of the PDF
-
+        
         public DiffusionProfile this[int index]
         {
             get
@@ -302,6 +303,17 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     filterKernels[n * i + j].w = profiles[p].filterKernelFarField[j].y;
                 }
             }
+        }
+
+        public void OnBeforeSerialize() {}
+
+        public void OnAfterDeserialize()
+        {
+#if UNITY_EDITOR
+            // watch for asset duplication, a workaround because the AssetModificationProcessor doesn't handle all the cases
+            // i.e: https://issuetracker.unity3d.com/issues/assetmodificationprocessor-is-not-notified-when-an-asset-is-duplicated
+            UnityEditor.Experimental.Rendering.HDPipeline.DiffusionProfileHashTable.UpdateUniqueHash(this);
+#endif
         }
     }
 }

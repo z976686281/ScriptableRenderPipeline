@@ -203,6 +203,8 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
         protected MaterialProperty[] diffusionProfileHash = new MaterialProperty[kMaxLayerCount];
         protected const string kDiffusionProfileHash = "_DiffusionProfileHash";
+        protected MaterialProperty[] diffusionProfileAsset = new MaterialProperty[kMaxLayerCount];
+        protected const string kDiffusionProfileAsset = "_DiffusionProfileAsset";
         protected MaterialProperty[] subsurfaceMask = new MaterialProperty[kMaxLayerCount];
         protected const string kSubsurfaceMask = "_SubsurfaceMask";
         protected MaterialProperty[] subsurfaceMaskMap = new MaterialProperty[kMaxLayerCount];
@@ -304,9 +306,6 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         protected const string kRefractionModel = "_RefractionModel";
         protected MaterialProperty ssrefractionProjectionModel = null;
         protected const string kSSRefractionProjectionModel = "_SSRefractionProjectionModel";
-        
-        protected MaterialProperty diffusionProfileAsset = null;
-        protected const string kDiffusionProfileAsset = "_DiffusionProfileAsset";
 
         protected override bool showBlendModePopup
         {
@@ -358,6 +357,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
                 // Sub surface
                 diffusionProfileHash[i] = FindProperty(string.Format("{0}{1}", kDiffusionProfileHash, m_PropertySuffixes[i]), props);
+                diffusionProfileAsset[i] = FindProperty(string.Format("{0}{1}", kDiffusionProfileAsset, m_PropertySuffixes[i]), props);
                 subsurfaceMask[i] = FindProperty(string.Format("{0}{1}", kSubsurfaceMask, m_PropertySuffixes[i]), props);
                 subsurfaceMaskMap[i] = FindProperty(string.Format("{0}{1}", kSubsurfaceMaskMap, m_PropertySuffixes[i]), props);
                 thickness[i] = FindProperty(string.Format("{0}{1}", kThickness, m_PropertySuffixes[i]), props);
@@ -432,7 +432,6 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             atDistance = FindProperty(kATDistance, props, false);
             thicknessMultiplier = FindProperty(kThicknessMultiplier, props, false);
             ior = FindProperty(kIor, props, false);
-            diffusionProfileAsset = FindProperty(kDiffusionProfileAsset, props, false);
             // We reuse thickness from SSS
         }
 
@@ -480,6 +479,8 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             return sb.ToString();
         }
 
+        DiffusionProfileSettings diffusionProfile;
+
         protected void ShaderSSSAndTransmissionInputGUI(Material material, int layerIndex)
         {
             var hdPipeline = RenderPipelineManager.currentPipeline as HDRenderPipeline;
@@ -514,28 +515,32 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             {
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    string diffusionProfileGUID = ConvertVector4ToGUID(diffusionProfileAsset.vectorValue);
+                    if (diffusionProfile == null)
+                    {
+                        string guid = ConvertVector4ToGUID(diffusionProfileAsset[layerIndex].vectorValue);
+                        diffusionProfile = AssetDatabase.LoadAssetAtPath<DiffusionProfileSettings>(AssetDatabase.GUIDToAssetPath(guid));
+                    }
+                    
                     // is it okay to do this every frame ?
-                    var asset = AssetDatabase.LoadAssetAtPath<DiffusionProfileSettings>(AssetDatabase.GUIDToAssetPath(diffusionProfileGUID));
                     EditorGUI.BeginChangeCheck();
-                    asset = (DiffusionProfileSettings)EditorGUILayout.ObjectField(Styles.diffusionProfileText, asset, typeof(DiffusionProfileSettings), false);
+                    diffusionProfile = (DiffusionProfileSettings)EditorGUILayout.ObjectField(Styles.diffusionProfileText, diffusionProfile, typeof(DiffusionProfileSettings), false);
                     if (EditorGUI.EndChangeCheck())
                     {
-                        Vector4 guid = Vector4.zero;
+                        Vector4 newGuid = Vector4.zero;
                         float    hash = 0;
 
-                        if (asset != null)
+                        if (diffusionProfile != null)
                         {
-                            guid = ConvertGUIDToVector4(AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(asset)));
-                            // Maybe move As* elsewhere
-                            hash = (asset.profiles[0].hash);
+                            string guid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(diffusionProfile));
+                            newGuid = ConvertGUIDToVector4(guid);
+                            hash = (diffusionProfile.profiles[0].hash);
                         }
 
                         // encode back GUID and it's hash
-                        // TODO: layerize
-                        diffusionProfileAsset.vectorValue = guid;
+                        diffusionProfileAsset[layerIndex].vectorValue = newGuid;
                         diffusionProfileHash[layerIndex].floatValue = hash;
-                        Debug.Log("float: " + diffusionProfileHash[layerIndex].floatValue);
+                        Debug.Log("Update diffusion profile diffusionProfile hash: " + diffusionProfileHash[layerIndex].floatValue);
+                        // TODO: not serialized ???
                     }
                     // int profileID = (int)diffusionProfileHash[layerIndex].floatValue;
 
