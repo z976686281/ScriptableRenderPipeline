@@ -45,6 +45,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             public ComputeShader screenSpaceShadowCS;
             public ComputeShader volumeVoxelizationCS;
             public ComputeShader volumetricLightingCS;
+            public Shader deferredTilePS;
 
             public ComputeShader subsurfaceScatteringCS;                // Disney SSS
             public Shader combineLightingPS;
@@ -122,6 +123,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             public ComputeShader bloomPrefilterCS;
             public ComputeShader bloomBlurCS;
             public ComputeShader bloomUpsampleCS;
+            public ComputeShader FXAACS;
             public Shader finalPassPS;
 
 #if ENABLE_RAYTRACING
@@ -224,9 +226,11 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 volumeVoxelizationCS = Load<ComputeShader>(HDRenderPipelinePath + "Lighting/VolumetricLighting/VolumeVoxelization.compute"),
                 volumetricLightingCS = Load<ComputeShader>(HDRenderPipelinePath + "Lighting/VolumetricLighting/VolumetricLighting.compute"),
 
+                deferredTilePS = Load<Shader>(HDRenderPipelinePath + "Lighting/LightLoop/DeferredTile.shader"),
+
                 subsurfaceScatteringCS = Load<ComputeShader>(HDRenderPipelinePath + "Material/SubsurfaceScattering/SubsurfaceScattering.compute"),
                 combineLightingPS = Load<Shader>(HDRenderPipelinePath + "Material/SubsurfaceScattering/CombineLighting.shader"),
-
+                
                 // General
                 cameraMotionVectorsPS = Load<Shader>(HDRenderPipelinePath + "RenderPipeline/RenderPass/MotionVectors/CameraMotionVectors.shader"),
                 copyStencilBufferPS = Load<Shader>(HDRenderPipelinePath + "ShaderLibrary/CopyStencilBuffer.shader"),
@@ -302,7 +306,9 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 bloomPrefilterCS = Load<ComputeShader>(HDRenderPipelinePath + "PostProcessing/Shaders/BloomPrefilter.compute"),
                 bloomBlurCS = Load<ComputeShader>(HDRenderPipelinePath + "PostProcessing/Shaders/BloomBlur.compute"),
                 bloomUpsampleCS = Load<ComputeShader>(HDRenderPipelinePath + "PostProcessing/Shaders/BloomUpsample.compute"),
-                finalPassPS = Load<Shader>(HDRenderPipelinePath + "PostProcessing/Shaders/FinalPass.shader")
+                FXAACS = Load<ComputeShader>(HDRenderPipelinePath + "PostProcessing/Shaders/FXAA.compute"),
+                finalPassPS = Load<Shader>(HDRenderPipelinePath + "PostProcessing/Shaders/FinalPass.shader"),
+
             
 #if ENABLE_RAYTRACING
                 ,

@@ -4,7 +4,15 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [5.3.0-preview] - 2019-01-23
+## [5.3.1-preview] - 2019-01-28
+
+### Added
+- Added software dynamic resolution support
+
+### Fixed
+- Fixed a case of ambient lighting flickering because of previews
+
+## [5.3.0-preview] - 2019-01-28
 
 ### Added
 - Added new API to perform a camera rendering
@@ -40,6 +48,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added stereo instancing macros to a few shaders
 - Added HDRenderPipeline.RequestSkyEnvironmentUpdate function to force an update from script when sky is set to OnDemand
 - Added a Lighting and BackLighting slots in Lit, StackLit, Fabric and Hair master nodes
+- Added xrInstancing flag support to RTHandle
+- Added support for cullmask for decal projectors
+
 
 ### Fixed
 - Fixed logic to disable FPTL with stereo rendering
@@ -93,6 +104,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fixed issue with alpha shadow clip (was incorrectly clipping object shadow)
 - Fixed an issue where sky cubemap would not be cleared correctly when setting the current sky to None
 - Fixed a typo in Static Lighting Sky component UI
+- Fixed issue with incorrect reset of RenderQueue when switching shader in inspector GUI
+- Fixed issue with variant stripper stripping incorrectly some variants
 
 ### Changed
 - ColorPyramid compute shader passes is swapped to pixel shader passes on platforms where the later is faster (Nintendo Switch).
