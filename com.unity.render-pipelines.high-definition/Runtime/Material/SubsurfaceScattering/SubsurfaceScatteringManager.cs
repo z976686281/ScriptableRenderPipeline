@@ -33,12 +33,15 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         bool m_MSAASupport = false;
 
         // List of every diffusion profile data we need
-        List<Vector4>   thicknessRemaps = new List<Vector4>();
-        List<Vector4>   shapeParams = new List<Vector4>();
-        List<Vector4>   transmissionTintsAndFresnel0 = new List<Vector4>();
-        List<Vector4>   disabledTransmissionTintsAndFresnel0 = new List<Vector4>();
-        List<Vector4>   worldScales = new List<Vector4>();
-        List<float>     diffusionProfileHashes = new List<float>();
+        Vector4[]                   thicknessRemaps;
+        Vector4[]                   shapeParams;
+        Vector4[]                   transmissionTintsAndFresnel0;
+        Vector4[]                   disabledTransmissionTintsAndFresnel0;
+        Vector4[]                   worldScales;
+        Vector4[]                   filterKernels;
+        float[]                     diffusionProfileHashes;
+        DiffusionProfileSettings[]  defaultDiffusionProfileSettings;
+        int                         activeDiffusionProfileCount;
 
         public SubsurfaceScatteringManager()
         {
@@ -81,15 +84,14 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
             // fill the list with the max number of diffusion profile so we dont have
             // the error: exceeds previous array size (5 vs 3). Cap to previous size.
-            for (int i = 0; i < 17; i++) // TODO: constant
-            {
-                thicknessRemaps.Add(Vector4.zero);
-                shapeParams.Add(Vector4.zero);
-                transmissionTintsAndFresnel0.Add(Vector4.zero);
-                disabledTransmissionTintsAndFresnel0.Add(Vector4.zero);
-                worldScales.Add(Vector4.zero);
-                diffusionProfileHashes.Add(0);
-            }
+             // TODO: constant
+            thicknessRemaps = new Vector4[17];
+            shapeParams = new Vector4[17];
+            transmissionTintsAndFresnel0 = new Vector4[17];
+            disabledTransmissionTintsAndFresnel0 = new Vector4[17];
+            worldScales = new Vector4[17];
+            filterKernels = new Vector4[17];
+            diffusionProfileHashes = new float[17];
         }
 
         public RTHandleSystem.RTHandle GetSSSBuffer(int index)
@@ -118,6 +120,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             m_CopyStencilForSplitLighting = CoreUtils.CreateEngineMaterial(hdAsset.renderPipelineResources.shaders.copyStencilBufferPS);
             m_CopyStencilForSplitLighting.SetInt(HDShaderIDs._StencilRef, (int)StencilLightingUsage.SplitLighting);
             m_CopyStencilForSplitLighting.SetInt(HDShaderIDs._StencilMask, (int)HDRenderPipeline.StencilBitMask.LightingMask);
+            
+            defaultDiffusionProfileSettings = hdAsset.diffusionProfileSettingsList;
         }
 
         public void Cleanup()
@@ -142,43 +146,54 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             RTHandles.Release(m_HTile);
         }
 
-        public void PushGlobalParams(HDCamera hdCamera, CommandBuffer cmd, DiffusionProfileSettings unusedSssParameters)
+        void UpdateCurrentDiffusionProfileSettings()
         {
-            // TODO: fetch the current diffusion profile volume and upload to the shader
-            var volume = VolumeManager.instance.stack.GetComponent< DiffusionProfileVolume >();
-            var sssParameters = volume.diffusionProfiles.value;
-
-            // TODO: add a "default" diffusion profile at index 0 in the hash table (so we dont have to check against 0 in the shader)
-            // TODO: merge overlapping diffusion profiles ?
-
-            if (sssParameters == null || sssParameters.Length == 0)
-            {
-                cmd.SetGlobalInt(HDShaderIDs._DiffusionProfileCount, 0);
-                return ;
-            }
+            var list = VolumeManager.instance.stack.GetComponent<DiffusionProfileOverride>().diffusionProfiles.value;
+            if (list == null)
+                list = defaultDiffusionProfileSettings;
 
             int i = 0;
-            foreach (var v in volume.diffusionProfiles.value)
+            foreach (var v in list)
             {
+                if (v == null)
+                    continue;
                 thicknessRemaps[i] = v.thicknessRemaps[1];
                 shapeParams[i] = v.shapeParams[1];
                 transmissionTintsAndFresnel0[i] = v.transmissionTintsAndFresnel0[1];
                 disabledTransmissionTintsAndFresnel0[i] = v.disabledTransmissionTintsAndFresnel0[1];
                 worldScales[i] = v.worldScales[1];
+                filterKernels[i] = v.filterKernels[1];
                 diffusionProfileHashes[i] = v.profiles[0].hash;
                 i++;
             }
+
+            activeDiffusionProfileCount = i;
+        }
+
+        public void PushGlobalParams(HDCamera hdCamera, CommandBuffer cmd)
+        {
+            UpdateCurrentDiffusionProfileSettings();
+            // TODO: add a "default" diffusion profile at index 0 in the hash table (so we dont have to check against 0 in the shader)
+
+            cmd.SetGlobalInt(HDShaderIDs._DiffusionProfileCount, activeDiffusionProfileCount);
+
+            if (activeDiffusionProfileCount == 0)
+                return ;
 
             // Broadcast SSS parameters to all shaders.
             cmd.SetGlobalInt(HDShaderIDs._EnableSubsurfaceScattering, hdCamera.frameSettings.IsEnabled(FrameSettingsField.SubsurfaceScattering) ? 1 : 0);
             unsafe
             {
+                // TODO !!
                 // Warning: Unity is not able to losslessly transfer integers larger than 2^24 to the shader system.
                 // Therefore, we bitcast uint to float in C#, and bitcast back to uint in the shader.
-                uint texturingModeFlags = sssParameters[0].texturingModeFlags;
-                uint transmissionFlags = sssParameters[0].transmissionFlags; // TODO: move these to HDRP asset ?
-                cmd.SetGlobalFloat(HDShaderIDs._TexturingModeFlags, *(float*)&texturingModeFlags);
-                cmd.SetGlobalFloat(HDShaderIDs._TransmissionFlags, *(float*)&transmissionFlags);
+                // uint texturingModeFlags = sssParameters[0].texturingModeFlags;
+                // uint transmissionFlags = sssParameters[0].transmissionFlags; // TODO: move these to HDRP asset ?
+                // cmd.SetGlobalFloat(HDShaderIDs._TexturingModeFlags, *(float*)&texturingModeFlags);
+                // cmd.SetGlobalFloat(HDShaderIDs._TransmissionFlags, *(float*)&transmissionFlags);
+                
+                cmd.SetGlobalFloat(HDShaderIDs._TexturingModeFlags, 0);
+                cmd.SetGlobalFloat(HDShaderIDs._TransmissionFlags, 0);
             }
             cmd.SetGlobalVectorArray(HDShaderIDs._ThicknessRemaps, thicknessRemaps);
             cmd.SetGlobalVectorArray(HDShaderIDs._ShapeParams, shapeParams);
@@ -187,7 +202,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             cmd.SetGlobalVectorArray(HDShaderIDs._WorldScales, worldScales);
 
             cmd.SetGlobalFloatArray(HDShaderIDs._DiffusionProfileHashTable, diffusionProfileHashes);
-            cmd.SetGlobalInt(HDShaderIDs._DiffusionProfileCount, diffusionProfileHashes.Count);
         }
 
         bool NeedTemporarySubsurfaceBuffer()
@@ -204,16 +218,12 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         // Combines specular lighting and diffuse lighting with subsurface scattering.
         // In the case our frame is MSAA, for the moment given the fact that we do not have read/write access to the stencil buffer of the MSAA target; we need to keep this pass MSAA
         // However, the compute can't output and MSAA target so we blend the non-MSAA target into the MSAA one.
-        public void SubsurfaceScatteringPass(HDCamera hdCamera, CommandBuffer cmd, DiffusionProfileSettings unusedSssParameters,
-            RTHandleSystem.RTHandle colorBufferRT, RTHandleSystem.RTHandle diffuseBufferRT, RTHandleSystem.RTHandle depthStencilBufferRT, RTHandleSystem.RTHandle depthTextureRT)
+        public void SubsurfaceScatteringPass(HDCamera hdCamera, CommandBuffer cmd, RTHandleSystem.RTHandle colorBufferRT,
+        RTHandleSystem.RTHandle diffuseBufferRT, RTHandleSystem.RTHandle depthStencilBufferRT, RTHandleSystem.RTHandle depthTextureRT)
         {
-            // TODO !
-            var volume = VolumeManager.instance.stack.GetComponent< DiffusionProfileVolume >();
-            var sssParameters = volume.diffusionProfiles.value;
-
-            if (sssParameters == null || !hdCamera.frameSettings.IsEnabled(FrameSettingsField.SubsurfaceScattering))
+            if (!hdCamera.frameSettings.IsEnabled(FrameSettingsField.SubsurfaceScattering))
                 return;
-
+            
             // TODO: For MSAA, at least initially, we can only support Jimenez, because we can't
             // create MSAA + UAV render targets.
 
@@ -249,13 +259,13 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 {
                     // Warning: Unity is not able to losslessly transfer integers larger than 2^24 to the shader system.
                     // Therefore, we bitcast uint to float in C#, and bitcast back to uint in the shader.
-                    uint texturingModeFlags = sssParameters[0].texturingModeFlags;
+                    uint texturingModeFlags = 0; // TODO: change this (maybe inside the diffusion profile settings)
                     cmd.SetComputeFloatParam(m_SubsurfaceScatteringCS, HDShaderIDs._TexturingModeFlags, *(float*)&texturingModeFlags);
                 }
 
-                cmd.SetComputeVectorArrayParam(m_SubsurfaceScatteringCS, HDShaderIDs._WorldScales,        sssParameters[0].worldScales);
-                cmd.SetComputeVectorArrayParam(m_SubsurfaceScatteringCS, HDShaderIDs._FilterKernels,      sssParameters[0].filterKernels);
-                cmd.SetComputeVectorArrayParam(m_SubsurfaceScatteringCS, HDShaderIDs._ShapeParams,        sssParameters[0].shapeParams);
+                cmd.SetComputeVectorArrayParam(m_SubsurfaceScatteringCS, HDShaderIDs._WorldScales,        worldScales);
+                cmd.SetComputeVectorArrayParam(m_SubsurfaceScatteringCS, HDShaderIDs._FilterKernels,      filterKernels);
+                cmd.SetComputeVectorArrayParam(m_SubsurfaceScatteringCS, HDShaderIDs._ShapeParams,        shapeParams);
 
                 int sssKernel = hdCamera.frameSettings.IsEnabled(FrameSettingsField.MSAA) ? m_SubsurfaceScatteringKernelMSAA : m_SubsurfaceScatteringKernel;
 

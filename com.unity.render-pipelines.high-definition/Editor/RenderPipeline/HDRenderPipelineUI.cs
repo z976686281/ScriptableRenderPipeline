@@ -28,7 +28,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         }
 
         readonly static ExpandedState<Expandable, HDRenderPipelineAsset> k_ExpandedState = new ExpandedState<Expandable, HDRenderPipelineAsset>(Expandable.CameraFrameSettings | Expandable.General, "HDRP");
-                
+
         enum ShadowResolutionValue
         {
             ShadowResolution128 = 128,
@@ -47,6 +47,8 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             BakedOrCustomReflection,
             RealtimeReflection
         }
+
+        internal static DiffusionProfileSettingsListUI diffusionProfileUI = new DiffusionProfileSettingsListUI();
 
         internal static SelectedFrameSettings selectedFrameSettings = SelectedFrameSettings.Camera;
 
@@ -187,6 +189,10 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             EditorGUILayout.PropertyField(serialized.renderPipelineSettings.supportSSR, k_SupportSSRContent);
 
             EditorGUILayout.Space();
+
+            EditorGUILayout.PropertyField(serialized.diffusionProfileSettings, diffusionProfileSettingsContent);
+            // EditorGUILayout.PropertyField(serialized.allowShaderVariantStripping, enableShaderVariantStrippingContent);
+            diffusionProfileUI.OnGUI(serialized.diffusionProfileSettingsList);
 
             EditorGUILayout.PropertyField(serialized.renderPipelineSettings.lightLoopSettings.reflectionCacheCompressed, k_CompressProbeCacheContent);
             EditorGUILayout.PropertyField(serialized.renderPipelineSettings.lightLoopSettings.reflectionCubemapSize, k_CubemapSizeContent);

@@ -5,14 +5,14 @@ using UnityEngine;
 
 namespace UnityEditor.Experimental.Rendering.HDPipeline
 {
-    [VolumeComponentEditor(typeof(DiffusionProfileVolume))]
-    sealed class DiffusionProfileVolumeEditor : VolumeComponentEditor
+    [VolumeComponentEditor(typeof(DiffusionProfileOverride))]
+    sealed class DiffusionProfileOverrideEditor : VolumeComponentEditor
     {
         SerializedDataParameter m_DiffusionProfiles;
 
         public override void OnEnable()
         {
-            var o = new PropertyFetcher<DiffusionProfileVolume>(serializedObject);
+            var o = new PropertyFetcher<DiffusionProfileOverride>(serializedObject);
 
             m_DiffusionProfiles = Unpack(o.Find(x => x.diffusionProfiles));
         }

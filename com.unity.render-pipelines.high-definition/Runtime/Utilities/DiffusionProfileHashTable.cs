@@ -6,6 +6,8 @@ using UnityEditor;
 
 namespace UnityEditor.Experimental.Rendering.HDPipeline
 {
+    // This class keep track of every diffusion profile in the project so it can generate unique uint hashes
+    // for every asset, which are used to differentiate diffusion profiles in the shader
     [InitializeOnLoad]
     public class DiffusionProfileHashTable
     {
@@ -16,27 +18,18 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         // for collisions when we create the hash for a new asset
         static DiffusionProfileHashTable()
         {
-            var profileGUIDs = AssetDatabase.FindAssets("t:" + typeof(DiffusionProfileSettings));
-            
-            foreach (var profileGUID in profileGUIDs)
-            {
-                string profilePath = AssetDatabase.GUIDToAssetPath(profileGUID);
-                var profile = AssetDatabase.LoadAssetAtPath<DiffusionProfileSettings>(profilePath);
-
-                if (profile == null)
-                    continue;
-
-                Debug.Log("load hash: " + (float)(profile.profiles[0].hash));
-                diffusionProfileHashes.Add(profile.profiles[0].hash);
-            }
-
             EditorApplication.update += UpdateDiffusionProfileHashes;
+        }
+
+        static uint GetDiffusionProfileHash(DiffusionProfileSettings asset)
+        {
+            return (uint)AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(asset)).GetHashCode();
         }
 
         static uint GenerateUniqueHash(DiffusionProfileSettings asset)
         {
-            uint hash = (uint)AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(asset)).GetHashCode();
-            Debug.Log("Generating new hash: " + hash);
+            uint hash = GetDiffusionProfileHash(asset);
+            Debug.Log("Generating new hash for asset " + asset);
             return GetCollisionLessHash(hash);
         }
 
@@ -46,11 +39,13 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             {
                 var profile = diffusionProfileToUpdate.Dequeue();
                 uint hash = profile.profiles[0].hash;
-                Debug.Log("profile: " + profile + ", hash: " + hash);
 
                 // If the hash is 0, then we need to generate a new one (it means that the profile was just created)
                 if (hash == 0)
+                {
+                    Debug.Log("Empty hash in asset: " + profile);
                     profile.profiles[0].hash = GenerateUniqueHash(profile);
+                }
                 // If the hash is already in the list, it means that it was duplicated
                 else if (diffusionProfileHashes.Contains(hash))
                     profile.profiles[0].hash = GenerateUniqueHash(profile);
@@ -61,6 +56,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
         public static void UpdateUniqueHash(DiffusionProfileSettings asset)
         {
+            diffusionProfileHashes.Add(asset.profiles[0].hash);
             // Defere the generation of the hash because we can't call AssetDatabase functions outside of editor scope
             diffusionProfileToUpdate.Enqueue(asset);
         }

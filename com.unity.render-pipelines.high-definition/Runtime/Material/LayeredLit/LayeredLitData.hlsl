@@ -716,7 +716,6 @@ void GetSurfaceAndBuiltinData(FragInputs input, float3 V, inout PositionInputs p
     surfaceData.subsurfaceMask = SURFACEDATA_BLEND_SCALAR(surfaceData, subsurfaceMask, weights);
     surfaceData.thickness = SURFACEDATA_BLEND_SCALAR(surfaceData, thickness, weights);
     surfaceData.diffusionProfileHash = 0; // We don't need the hash as we only use it to compute the diffusion profile index
-    surfaceData.diffusionProfileIndex = SURFACEDATA_BLEND_DIFFUSION_PROFILE(surfaceData, diffusionProfileIndex, weights);
 
     // Layered shader support SSS and Transmission features
     surfaceData.materialFeatures = MATERIALFEATUREFLAGS_LIT_STANDARD;

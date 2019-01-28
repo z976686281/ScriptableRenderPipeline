@@ -9,35 +9,36 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
     [VolumeParameterDrawer(typeof(DiffusionProfileSettingsParameter))]
     sealed class DiffusionProfileSettingsArrayDrawer : VolumeParameterDrawer
     {
-        ReorderableList         m_DiffusionProfileList;
+        DiffusionProfileSettingsListUI      listUI = new DiffusionProfileSettingsListUI();
+
+        static GUIContent m_DiffusionProfileLabel = new GUIContent("Diffusion Profile List", "Diffusion Profile List from current HDRenderPipeline Asset");
 
         public override bool OnGUI(SerializedDataParameter parameter, GUIContent title)
         {
             if (parameter.value.propertyType != SerializedPropertyType.Generic)
                 return false;
 
-            if (m_DiffusionProfileList == null)
-                CreateReorderableList(parameter);
+            var a = GraphicsSettings.renderPipelineAsset as HDRenderPipelineAsset;
 
-            EditorGUILayout.BeginVertical();
-            m_DiffusionProfileList.DoLayoutList();
-            EditorGUILayout.EndVertical();
+            // If the parameter is not overwritten, display the list inside HDRenderPipeline asset
+            if (!parameter.overrideState.boolValue)
+            {
+                EditorGUI.BeginDisabledGroup(false);
+                EditorGUILayout.BeginVertical();
+                EditorGUILayout.LabelField(m_DiffusionProfileLabel);
+                int i = 0;
+                foreach (var profile in a.diffusionProfileSettingsList)
+                {
+                    EditorGUILayout.ObjectField("Profile " + i, profile, typeof(DiffusionProfileSettings), false);
+                    i++;
+                }
+                EditorGUILayout.EndVertical();
+                EditorGUI.EndDisabledGroup();
+            }
+            else
+                listUI.OnGUI(parameter.value);
 
             return true;
-        }
-
-        void CreateReorderableList(SerializedDataParameter parameter)
-        {
-            m_DiffusionProfileList = new ReorderableList(parameter.value.serializedObject, parameter.value);
-
-            m_DiffusionProfileList.drawHeaderCallback = (rect) => {
-                EditorGUI.LabelField(rect, "Diffusion Profile List");
-            };
-
-            m_DiffusionProfileList.drawElementCallback = (rect, index, active, focused) => {
-                rect.height = EditorGUIUtility.singleLineHeight;
-                EditorGUI.ObjectField(rect, parameter.value.GetArrayElementAtIndex(index), new GUIContent("Profile " + index));
-            };
         }
     }
 }
