@@ -192,6 +192,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
             EditorGUILayout.PropertyField(serialized.diffusionProfileSettings, diffusionProfileSettingsContent);
             // EditorGUILayout.PropertyField(serialized.allowShaderVariantStripping, enableShaderVariantStrippingContent);
+            diffusionProfileUI.drawElement = DrawDiffusionProfileElement;
             diffusionProfileUI.OnGUI(serialized.diffusionProfileSettingsList);
 
             EditorGUILayout.PropertyField(serialized.renderPipelineSettings.lightLoopSettings.reflectionCacheCompressed, k_CompressProbeCacheContent);
@@ -428,6 +429,11 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             }
             
             EditorGUILayout.PropertyField(serialized.renderPipelineSettings.lightLoopSettings.supportFabricConvolution, k_SupportFabricBSDFConvolutionContent);
+        }
+
+        static void DrawDiffusionProfileElement(SerializedProperty element, Rect rect, int index)
+        {
+            EditorGUI.ObjectField(rect, element, new GUIContent("Profile " + index));
         }
     }
 }

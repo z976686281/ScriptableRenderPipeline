@@ -3,6 +3,7 @@ using UnityEngine.Rendering;
 using UnityEngine.Experimental.Rendering.HDPipeline;
 using UnityEditor.Rendering;
 using UnityEditorInternal;
+using System;
 
 namespace UnityEditor.Experimental.Rendering.HDPipeline
 {
@@ -29,6 +30,8 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             EditorGUILayout.EndVertical();
         }
 
+        public Action<SerializedProperty, Rect, int>    drawElement;
+
         void CreateReorderableList(SerializedProperty parameter)
         {
             m_Property = parameter;
@@ -40,7 +43,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
             m_DiffusionProfileList.drawElementCallback = (rect, index, active, focused) => {
                 rect.height = EditorGUIUtility.singleLineHeight;
-                EditorGUI.ObjectField(rect, parameter.GetArrayElementAtIndex(index), new GUIContent("Profile " + index));
+                drawElement(parameter.GetArrayElementAtIndex(index), rect, index);
             };
         }
     }

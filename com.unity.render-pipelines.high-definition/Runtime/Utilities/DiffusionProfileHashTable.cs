@@ -45,10 +45,16 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                 {
                     Debug.Log("Empty hash in asset: " + profile);
                     profile.profiles[0].hash = GenerateUniqueHash(profile);
+                    EditorUtility.SetDirty(profile);
                 }
                 // If the hash is already in the list, it means that it was duplicated
                 else if (diffusionProfileHashes.Contains(hash))
+                {
+                    foreach (var h in diffusionProfileHashes)
+                        Debug.Log("h: " + h);
                     profile.profiles[0].hash = GenerateUniqueHash(profile);
+                    EditorUtility.SetDirty(profile);
+                }
                 
                 // otherwise, no issue, we don't change the hash
             }

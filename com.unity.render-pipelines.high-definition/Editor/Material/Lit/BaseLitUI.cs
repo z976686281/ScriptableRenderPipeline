@@ -5,6 +5,17 @@ using UnityEngine.Rendering;
 
 namespace UnityEditor.Experimental.Rendering.HDPipeline
 {
+    // It would be really cool to set these enums outside of the Shader GUI so we don't have to duplicate them everywhere
+    public enum MaterialId
+    {
+        LitSSS = 0,
+        LitStandard = 1,
+        LitAniso = 2,
+        LitIridescence = 3,
+        LitSpecular = 4,
+        LitTranslucent = 5
+    };
+
     // A Material can be authored from the shader graph or by hand. When written by hand we need to provide an inspector.
     // Such a Material will share some properties between it various variant (shader graph variant or hand authored variant).
     // This is the purpose of BaseLitGUI. It contain all properties that are common to all Material based on Lit template.
@@ -88,16 +99,6 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             Pixel,
             Tessellation
         }
-
-        public enum MaterialId
-        {
-            LitSSS = 0,
-            LitStandard = 1,
-            LitAniso = 2,
-            LitIridescence = 3,
-            LitSpecular = 4,
-            LitTranslucent = 5
-        };
 
         public enum HeightmapParametrization
         {
@@ -274,7 +275,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             {
                 m_MaterialEditor.ShaderProperty(materialID, StylesBaseLit.materialIDText);
 
-                if ((int)materialID.floatValue == (int)BaseLitGUI.MaterialId.LitSSS)
+                if ((int)materialID.floatValue == (int)MaterialId.LitSSS)
                 {
                     EditorGUI.indentLevel++;
                     m_MaterialEditor.ShaderProperty(transmissionEnable, StylesBaseLit.transmissionEnableText);
@@ -488,7 +489,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             // Set the reference value for the stencil test.
             int stencilRef = (int)StencilLightingUsage.RegularLighting;
             int stencilWriteMask = (int)HDRenderPipeline.StencilBitMask.LightingMask;
-            if (material.HasProperty(kMaterialID) && (int)material.GetFloat(kMaterialID) == (int)BaseLitGUI.MaterialId.LitSSS)
+            if (material.HasProperty(kMaterialID) && (int)material.GetFloat(kMaterialID) == (int)MaterialId.LitSSS)
             {
                 stencilRef = (int)StencilLightingUsage.SplitLighting;
             }

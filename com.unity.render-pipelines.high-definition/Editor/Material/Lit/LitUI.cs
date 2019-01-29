@@ -443,42 +443,6 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             EditorGUI.indentLevel--;
         }
 
-        // These two convertion functions are used to store GUID assets inside materials,
-        // a unity asset GUID is exactly 16 bytes long which is also a Vector4 so by adding a
-        // Vector4 field inside the shader we can store references of an asset inside the material
-        // which is actually used to store the reference of the diffusion profile asset
-        Vector4 ConvertGUIDToVector4(string guid)
-        {
-            Vector4 vector;
-            byte[]  bytes = new byte[16];
-
-            for (int i = 0; i < 16; i++)
-                bytes[i] = byte.Parse(guid.Substring(i * 2, 2), System.Globalization.NumberStyles.HexNumber);
-            
-            unsafe
-            {
-                fixed (byte * b = bytes)
-                    vector = *(Vector4 *)b;
-            }
-
-            return vector;
-        }
-
-        string ConvertVector4ToGUID(Vector4 vector)
-        {
-            System.Text.StringBuilder sb = new System.Text.StringBuilder();
-            unsafe
-            {
-                byte * v = (byte *)&vector;
-                for (int i = 0; i < 16; i++)
-                    sb.Append(v[i].ToString("x2"));
-                var guidBytes = new byte[16];
-                System.Runtime.InteropServices.Marshal.Copy((IntPtr)v, guidBytes, 0, 16);
-            }
-
-            return sb.ToString();
-        }
-
         DiffusionProfileSettings diffusionProfile;
 
         protected void ShaderSSSAndTransmissionInputGUI(Material material, int layerIndex)
@@ -517,7 +481,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                 {
                     if (diffusionProfile == null)
                     {
-                        string guid = ConvertVector4ToGUID(diffusionProfileAsset[layerIndex].vectorValue);
+                        string guid = HDEditorUtils.ConvertVector4ToGUID(diffusionProfileAsset[layerIndex].vectorValue);
                         diffusionProfile = AssetDatabase.LoadAssetAtPath<DiffusionProfileSettings>(AssetDatabase.GUIDToAssetPath(guid));
                     }
                     
@@ -532,7 +496,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                         if (diffusionProfile != null)
                         {
                             string guid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(diffusionProfile));
-                            newGuid = ConvertGUIDToVector4(guid);
+                            newGuid = HDEditorUtils.ConvertGUIDToVector4(guid);
                             hash = (diffusionProfile.profiles[0].hash);
                         }
 
@@ -559,14 +523,14 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                 //     diffusionProfileHash[layerIndex].floatValue = profileID;
             }
 
-            if ((int)materialID.floatValue == (int)BaseLitGUI.MaterialId.LitSSS)
+            if ((int)materialID.floatValue == (int)MaterialId.LitSSS)
             {
                 m_MaterialEditor.ShaderProperty(subsurfaceMask[layerIndex], Styles.subsurfaceMaskText);
                 m_MaterialEditor.TexturePropertySingleLine(Styles.subsurfaceMaskMapText, subsurfaceMaskMap[layerIndex]);
             }
 
-            if ((int)materialID.floatValue == (int)BaseLitGUI.MaterialId.LitTranslucent ||
-                ((int)materialID.floatValue == (int)BaseLitGUI.MaterialId.LitSSS && transmissionEnable.floatValue > 0.0f))
+            if ((int)materialID.floatValue == (int)MaterialId.LitTranslucent ||
+                ((int)materialID.floatValue == (int)MaterialId.LitSSS && transmissionEnable.floatValue > 0.0f))
             {
                 m_MaterialEditor.TexturePropertySingleLine(Styles.thicknessMapText, thicknessMap[layerIndex]);
                 if (thicknessMap[layerIndex].textureValue != null)
@@ -677,9 +641,9 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                 {
                     m_MaterialEditor.TexturePropertySingleLine(Styles.baseColorText, baseColorMap[layerIndex], baseColor[layerIndex]);
 
-                    if ((BaseLitGUI.MaterialId)materialID.floatValue == BaseLitGUI.MaterialId.LitStandard ||
-                        (BaseLitGUI.MaterialId)materialID.floatValue == BaseLitGUI.MaterialId.LitAniso ||
-                        (BaseLitGUI.MaterialId)materialID.floatValue == BaseLitGUI.MaterialId.LitIridescence)
+                    if ((MaterialId)materialID.floatValue == MaterialId.LitStandard ||
+                        (MaterialId)materialID.floatValue == MaterialId.LitAniso ||
+                        (MaterialId)materialID.floatValue == MaterialId.LitIridescence)
                     {
                         m_MaterialEditor.ShaderProperty(metallic[layerIndex], Styles.metallicText);
                     }
@@ -711,7 +675,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                         }
                     }
 
-                    m_MaterialEditor.TexturePropertySingleLine(((BaseLitGUI.MaterialId)materialID.floatValue == BaseLitGUI.MaterialId.LitSpecular) ? Styles.maskMapSpecularText : Styles.maskMapSText, maskMap[layerIndex]);
+                    m_MaterialEditor.TexturePropertySingleLine(((MaterialId)materialID.floatValue == MaterialId.LitSpecular) ? Styles.maskMapSpecularText : Styles.maskMapSText, maskMap[layerIndex]);
 
                     m_MaterialEditor.ShaderProperty(normalMapSpace[layerIndex], Styles.normalMapSpaceText);
 
@@ -786,25 +750,25 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                         }
                     }
 
-                    switch ((BaseLitGUI.MaterialId)materialID.floatValue)
+                    switch ((MaterialId)materialID.floatValue)
                     {
-                        case BaseLitGUI.MaterialId.LitSSS:
-                        case BaseLitGUI.MaterialId.LitTranslucent:
+                        case MaterialId.LitSSS:
+                        case MaterialId.LitTranslucent:
                             ShaderSSSAndTransmissionInputGUI(material, layerIndex);
                             break;
-                        case BaseLitGUI.MaterialId.LitStandard:
+                        case MaterialId.LitStandard:
                             // Nothing
                             break;
 
                         // Following mode are not supported by layered lit and will not be call by it
                         // as the MaterialId enum don't define it
-                        case BaseLitGUI.MaterialId.LitAniso:
+                        case MaterialId.LitAniso:
                             ShaderAnisoInputGUI();
                             break;
-                        case BaseLitGUI.MaterialId.LitSpecular:
+                        case MaterialId.LitSpecular:
                             ShaderSpecularColorInputGUI(material);
                             break;
-                        case BaseLitGUI.MaterialId.LitIridescence:
+                        case MaterialId.LitIridescence:
                             ShaderIridescenceInputGUI();
                             break;
 
@@ -1106,15 +1070,15 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                 material.DisableKeyword("_REQUIRE_UV3");
             }
 
-            BaseLitGUI.MaterialId materialId = (BaseLitGUI.MaterialId)material.GetFloat(kMaterialID);
-            CoreUtils.SetKeyword(material, "_MATERIAL_FEATURE_SUBSURFACE_SCATTERING", materialId == BaseLitGUI.MaterialId.LitSSS);
-            CoreUtils.SetKeyword(material, "_MATERIAL_FEATURE_TRANSMISSION", materialId == BaseLitGUI.MaterialId.LitTranslucent || (materialId == BaseLitGUI.MaterialId.LitSSS && material.GetFloat(kTransmissionEnable) > 0.0f));
+            MaterialId materialId = (MaterialId)material.GetFloat(kMaterialID);
+            CoreUtils.SetKeyword(material, "_MATERIAL_FEATURE_SUBSURFACE_SCATTERING", materialId == MaterialId.LitSSS);
+            CoreUtils.SetKeyword(material, "_MATERIAL_FEATURE_TRANSMISSION", materialId == MaterialId.LitTranslucent || (materialId == MaterialId.LitSSS && material.GetFloat(kTransmissionEnable) > 0.0f));
 
-            CoreUtils.SetKeyword(material, "_MATERIAL_FEATURE_ANISOTROPY", materialId == BaseLitGUI.MaterialId.LitAniso);
+            CoreUtils.SetKeyword(material, "_MATERIAL_FEATURE_ANISOTROPY", materialId == MaterialId.LitAniso);
             // No material Id for clear coat, just test the attribute
             CoreUtils.SetKeyword(material, "_MATERIAL_FEATURE_CLEAR_COAT", material.GetFloat(kCoatMask) > 0.0 || material.GetTexture(kCoatMaskMap));
-            CoreUtils.SetKeyword(material, "_MATERIAL_FEATURE_IRIDESCENCE", materialId == BaseLitGUI.MaterialId.LitIridescence);
-            CoreUtils.SetKeyword(material, "_MATERIAL_FEATURE_SPECULAR_COLOR", materialId == BaseLitGUI.MaterialId.LitSpecular);
+            CoreUtils.SetKeyword(material, "_MATERIAL_FEATURE_IRIDESCENCE", materialId == MaterialId.LitIridescence);
+            CoreUtils.SetKeyword(material, "_MATERIAL_FEATURE_SPECULAR_COLOR", materialId == MaterialId.LitSpecular);
 
             var refractionModelValue = (ScreenSpaceRefraction.RefractionModel)material.GetFloat(kRefractionModel);
             // We can't have refraction in pre-refraction queue
