@@ -125,7 +125,7 @@ struct SurfaceData
     float coatIor;
     float coatThickness;
     float3 coatExtinction;
-    float diffusionProfileHash;
+    uint diffusionProfileHash;
     float subsurfaceMask;
     float thickness;
 };
@@ -268,7 +268,7 @@ void GetGeneratedSurfaceDataDebug(uint paramId, SurfaceData surfacedata, inout f
             result = surfacedata.coatExtinction;
             break;
         case DEBUGVIEW_STACKLIT_SURFACEDATA_DIFFUSION_PROFILE_HASH:
-            result = surfacedata.diffusionProfileHash.xxx;
+            result = GetIndexColor(surfacedata.diffusionProfileHash);
             break;
         case DEBUGVIEW_STACKLIT_SURFACEDATA_SUBSURFACE_MASK:
             result = surfacedata.subsurfaceMask.xxx;

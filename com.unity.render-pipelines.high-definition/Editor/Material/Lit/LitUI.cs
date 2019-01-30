@@ -443,8 +443,6 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             EditorGUI.indentLevel--;
         }
 
-        DiffusionProfileSettings diffusionProfile;
-
         protected void ShaderSSSAndTransmissionInputGUI(Material material, int layerIndex)
         {
             var hdPipeline = RenderPipelineManager.currentPipeline as HDRenderPipeline;
@@ -452,39 +450,14 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             if (hdPipeline == null)
                 return;
 
-            // TODO: remove this
-            // var diffusionProfileSettings = hdPipeline.diffusionProfileSettings;
-
-            // if (hdPipeline.IsInternalDiffusionProfile(diffusionProfileSettings))
-            // {
-            //     EditorGUILayout.HelpBox("No Diffusion Profile List have been assigned to the render pipeline asset.", MessageType.Warning);
-            //     return;
-            // }
-
-            // TODO: Optimize me
-            // var profiles = diffusionProfileSettings.profiles;
-            // var names = new GUIContent[profiles.Length + 1];
-            // names[0] = new GUIContent("None");
-
-            // var values = new int[names.Length];
-            // values[0] = DiffusionProfileConstants.DIFFUSION_PROFILE_NEUTRAL_ID;
-
-            // for (int i = 0; i < profiles.Length; i++)
-            // {
-            //     names[i + 1] = new GUIContent(profiles[i].name);
-            //     values[i + 1] = i + 1;
-            // }
-
             using (var scope = new EditorGUI.ChangeCheckScope())
             {
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    if (diffusionProfile == null)
-                    {
-                        string guid = HDEditorUtils.ConvertVector4ToGUID(diffusionProfileAsset[layerIndex].vectorValue);
-                        diffusionProfile = AssetDatabase.LoadAssetAtPath<DiffusionProfileSettings>(AssetDatabase.GUIDToAssetPath(guid));
-                    }
-                    
+                    // We can't cache these fields because of several edge cases like undo/redo or pressing escape in the object picker
+                    string guid = HDEditorUtils.ConvertVector4ToGUID(diffusionProfileAsset[layerIndex].vectorValue);
+                    DiffusionProfileSettings diffusionProfile = AssetDatabase.LoadAssetAtPath<DiffusionProfileSettings>(AssetDatabase.GUIDToAssetPath(guid));
+
                     // is it okay to do this every frame ?
                     EditorGUI.BeginChangeCheck();
                     diffusionProfile = (DiffusionProfileSettings)EditorGUILayout.ObjectField(Styles.diffusionProfileText, diffusionProfile, typeof(DiffusionProfileSettings), false);
@@ -495,32 +468,17 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
                         if (diffusionProfile != null)
                         {
-                            string guid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(diffusionProfile));
+                            guid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(diffusionProfile));
                             newGuid = HDEditorUtils.ConvertGUIDToVector4(guid);
-                            hash = (diffusionProfile.profiles[0].hash);
+                            hash = HDShadowUtils.Asfloat(diffusionProfile.profiles[0].hash);
                         }
 
                         // encode back GUID and it's hash
                         diffusionProfileAsset[layerIndex].vectorValue = newGuid;
+                        Debug.Log("Update diffusion profile diffusionProfile hash from: " + diffusionProfileHash[layerIndex].floatValue + " to " + hash);
                         diffusionProfileHash[layerIndex].floatValue = hash;
-                        Debug.Log("Update diffusion profile diffusionProfile hash: " + diffusionProfileHash[layerIndex].floatValue);
-                        // TODO: not serialized ???
                     }
-                    // int profileID = (int)diffusionProfileHash[layerIndex].floatValue;
-
-                    // EditorGUILayout.PrefixLabel(Styles.diffusionProfileText);
-
-                    // using (new EditorGUILayout.HorizontalScope())
-                    // {
-                    //     profileID = EditorGUILayout.IntPopup(profileID, names, values);
-
-                    //     if (GUILayout.Button("Goto", EditorStyles.miniButton, GUILayout.Width(50f)))
-                    //         Selection.activeObject = diffusionProfileSettings;
-                    // }
                 }
-
-                // if (scope.changed)
-                //     diffusionProfileHash[layerIndex].floatValue = profileID;
             }
 
             if ((int)materialID.floatValue == (int)MaterialId.LitSSS)

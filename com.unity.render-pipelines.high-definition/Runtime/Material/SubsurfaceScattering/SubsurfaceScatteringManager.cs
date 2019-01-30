@@ -148,22 +148,28 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
         void UpdateCurrentDiffusionProfileSettings()
         {
-            var list = VolumeManager.instance.stack.GetComponent<DiffusionProfileOverride>().diffusionProfiles.value;
-            if (list == null)
-                list = defaultDiffusionProfileSettings;
+            var currentDiffusionProfiles = defaultDiffusionProfileSettings;
+            var diffusionProfileOverride = VolumeManager.instance.stack.GetComponent<DiffusionProfileOverride>();
+
+            // If there is a diffusion profile volume override, we merge diffusion profiles that are overwritten
+            if (diffusionProfileOverride.active)
+            {
+                currentDiffusionProfiles = diffusionProfileOverride.GetMergedDiffusionProfileSettings();
+            }
 
             int i = 0;
-            foreach (var v in list)
+            foreach (var v in currentDiffusionProfiles)
             {
                 if (v == null)
                     continue;
+
                 thicknessRemaps[i] = v.thicknessRemaps[1];
                 shapeParams[i] = v.shapeParams[1];
                 transmissionTintsAndFresnel0[i] = v.transmissionTintsAndFresnel0[1];
                 disabledTransmissionTintsAndFresnel0[i] = v.disabledTransmissionTintsAndFresnel0[1];
                 worldScales[i] = v.worldScales[1];
                 filterKernels[i] = v.filterKernels[1];
-                diffusionProfileHashes[i] = v.profiles[0].hash;
+                diffusionProfileHashes[i] = HDShadowUtils.Asfloat(v.profiles[0].hash);
                 i++;
             }
 
@@ -200,7 +206,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             // To disable transmission, we simply nullify the transmissionTint
             cmd.SetGlobalVectorArray(HDShaderIDs._TransmissionTintsAndFresnel0, hdCamera.frameSettings.IsEnabled(FrameSettingsField.Transmission) ? transmissionTintsAndFresnel0 : disabledTransmissionTintsAndFresnel0);
             cmd.SetGlobalVectorArray(HDShaderIDs._WorldScales, worldScales);
-
             cmd.SetGlobalFloatArray(HDShaderIDs._DiffusionProfileHashTable, diffusionProfileHashes);
         }
 
@@ -223,7 +228,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         {
             if (!hdCamera.frameSettings.IsEnabled(FrameSettingsField.SubsurfaceScattering))
                 return;
-            
+
             // TODO: For MSAA, at least initially, we can only support Jimenez, because we can't
             // create MSAA + UAV render targets.
 
@@ -263,9 +268,10 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     cmd.SetComputeFloatParam(m_SubsurfaceScatteringCS, HDShaderIDs._TexturingModeFlags, *(float*)&texturingModeFlags);
                 }
 
-                cmd.SetComputeVectorArrayParam(m_SubsurfaceScatteringCS, HDShaderIDs._WorldScales,        worldScales);
-                cmd.SetComputeVectorArrayParam(m_SubsurfaceScatteringCS, HDShaderIDs._FilterKernels,      filterKernels);
-                cmd.SetComputeVectorArrayParam(m_SubsurfaceScatteringCS, HDShaderIDs._ShapeParams,        shapeParams);
+                cmd.SetComputeVectorArrayParam(m_SubsurfaceScatteringCS, HDShaderIDs._WorldScales,          worldScales);
+                cmd.SetComputeVectorArrayParam(m_SubsurfaceScatteringCS, HDShaderIDs._FilterKernels,        filterKernels);
+                cmd.SetComputeVectorArrayParam(m_SubsurfaceScatteringCS, HDShaderIDs._ShapeParams,          shapeParams);
+                cmd.SetComputeFloatParams(m_SubsurfaceScatteringCS, HDShaderIDs._DiffusionProfileHashTable, diffusionProfileHashes);
 
                 int sssKernel = hdCamera.frameSettings.IsEnabled(FrameSettingsField.MSAA) ? m_SubsurfaceScatteringKernelMSAA : m_SubsurfaceScatteringKernel;
 
@@ -277,7 +283,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 {
                     cmd.SetComputeTextureParam(m_SubsurfaceScatteringCS, sssKernel, HDShaderIDs._SSSBufferTexture[i], GetSSSBuffer(i));
                 }
-
+                
                 int numTilesX = ((int)(hdCamera.textureWidthScaling.x * hdCamera.screenSize.x) + 15) / 16;
                 int numTilesY = ((int)hdCamera.screenSize.y + 15) / 16;
 

@@ -74,7 +74,7 @@ struct SurfaceData
     float3 normalWS;
     float3 geomNormalWS;
     float perceptualSmoothness;
-    float diffusionProfileHash;
+    uint diffusionProfileHash;
     float subsurfaceMask;
     float thickness;
     float3 hairStrandDirectionWS;
@@ -151,7 +151,7 @@ void GetGeneratedSurfaceDataDebug(uint paramId, SurfaceData surfacedata, inout f
             result = surfacedata.perceptualSmoothness.xxx;
             break;
         case DEBUGVIEW_HAIR_SURFACEDATA_DIFFUSION_PROFILE_HASH:
-            result = surfacedata.diffusionProfileHash.xxx;
+            result = GetIndexColor(surfacedata.diffusionProfileHash);
             break;
         case DEBUGVIEW_HAIR_SURFACEDATA_SUBSURFACE_MASK:
             result = surfacedata.subsurfaceMask.xxx;

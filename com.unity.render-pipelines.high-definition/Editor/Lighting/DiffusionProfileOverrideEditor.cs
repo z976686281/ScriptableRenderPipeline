@@ -28,7 +28,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
             m_Volume = (m_Inspector.target as Volume);
             m_DiffusionProfiles = Unpack(o.Find(x => x.diffusionProfiles));
-            m_OverrideStates = Unpack(o.Find(x => x.ovearrideStates));
+            m_OverrideStates = Unpack(o.Find(x => x.overrideStates));
             var hdAsset = GraphicsSettings.renderPipelineAsset as HDRenderPipelineAsset;
             m_DefaultDiffusionProfiles = hdAsset.diffusionProfileSettingsList;
         }
@@ -55,12 +55,15 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             rect.xMin += k_OverrideStateCheckboxWidth;
             var toggle = m_OverrideStates.value.GetArrayElementAtIndex(index);
             toggle.boolValue = EditorGUI.Toggle(overrideStateRect, toggle.boolValue);
-            EditorGUI.BeginDisabledGroup(!toggle.boolValue);
-            if (index < m_DefaultDiffusionProfiles.Length && !toggle.boolValue)
-                EditorGUI.ObjectField(rect, new GUIContent("Profile " + index), m_DefaultDiffusionProfiles[index], typeof(DiffusionProfileSettings), false);
+            if (!toggle.boolValue)
+            {
+                DiffusionProfileSettings defaultValue = (index < m_DefaultDiffusionProfiles.Length) ? m_DefaultDiffusionProfiles[index] : null;
+                EditorGUI.BeginDisabledGroup(true);
+                EditorGUI.ObjectField(rect, new GUIContent("Profile " + index), defaultValue, typeof(DiffusionProfileSettings), false);
+                EditorGUI.EndDisabledGroup();
+            }
             else
                 EditorGUI.ObjectField(rect, element, new GUIContent("Profile " + index));
-            EditorGUI.EndDisabledGroup();
         }
 
         void FillProfileListWithScene()
@@ -91,6 +94,15 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                         }
                     }
                 }
+            }
+
+            m_DiffusionProfiles.value.arraySize = profiles.Count;
+            int i = 0;
+            foreach (var profile in profiles)
+            {
+                m_DiffusionProfiles.value.GetArrayElementAtIndex(i).objectReferenceValue = profile;
+                m_OverrideStates.value.GetArrayElementAtIndex(i).boolValue = true;
+                i++;
             }
         }
 

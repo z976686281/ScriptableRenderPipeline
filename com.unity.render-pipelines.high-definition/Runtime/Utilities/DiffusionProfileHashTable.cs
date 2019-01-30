@@ -11,7 +11,9 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
     [InitializeOnLoad]
     public class DiffusionProfileHashTable
     {
+        [System.NonSerialized]
         static HashSet<uint>                    diffusionProfileHashes = new HashSet< uint >();
+        [System.NonSerialized]
         static Queue<DiffusionProfileSettings>  diffusionProfileToUpdate = new Queue<DiffusionProfileSettings>();
 
         // Called at each domain reload to build a list of all diffusion profile hashes so we can check
@@ -38,6 +40,11 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             while (diffusionProfileToUpdate.Count != 0)
             {
                 var profile = diffusionProfileToUpdate.Dequeue();
+
+                // if the profile to update is destroyed before the next editor frame, it will be null
+                if (profile == null)
+                    continue;
+
                 uint hash = profile.profiles[0].hash;
 
                 // If the hash is 0, then we need to generate a new one (it means that the profile was just created)
@@ -55,14 +62,13 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                     profile.profiles[0].hash = GenerateUniqueHash(profile);
                     EditorUtility.SetDirty(profile);
                 }
-                
-                // otherwise, no issue, we don't change the hash
+                else // otherwise, no issue, we don't change the hash and we keep it to check for collisions
+                    diffusionProfileHashes.Add(profile.profiles[0].hash);
             }
         }
 
         public static void UpdateUniqueHash(DiffusionProfileSettings asset)
         {
-            diffusionProfileHashes.Add(asset.profiles[0].hash);
             // Defere the generation of the hash because we can't call AssetDatabase functions outside of editor scope
             diffusionProfileToUpdate.Enqueue(asset);
         }
@@ -71,7 +77,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         {
             while (diffusionProfileHashes.Contains(hash))
             {
-                Debug.Log("Collision found !!!!, generating a new hash");
+                Debug.LogWarning("Collision found !!!!, generating a new hash");
                 hash++;
             }
             return hash;

@@ -207,7 +207,7 @@ void FillMaterialTransmission(uint diffusionProfileIndex, float thickness, inout
                                                         bsdfData.thickness);
 }
 
-uint FindDiffusionProfileIndex(float diffusionProfileHash)
+uint FindDiffusionProfileIndex(uint diffusionProfileHash)
 {
     if (diffusionProfileHash == 0)
         return 0;
@@ -218,7 +218,7 @@ uint FindDiffusionProfileIndex(float diffusionProfileHash)
     // Fetch the 4 bit index number by looking for the diffusion profile unique ID:
     for (i = 0; i < _DiffusionProfileCount; i++)
     {
-        if (_DiffusionProfileHashTable[i] == diffusionProfileHash)
+        if (asuint(_DiffusionProfileHashTable[i]) == diffusionProfileHash)
         {
             diffusionProfileIndex = i;
             break;

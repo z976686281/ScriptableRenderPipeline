@@ -13,8 +13,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         public fixed float _TransmissionTintsAndFresnel0[16 * 4];  // RGB = 1/4 * color, A = fresnel0
         [HLSLArray(16, typeof(Vector4))]
         public fixed float _WorldScales[16 * 4];        // X = meters per world unit; Y = world units per meter
-        [HLSLArray(16, typeof(float))]
-        public fixed float _DiffusionProfileHashTable[16]; // TODO: constant
+        [HLSLArray(16, typeof(uint))]
+        public fixed uint _DiffusionProfileHashTable[16]; // TODO: constant
 
         // Warning: Unity is not able to losslessly transfer integers larger than 2^24 to the shader system.
         // Therefore, we bitcast uint to float in C#, and bitcast back to uint in the shader.
