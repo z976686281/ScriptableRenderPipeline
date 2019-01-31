@@ -95,8 +95,8 @@ namespace UnityEditor.VFX.Test
             return mainObject;
         }
 
-        static readonly bool k_HasFixed_DisabledState = false;
-        static readonly bool k_HasFixed_PrefabOverride = false;
+        static readonly bool k_HasFixed_DisabledState = true;
+        static readonly bool k_HasFixed_PrefabOverride = true;
 
         /* Follow "Known issue : " <= This test has been added to cover a future fix in vfx behavior */
         [UnityTest]
