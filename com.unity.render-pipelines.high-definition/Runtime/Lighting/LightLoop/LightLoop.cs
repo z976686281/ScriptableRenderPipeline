@@ -699,7 +699,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 m_CubeCookieTexArray.Release();
                 m_CubeCookieTexArray = null;
             }
-            
+
             if (m_AreaLightCookieManager != null)
             {
                 m_AreaLightCookieManager.ReleaseResources();
@@ -2688,14 +2688,10 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 cmd.SetComputeTextureParam(screenSpaceShadowComputeShader, kernel, HDShaderIDs._DeferredShadowTextureUAV, deferredShadowRT);
 
                 int deferredShadowTileSize = 16; // Must match DeferreDirectionalShadow.compute
-                int numTilesX = hdCamera.camera.stereoEnabled ? ((hdCamera.actualWidth / 2) + (deferredShadowTileSize - 1)) / deferredShadowTileSize : (hdCamera.actualWidth + (deferredShadowTileSize - 1)) / deferredShadowTileSize;
+                int numTilesX = (hdCamera.actualWidth  + (deferredShadowTileSize - 1)) / deferredShadowTileSize;
                 int numTilesY = (hdCamera.actualHeight + (deferredShadowTileSize - 1)) / deferredShadowTileSize;
 
-                for (int eye = 0; eye < hdCamera.numEyes; eye++)
-                {
-                    cmd.SetGlobalInt(HDShaderIDs._ComputeEyeIndex, (int)eye);
-                    cmd.DispatchCompute(screenSpaceShadowComputeShader, kernel, numTilesX, numTilesY, 1);
-                }
+                cmd.DispatchCompute(screenSpaceShadowComputeShader, kernel, numTilesX, numTilesY, XRGraphics.computePassCount);
             }
         }
 
@@ -2731,7 +2727,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     int numTilesY = (h + 15) / 16;
                     int numTiles = numTilesX * numTilesY;
 
-                    bool enableFeatureVariants = GetFeatureVariantsEnabled() && !debugDisplaySettings.IsDebugDisplayEnabled() && !hdCamera.camera.stereoEnabled; // TODO VR: Reenable later
+                    // XRTODO: fix it
+                    bool enableFeatureVariants = GetFeatureVariantsEnabled() && !debugDisplaySettings.IsDebugDisplayEnabled() && !hdCamera.camera.stereoEnabled;
 
                     int numVariants = 1;
                     if (enableFeatureVariants)
@@ -2768,21 +2765,17 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
                         // always do deferred lighting in blocks of 16x16 (not same as tiled light size)
 
+                        // XRTODO: variants support (solve how g_TileListOffset and surrounding math should work with stereo)
                         if (enableFeatureVariants)
-                        { // TODO VR: variants support (solve how g_TileListOffset and surrounding math should work with stereo)
+                        {
                             cmd.SetComputeBufferParam(deferredComputeShader, kernel, HDShaderIDs.g_TileFeatureFlags, s_TileFeatureFlags);
                             cmd.SetComputeIntParam(deferredComputeShader, HDShaderIDs.g_TileListOffset, variant * numTiles);
                             cmd.SetComputeBufferParam(deferredComputeShader, kernel, HDShaderIDs.g_TileList, s_TileList);
-                            cmd.SetGlobalInt(HDShaderIDs._ComputeEyeIndex, 0);
                             cmd.DispatchCompute(deferredComputeShader, kernel, s_DispatchIndirectBuffer, (uint)variant * 3 * sizeof(uint));
                         }
                         else
                         {
-                            for (int eye = 0; eye < hdCamera.numEyes; eye++)
-                            {
-                                cmd.SetGlobalInt(HDShaderIDs._ComputeEyeIndex, eye);
-                                cmd.DispatchCompute(deferredComputeShader, kernel, numTilesX, numTilesY, 1);
-                            }
+                            cmd.DispatchCompute(deferredComputeShader, kernel, numTilesX, numTilesY, 1);
                         }
                     }
                 }
@@ -2804,7 +2797,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     cmd.SetGlobalTexture(HDShaderIDs._CameraDepthTexture, depthTexture);
                     cmd.SetGlobalBuffer(HDShaderIDs.g_TileFeatureFlags, s_TileFeatureFlags);
                     cmd.SetGlobalBuffer(HDShaderIDs.g_TileList, s_TileList);
-                    cmd.SetGlobalInt(HDShaderIDs._ComputeEyeIndex, 0);
 
                     // If SSS is disabled, do lighting for both split lighting and no split lighting
                     // Must set stencil parameters through Material.
@@ -2842,16 +2834,10 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                         CoreUtils.SetKeyword(cmd, "LIGHTLOOP_DISABLE_TILE_AND_CLUSTER", m_FrameSettings.IsEnabled(FrameSettingsField.DeferredTile));
                         CoreUtils.SetKeyword(cmd, "DEBUG_DISPLAY", debugDisplaySettings.IsDebugDisplayEnabled());
 
-                        int numEyes = hdCamera.camera.stereoEnabled ? (int)hdCamera.numEyes : 1;
-
-                        for (int eye = 0; eye < numEyes; eye++)
-                        {
-                            cmd.SetGlobalInt(HDShaderIDs._ComputeEyeIndex, eye);
-                            if (options.outputSplitLighting)
-                                CoreUtils.DrawFullScreen(cmd, deferredMat, colorBuffers, depthStencilBuffer, null, 1);
-                            else
-                                CoreUtils.DrawFullScreen(cmd, deferredMat, colorBuffers[0], depthStencilBuffer, null, 1);
-                        }
+                        if (options.outputSplitLighting)
+                            CoreUtils.DrawFullScreen(cmd, deferredMat, colorBuffers, depthStencilBuffer, null, 1);
+                        else
+                            CoreUtils.DrawFullScreen(cmd, deferredMat, colorBuffers[0], depthStencilBuffer, null, 1);
                     }
                 }
                 else // Pixel shader evaluation
