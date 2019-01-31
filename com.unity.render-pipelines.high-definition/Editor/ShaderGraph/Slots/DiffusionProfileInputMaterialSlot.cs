@@ -15,18 +15,12 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
     class DiffusionProfileInputMaterialSlot : Vector1MaterialSlot
     {
         [SerializeField]
-        PopupList m_DiffusionProfile = new PopupList();
+        DiffusionProfileSettings m_DiffusionProfile;
 
-        public PopupList diffusionProfile
+        public DiffusionProfileSettings diffusionProfile
         {
-            get
-            {
-                return m_DiffusionProfile;
-            }
-            set
-            {
-                m_DiffusionProfile = value;
-            }
+            get { return m_DiffusionProfile; }
+            set { m_DiffusionProfile = value; }
         }
 
         public DiffusionProfileInputMaterialSlot()
@@ -37,27 +31,6 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                                           ShaderStageCapability stageCapability = ShaderStageCapability.All, bool hidden = false)
             : base(slotId, displayName, shaderOutputName, SlotType.Input, 0.0f, stageCapability, hidden: hidden)
         {
-            var hdPipeline = UnityEngine.Rendering.RenderPipelineManager.currentPipeline as HDRenderPipeline;
-            if (hdPipeline != null)
-            {
-                var diffusionProfileSettings = hdPipeline.diffusionProfileSettings;
-                m_DiffusionProfile.popupEntries = new List<string>();
-                m_DiffusionProfile.popupEntries.Add("None");
-
-                if (!hdPipeline.IsInternalDiffusionProfile(diffusionProfileSettings))
-                {
-                    var profiles = diffusionProfileSettings.profiles;
-                    for (int i = 0; i < profiles.Length; i++)
-                    {
-                        m_DiffusionProfile.popupEntries.Add(profiles[i].name);
-                    }
-                    m_DiffusionProfile.selectedEntry = Mathf.Min(m_DiffusionProfile.selectedEntry, profiles.Length + 1);
-                }
-                else
-                {
-                    m_DiffusionProfile.selectedEntry = 0;
-                }
-            }
         }
 
         public override VisualElement InstantiateControl()
@@ -65,17 +38,57 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             return new DiffusionProfileSlotControlView(this);
         }
 
+        public override void AddDefaultProperty(PropertyCollector properties, GenerationMode generationMode)
+        {
+            var matOwner = owner as AbstractMaterialNode;
+            if (matOwner == null)
+                throw new Exception(string.Format("Slot {0} either has no owner, or the owner is not a {1}", this, typeof(AbstractMaterialNode)));
+
+            string diffusionProfileGUID = "";
+            if (diffusionProfile != null)
+                diffusionProfileGUID = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(diffusionProfile));
+            
+            // Note: Unity can't parse float values with exponential notation so we just can't
+            // store the hash nor the asset GUID here :(
+            var difffusionProfileHash = new Vector1ShaderProperty
+            {
+                overrideReferenceName = "_DiffusionProfileHash",
+                // value = (diffusionProfile != null) ? diffusionProfile.profiles[0].hash : 0
+                value = 0
+            };
+            var diffusionProfileAsset = new Vector4ShaderProperty
+            {
+                overrideReferenceName = "_DiffusionProfileAsset",
+                value = Vector4.zero
+                // value = (diffusionProfile != null) ? HDEditorUtils.ConvertGUIDToVector4(diffusionProfileGUID) : Vector4.zero
+            };
+
+            Debug.Log("Diffusion profile properties added !");
+            properties.AddShaderProperty(difffusionProfileHash);
+            properties.AddShaderProperty(diffusionProfileAsset);
+
+            properties.AddShaderProperty(new ColorShaderProperty
+            {
+                overrideReferenceName = "_A1B2C3D4EF",
+                value = Color.white
+            });
+        }
+
         public override string GetDefaultValue(GenerationMode generationMode)
         {
-            return m_DiffusionProfile.selectedEntry.ToString();
+            if (m_DiffusionProfile == null)
+                return "0";
+            else
+                return "asfloat(uint(" + m_DiffusionProfile.profiles[0].hash.ToString() + "))";
         }
 
         public override void CopyValuesFrom(MaterialSlot foundSlot)
         {
             var slot = foundSlot as DiffusionProfileInputMaterialSlot;
+
             if (slot != null)
             {
-                diffusionProfile = slot.diffusionProfile;
+                m_DiffusionProfile = slot.m_DiffusionProfile;
             }
         }
     }

@@ -6,6 +6,7 @@ using UnityEditorInternal;
 
 namespace UnityEditor.Experimental.Rendering.HDPipeline
 {
+    // TODO: remove me
     [VolumeParameterDrawer(typeof(DiffusionProfileSettingsParameter))]
     sealed class DiffusionProfileSettingsArrayDrawer : VolumeParameterDrawer
     {

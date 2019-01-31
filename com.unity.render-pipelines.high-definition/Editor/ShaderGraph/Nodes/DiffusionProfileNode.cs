@@ -24,42 +24,19 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         }
 
         [SerializeField]
-        PopupList m_DiffusionProfile = new PopupList();
+        DiffusionProfileSettings    m_DiffusionProfileAsset;
 
-        [PopupControl]
-        public PopupList diffusionProfile
+        [ObjectControl]
+        public DiffusionProfileSettings diffusionProfile
         {
             get
             {
-                return m_DiffusionProfile;
+                return m_DiffusionProfileAsset;
             }
             set
             {
-                m_DiffusionProfile = value;
+                m_DiffusionProfileAsset = value;
                 Dirty(ModificationScope.Node);
-            }
-        }
-
-        ButtonConfig m_ButtonConfig = new ButtonConfig()
-        {
-            text = "Goto",
-            action = () =>
-            {
-                var hdPipeline = UnityEngine.Rendering.RenderPipelineManager.currentPipeline as HDRenderPipeline;
-                if (hdPipeline != null)
-                {
-                    var diffusionProfileSettings = hdPipeline.diffusionProfileSettings;
-                    Selection.activeObject = diffusionProfileSettings;
-                }
-            }
-        };
-
-        [ButtonControl]
-        public ButtonConfig buttonConfig
-        {
-            get
-            {
-                return m_ButtonConfig;
             }
         }
 
@@ -70,37 +47,18 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
         public sealed override void UpdateNodeAfterDeserialization()
         {
-            var hdPipeline = UnityEngine.Rendering.RenderPipelineManager.currentPipeline as HDRenderPipeline;
-            if (hdPipeline != null)
-            {
-                var diffusionProfileSettings = hdPipeline.diffusionProfileSettings;
-                m_DiffusionProfile.popupEntries = new List<string>();
-                m_DiffusionProfile.popupEntries.Add("None");
-
-                if (!hdPipeline.IsInternalDiffusionProfile(diffusionProfileSettings))
-                {
-                    var profiles = diffusionProfileSettings.profiles;
-                    for (int i = 0; i < profiles.Length; i++)
-                    {
-                        m_DiffusionProfile.popupEntries.Add(profiles[i].name);
-                    }
-                    m_DiffusionProfile.selectedEntry = Mathf.Min(m_DiffusionProfile.selectedEntry, profiles.Length+1);
-                }
-                else
-                {
-                    m_DiffusionProfile.selectedEntry = 0;
-                    // Need something equivalent, perhaps via implementation of a warning interface for the node.
-                    //EditorGUILayout.HelpBox("No diffusion profile Settings have been assigned to the render pipeline asset.", MessageType.Warning);
-                }
-            }
-
             AddSlot(new Vector1MaterialSlot(kOutputSlotId, kOutputSlotName, kOutputSlotName, SlotType.Output, 0.0f));
             RemoveSlotsNameNotMatching(new[] { kOutputSlotId });
         }
 
         public void GenerateNodeCode(ShaderGenerator visitor, GraphContext graphContext, GenerationMode generationMode)
         {
-            visitor.AddShaderChunk(precision + " " + GetVariableNameForSlot(0) + " = " + m_DiffusionProfile.selectedEntry + ";", true);
+            uint hash = 0;
+            
+            if (m_DiffusionProfileAsset != null)
+                hash = (m_DiffusionProfileAsset.profiles[0].hash);
+            
+            visitor.AddShaderChunk(precision + " " + GetVariableNameForSlot(0) + " = asfloat(uint(" + hash + "));", true);
         }
     }
 }
