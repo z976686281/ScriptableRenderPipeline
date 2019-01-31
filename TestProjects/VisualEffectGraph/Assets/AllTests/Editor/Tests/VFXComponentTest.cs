@@ -377,6 +377,34 @@ namespace UnityEditor.VFX.Test
             Assert.IsTrue(spawnerStateFinal.totalTime > spawnerLimit); //Check there isn't any reset time
             Assert.IsTrue(vfx.HasVector2(exposedName));
             Assert.AreEqual(expectedValue.x, vfx.GetVector2(exposedName).x); Assert.AreEqual(expectedValue.y, vfx.GetVector2(exposedName).y);
+
+            //Last step, if trying to modify component value, verify reset override restore value in asset without reinit
+            if (modifyValue)
+            {
+                var editor = Editor.CreateEditor(vfx);
+                editor.serializedObject.Update();
+
+                var propertySheet = editor.serializedObject.FindProperty("m_PropertySheet");
+                var fieldName = VisualEffectSerializationUtility.GetTypeField(VFXExpression.TypeToType(VFXValueType.Float2)) + ".m_Array";
+                var vfxField = propertySheet.FindPropertyRelative(fieldName);
+
+                Assert.AreEqual(1, vfxField.arraySize);
+
+                var property = vfxField.GetArrayElementAtIndex(0);
+                property = property.FindPropertyRelative("m_Overridden");
+                expectedValue = (Vector2)parameter.value;
+                property.boolValue = false;
+                editor.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+
+                GameObject.DestroyImmediate(editor);
+
+                yield return null;
+                spawnerStateFinal = VisualEffectUtility.GetSpawnerState(vfx, 0u);
+
+                Assert.IsTrue(spawnerStateFinal.totalTime > spawnerLimit); //Check there isn't any reset time
+                Assert.IsTrue(vfx.HasVector2(exposedName));
+                Assert.AreEqual(expectedValue.x, vfx.GetVector2(exposedName).x); Assert.AreEqual(expectedValue.y, vfx.GetVector2(exposedName).y);
+            }
         }
 
         [UnityTest]
