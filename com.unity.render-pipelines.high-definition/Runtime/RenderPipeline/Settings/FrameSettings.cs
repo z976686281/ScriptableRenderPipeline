@@ -113,7 +113,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
     /// <summary>BitField that state which element is overrided.</summary>
     [Serializable]
-    [System.Diagnostics.DebuggerDisplay("FrameSettings overriding {mask.humanizedData}")]
+    [System.Diagnostics.DebuggerDisplay("{mask.humanizedData}")]
     public struct FrameSettingsOverrideMask
     {
         [SerializeField]
@@ -122,7 +122,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
     
     /// <summary>Per renderer and per frame settings.</summary>
     [Serializable]
-    [System.Diagnostics.DebuggerDisplay("FrameSettings {bitDatas.humanizedData}")]
+    [System.Diagnostics.DebuggerDisplay("{bitDatas.humanizedData}")]
     public partial struct FrameSettings
     {
         /// <summary>Default FrameSettings for Camera renderer.</summary>
@@ -302,7 +302,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
             // VR TODO: The work will be implemented piecemeal to support all passes
             // No recursive reflections
-            sanitazedFrameSettings.bitDatas[(int)FrameSettingsField.SSR] &= !reflection && renderPipelineSettings.supportSSR && !msaa && !preview && stereo;
+            sanitazedFrameSettings.bitDatas[(int)FrameSettingsField.SSR] &= !reflection && renderPipelineSettings.supportSSR && !msaa && !preview && !stereo;
             sanitazedFrameSettings.bitDatas[(int)FrameSettingsField.SSAO] &= renderPipelineSettings.supportSSAO && !preview;
             sanitazedFrameSettings.bitDatas[(int)FrameSettingsField.SubsurfaceScattering] &= !reflection && renderPipelineSettings.supportSubsurfaceScattering;
 
@@ -356,16 +356,32 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         /// <param name="additionalData">Additional data of the camera rendering.</param>
         /// <param name="hdrpAsset">HDRenderPipelineAsset contening default FrameSettings.</param>
         public static void AggregateFrameSettings(ref FrameSettings aggregatedFrameSettings, Camera camera, HDAdditionalCameraData additionalData, HDRenderPipelineAsset hdrpAsset)
+            => AggregateFrameSettings(
+                ref aggregatedFrameSettings,
+                camera,
+                additionalData,
+                ref hdrpAsset.GetDefaultFrameSettings(additionalData?.defaultFrameSettings ?? FrameSettingsRenderType.Camera), //fallback on Camera for SceneCamera and PreviewCamera
+                hdrpAsset.GetRenderPipelineSettings()
+                );
+
+        // Note: this version is the one tested as there is issue getting HDRenderPipelineAsset in batchmode in unit test framework currently.
+        /// <summary>Aggregation is default with override of the renderer then sanitazed depending on supported features of hdrpasset.</summary>
+        /// <param name="aggregatedFrameSettings">The aggregated FrameSettings result.</param>
+        /// <param name="camera">The camera rendering.</param>
+        /// <param name="additionalData">Additional data of the camera rendering.</param>
+        /// <param name="defaultFrameSettings">Base framesettings to copy prior any override.</param>
+        /// <param name="supportedFeatures">Currently supported feature for the sanitazation pass.</param>
+        public static void AggregateFrameSettings(ref FrameSettings aggregatedFrameSettings, Camera camera, HDAdditionalCameraData additionalData, ref FrameSettings defaultFrameSettings, RenderPipelineSettings supportedFeatures)
         {
-            aggregatedFrameSettings = hdrpAsset.GetDefaultFrameSettings(additionalData?.defaultFrameSettings ?? FrameSettingsRenderType.Camera); //fallback on Camera for SceneCamera and PreviewCamera
+            aggregatedFrameSettings = defaultFrameSettings; //fallback on Camera for SceneCamera and PreviewCamera
             if (additionalData && additionalData.customRenderingSettings)
                 Override(ref aggregatedFrameSettings, additionalData.renderingPathCustomFrameSettings, additionalData.renderingPathCustomFrameSettingsOverrideMask);
-            Sanitize(ref aggregatedFrameSettings, camera, hdrpAsset.GetRenderPipelineSettings());
+            Sanitize(ref aggregatedFrameSettings, camera, supportedFeatures);
         }
-        
+
         public static bool operator ==(FrameSettings a, FrameSettings b) => a.bitDatas == b.bitDatas;
         public static bool operator !=(FrameSettings a, FrameSettings b) => a.bitDatas != b.bitDatas;
-        public override bool Equals(object obj) => (obj is FrameSettings) && bitDatas.Equals((FrameSettings)obj);
+        public override bool Equals(object obj) => (obj is FrameSettings) && bitDatas.Equals(((FrameSettings)obj).bitDatas);
         public override int GetHashCode() => -1690259335 + bitDatas.GetHashCode();
     }
 }
