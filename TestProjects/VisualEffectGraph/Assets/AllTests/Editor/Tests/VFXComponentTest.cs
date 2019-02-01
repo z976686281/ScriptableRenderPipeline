@@ -249,6 +249,7 @@ namespace UnityEditor.VFX.Test
         [UnityTest]
         public IEnumerator CreateComponent_Switch_Asset_Keep_Override()
         {
+            EditorApplication.ExecuteMenuItem("Window/General/Game");
             var graph_A = MakeTemporaryGraph();
             var graph_B = MakeTemporaryGraph();
             var parametersVector3Desc = VFXLibrary.GetParameters().Where(o => o.model.type == typeof(Vector3)).First();
@@ -294,6 +295,7 @@ namespace UnityEditor.VFX.Test
         [UnityTest]
         public IEnumerator CreateComponent_Modify_Value_Doesnt_Reset([ValueSource("trueOrFalse")] bool modifyValue, [ValueSource("trueOrFalse")] bool modifyAssetValue)
         {
+            EditorApplication.ExecuteMenuItem("Window/General/Game");
             var graph = MakeTemporaryGraph();
             var parametersVector2Desc = VFXLibrary.GetParameters().Where(o => o.model.type == typeof(Vector2)).First();
 
@@ -410,6 +412,7 @@ namespace UnityEditor.VFX.Test
         [UnityTest]
         public IEnumerator CreateComponent_Modify_Asset_Keep_Override()
         {
+            EditorApplication.ExecuteMenuItem("Window/General/Game");
             var graph = MakeTemporaryGraph();
 
             var parametersVector3Desc = VFXLibrary.GetParameters().Where(o => o.model.type == typeof(Vector3)).First();
@@ -471,6 +474,7 @@ namespace UnityEditor.VFX.Test
         [UnityTest]
         public IEnumerator CreateComponentWithAllBasicTypeExposed([ValueSource("trueOrFalse")] bool linkMode, [ValueSource("trueOrFalse")] bool bindingModes)
         {
+            EditorApplication.ExecuteMenuItem("Window/General/Game");
             var commonBaseName = "abcd_";
 
             Func<Type, object> GetValue_A_Type = delegate(Type type)
