@@ -1,6 +1,8 @@
 #ifndef __SHADERBASE_H__
 #define __SHADERBASE_H__
 
+#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
+
 #ifdef SHADER_API_PSSL
     #ifndef Texture2DMS
         #define Texture2DMS         MS_Texture2D
@@ -16,7 +18,7 @@
 #endif
 
 #ifdef MSAA_ENABLED
-    TEXTURE2D_MSAA(float, g_depth_tex) : register( t0 );
+    Texture2DMS<float> g_depth_tex : register( t0 );
 
     float FetchDepthMSAA(uint2 pixCoord, uint sampleIdx)
     {
