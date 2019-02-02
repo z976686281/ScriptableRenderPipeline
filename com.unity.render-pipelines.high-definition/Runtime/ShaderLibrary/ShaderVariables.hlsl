@@ -129,6 +129,7 @@ CBUFFER_END
     static uint unity_StereoEyeIndex;
 #elif defined(UNITY_SINGLE_PASS_STEREO)
 #if SHADER_STAGE_COMPUTE
+    #define unity_StereoEyeIndex 0
 #else
     CBUFFER_START(UnityStereoEyeIndex)
         int unity_StereoEyeIndex;
