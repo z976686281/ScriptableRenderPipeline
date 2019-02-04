@@ -133,6 +133,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Rename SampleCameraDepth() functions to LoadCameraDepth() and SampleCameraDepth(), same for SampleCameraColor() functions
 - Improved Motion Blur quality. 
 - Remove unused _ComputeEyeIndex
+- Update stereo frame settings values for single-pass instancing and double-wide
 
 ## [5.2.0-preview] - 2018-11-27
 
