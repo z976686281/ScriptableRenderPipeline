@@ -143,24 +143,6 @@ namespace UnityEngine.Rendering
             }
         }
 
-        public static VRTextureUsage OverrideRenderTexture(bool xrInstancing, ref TextureDimension dimension, ref int slices)
-        {
-            if (xrInstancing)
-            {
-                //dimension = TextureDimension.Tex2DArray;
-            }
-
-            if (stereoRenderingMode == StereoRenderingMode.SinglePassInstanced)
-            {
-	            slices = eyeCount;
-
-                // XRTODO: add validation, asserts
-                return XRGraphics.eyeTextureDesc.vrUsage;
-            }
-
-            return VRTextureUsage.None;
-        }
-
         public static RenderTextureDescriptor eyeTextureDesc
         {
             get

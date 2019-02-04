@@ -4,10 +4,11 @@ Shader "Hidden/HDRP/Blit"
 
         #pragma target 4.5
         #pragma only_renderers d3d11 ps4 xboxone vulkan metal switch
+        #pragma multi_compile _ FORCE_NO_TEXTURE2DX_ARRAY
         #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
         #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
 
-        TEXTURE2D(_BlitTexture);
+        TEXTURE2DX(_BlitTexture);
         SamplerState sampler_PointClamp;
         SamplerState sampler_LinearClamp;
         uniform float4 _BlitScaleBias;
@@ -56,7 +57,7 @@ Shader "Hidden/HDRP/Blit"
             uv.x = (uv.x + unity_StereoEyeIndex) * 0.5;
             uv.y = 1.0 - uv.y; // Always flip Y when rendering stereo since HDRP doesn't support OpenGL
 #endif
-            return SAMPLE_TEXTURE2D_LOD(_BlitTexture, sampler_PointClamp, uv, _BlitMipLevel);
+            return SAMPLE_TEXTURE2DX_LOD(_BlitTexture, sampler_PointClamp, uv, _BlitMipLevel);
         }
 
         float4 FragBilinear(Varyings input) : SV_Target
@@ -67,7 +68,7 @@ Shader "Hidden/HDRP/Blit"
             uv.x = (uv.x + unity_StereoEyeIndex) * 0.5;
             uv.y = 1.0 - uv.y; // Always flip Y when rendering stereo since HDRP doesn't support OpenGL
 #endif
-            return SAMPLE_TEXTURE2D_LOD(_BlitTexture, sampler_LinearClamp, uv, _BlitMipLevel);
+            return SAMPLE_TEXTURE2DX_LOD(_BlitTexture, sampler_LinearClamp, uv, _BlitMipLevel);
         }
 
     ENDHLSL
