@@ -775,7 +775,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             frameIndex &= 1;
 
             return rtHandleSystem.Alloc(Vector2.one, filterMode: FilterMode.Point, colorFormat: GraphicsFormat.R16G16B16A16_SFloat,
-                                        enableRandomWrite: true, useMipMap: true, autoGenerateMips: false,
+                                        enableRandomWrite: true, useMipMap: true, autoGenerateMips: false, xrInstancing: true,
                                         name: string.Format("CameraColorBufferMipChain{0}", frameIndex));
         }
 

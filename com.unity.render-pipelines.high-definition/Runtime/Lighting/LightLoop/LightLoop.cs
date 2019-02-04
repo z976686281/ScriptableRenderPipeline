@@ -2630,7 +2630,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             bool needsContactShadows = (m_CurrentSunLight != null && sunShadowData != null && sunShadowData.contactShadows) || m_DominantLightIndex != -1;
             if (!m_EnableContactShadow || !needsContactShadows)
             {
-                cmd.SetGlobalTexture(HDShaderIDs._DeferredShadowTexture, Texture2D.blackTexture);
+                cmd.SetGlobalTexture(HDShaderIDs._DeferredShadowTexture, Texture2DX.GetBlackTexture());
                 return;
             }
             cmd.SetGlobalTexture(HDShaderIDs._DeferredShadowTexture, deferredShadowRT);
@@ -2691,7 +2691,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 int numTilesX = (hdCamera.actualWidth  + (deferredShadowTileSize - 1)) / deferredShadowTileSize;
                 int numTilesY = (hdCamera.actualHeight + (deferredShadowTileSize - 1)) / deferredShadowTileSize;
 
-                cmd.DispatchCompute(screenSpaceShadowComputeShader, kernel, numTilesX, numTilesY, 1);
+                cmd.DispatchCompute(screenSpaceShadowComputeShader, kernel, numTilesX, numTilesY, XRGraphics.computePassCount);
             }
         }
 
@@ -2774,7 +2774,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                         }
                         else
                         {
-                            cmd.DispatchCompute(deferredComputeShader, kernel, numTilesX, numTilesY, 1);
+                            cmd.DispatchCompute(deferredComputeShader, kernel, numTilesX, numTilesY, XRGraphics.computePassCount);
                         }
                     }
                 }

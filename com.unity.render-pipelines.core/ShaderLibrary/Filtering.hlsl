@@ -1,6 +1,13 @@
 #ifndef UNITY_FILTERING_INCLUDED
 #define UNITY_FILTERING_INCLUDED
 
+// Ability for render pipelines to redefine TEXTURE2DX as texture array for single-pass stereo instancing
+#ifndef TEXTURE2DX
+    #define TEXTURE2DX              TEXTURE2D
+    #define TEXTURE2DX_ARGS         TEXTURE2D_ARGS
+    #define SAMPLE_TEXTURE2DX_LOD   SAMPLE_TEXTURE2D_LOD
+#endif
+
 // Basic B-Spline of the 2nd degree (3rd order, support = 4).
 // The fractional coordinate of each part is assumed to be in the [0, 1] range.
 // https://www.desmos.com/calculator/479pgatwlt
@@ -91,7 +98,7 @@ void BiquadraticFilter(float2 fracCoord, out float2 weights[2], out float2 offse
 }
 
 // texSize = (width, height, 1/width, 1/height)
-float4 SampleTexture2DBiquadratic(TEXTURE2D_ARGS(tex, smp), float2 coord, float4 texSize)
+float4 SampleTexture2DBiquadratic(TEXTURE2DX_ARGS(tex, smp), float2 coord, float4 texSize)
 {
     float2 xy = coord * texSize.xy;
     float2 ic = floor(xy);
@@ -101,14 +108,14 @@ float4 SampleTexture2DBiquadratic(TEXTURE2D_ARGS(tex, smp), float2 coord, float4
     BiquadraticFilter(1.0 - fc, weights, offsets); // Inverse-translate the filter centered around 0.5
 
     // Apply the viewport scale right at the end.
-    return weights[0].x * weights[0].y * SAMPLE_TEXTURE2D_LOD(tex, smp, min((ic + float2(offsets[0].x, offsets[0].y)) * (texSize.zw * 1.0), 1.0), 0.0)  // Top left
-         + weights[1].x * weights[0].y * SAMPLE_TEXTURE2D_LOD(tex, smp, min((ic + float2(offsets[1].x, offsets[0].y)) * (texSize.zw * 1.0), 1.0), 0.0)  // Top right
-         + weights[0].x * weights[1].y * SAMPLE_TEXTURE2D_LOD(tex, smp, min((ic + float2(offsets[0].x, offsets[1].y)) * (texSize.zw * 1.0), 1.0), 0.0)  // Bottom left
-         + weights[1].x * weights[1].y * SAMPLE_TEXTURE2D_LOD(tex, smp, min((ic + float2(offsets[1].x, offsets[1].y)) * (texSize.zw * 1.0), 1.0), 0.0); // Bottom right
+    return weights[0].x * weights[0].y * SAMPLE_TEXTURE2DX_LOD(tex, smp, min((ic + float2(offsets[0].x, offsets[0].y)) * (texSize.zw * 1.0), 1.0), 0.0)  // Top left
+         + weights[1].x * weights[0].y * SAMPLE_TEXTURE2DX_LOD(tex, smp, min((ic + float2(offsets[1].x, offsets[0].y)) * (texSize.zw * 1.0), 1.0), 0.0)  // Top right
+         + weights[0].x * weights[1].y * SAMPLE_TEXTURE2DX_LOD(tex, smp, min((ic + float2(offsets[0].x, offsets[1].y)) * (texSize.zw * 1.0), 1.0), 0.0)  // Bottom left
+         + weights[1].x * weights[1].y * SAMPLE_TEXTURE2DX_LOD(tex, smp, min((ic + float2(offsets[1].x, offsets[1].y)) * (texSize.zw * 1.0), 1.0), 0.0); // Bottom right
 }
 
 // texSize = (width, height, 1/width, 1/height)
-float4 SampleTexture2DBicubic(TEXTURE2D_ARGS(tex, smp), float2 coord, float4 texSize, float2 maxCoord)
+float4 SampleTexture2DBicubic(TEXTURE2DX_ARGS(tex, smp), float2 coord, float4 texSize, float2 maxCoord)
 {
     float2 xy = coord * texSize.xy + 0.5;
     float2 ic = floor(xy);
@@ -117,10 +124,10 @@ float4 SampleTexture2DBicubic(TEXTURE2D_ARGS(tex, smp), float2 coord, float4 tex
     float2 weights[2], offsets[2];
     BicubicFilter(fc, weights, offsets);
 
-    return weights[0].y * (weights[0].x * SAMPLE_TEXTURE2D_LOD(tex, smp, min((ic + float2(offsets[0].x, offsets[0].y) - 0.5) * texSize.zw, maxCoord), 0.0)  +
-                           weights[1].x * SAMPLE_TEXTURE2D_LOD(tex, smp, min((ic + float2(offsets[1].x, offsets[0].y) - 0.5) * texSize.zw, maxCoord), 0.0)) +
-           weights[1].y * (weights[0].x * SAMPLE_TEXTURE2D_LOD(tex, smp, min((ic + float2(offsets[0].x, offsets[1].y) - 0.5) * texSize.zw, maxCoord), 0.0)  +
-                           weights[1].x * SAMPLE_TEXTURE2D_LOD(tex, smp, min((ic + float2(offsets[1].x, offsets[1].y) - 0.5) * texSize.zw, maxCoord), 0.0));
+    return weights[0].y * (weights[0].x * SAMPLE_TEXTURE2DX_LOD(tex, smp, min((ic + float2(offsets[0].x, offsets[0].y) - 0.5) * texSize.zw, maxCoord), 0.0)  +
+                           weights[1].x * SAMPLE_TEXTURE2DX_LOD(tex, smp, min((ic + float2(offsets[1].x, offsets[0].y) - 0.5) * texSize.zw, maxCoord), 0.0)) +
+           weights[1].y * (weights[0].x * SAMPLE_TEXTURE2DX_LOD(tex, smp, min((ic + float2(offsets[0].x, offsets[1].y) - 0.5) * texSize.zw, maxCoord), 0.0)  +
+                           weights[1].x * SAMPLE_TEXTURE2DX_LOD(tex, smp, min((ic + float2(offsets[1].x, offsets[1].y) - 0.5) * texSize.zw, maxCoord), 0.0));
 }
 
 #endif // UNITY_FILTERING_INCLUDED

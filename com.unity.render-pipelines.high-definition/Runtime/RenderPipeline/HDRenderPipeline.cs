@@ -432,7 +432,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             {
                 m_DebugColorPickerBuffer = RTHandles.Alloc(Vector2.one, filterMode: FilterMode.Point, colorFormat: GraphicsFormat.R16G16B16A16_SFloat, useDynamicScale: true, name: "DebugColorPicker");
                 m_DebugFullScreenTempBuffer = RTHandles.Alloc(Vector2.one, filterMode: FilterMode.Point, colorFormat: GraphicsFormat.R16G16B16A16_SFloat, useDynamicScale: true, name: "DebugFullScreen");
-                m_IntermediateAfterPostProcessBuffer = RTHandles.Alloc(Vector2.one, filterMode: FilterMode.Point, colorFormat: GraphicsFormat.R16G16B16A16_SFloat, useDynamicScale: true, name: "AfterPostProcess"); // Needs to be FP16 because output target might be HDR
+                m_IntermediateAfterPostProcessBuffer = RTHandles.Alloc(Vector2.one, filterMode: FilterMode.Point, colorFormat: GraphicsFormat.R16G16B16A16_SFloat, useDynamicScale: true, xrInstancing: true, name: "AfterPostProcess"); // Needs to be FP16 because output target might be HDR
             }
 
             // Let's create the MSAA textures
@@ -769,14 +769,14 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 }
                 else
                 {
-                    cmd.SetGlobalTexture(HDShaderIDs._CameraMotionVectorsTexture, Texture2D.blackTexture);
+                    cmd.SetGlobalTexture(HDShaderIDs._CameraMotionVectorsTexture, Texture2DX.GetBlackTexture());
                 }
 
                 // Light loop stuff...
                 if (hdCamera.frameSettings.IsEnabled(FrameSettingsField.SSR))
                     cmd.SetGlobalTexture(HDShaderIDs._SsrLightingTexture, m_SsrLightingTexture);
                 else
-                    cmd.SetGlobalTexture(HDShaderIDs._SsrLightingTexture, HDUtils.clearTexture);
+                    cmd.SetGlobalTexture(HDShaderIDs._SsrLightingTexture, Texture2DX.GetClearTexture());
 
                 // Off screen rendering is disabled for most of the frame by default.
                 cmd.SetGlobalInt(HDShaderIDs._OffScreenRendering, 0);
@@ -1870,7 +1870,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             m_BlitPropertyBlock.SetTexture(HDShaderIDs._BlitTexture, m_IntermediateAfterPostProcessBuffer);
             m_BlitPropertyBlock.SetVector(HDShaderIDs._BlitScaleBias, scaleBias);
             m_BlitPropertyBlock.SetFloat(HDShaderIDs._BlitMipLevel, 0);
-            HDUtils.DrawFullScreen(cmd, hdCamera.finalViewport, GetBlitMaterial(), destination, m_BlitPropertyBlock, 0);
+            HDUtils.DrawFullScreen(cmd, hdCamera.finalViewport, HDUtils.GetBlitMaterial(cmd, m_IntermediateAfterPostProcessBuffer.rt.dimension), destination, m_BlitPropertyBlock, 0);
         }
 
         void InitializeGlobalResources(ScriptableRenderContext renderContext)
@@ -2268,7 +2268,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 cmd.SetComputeTextureParam(m_applyDistortionCS, m_applyDistortionKernel, HDShaderIDs._Destination, m_CameraColorBuffer);
                 cmd.SetComputeVectorParam(m_applyDistortionCS, HDShaderIDs._Size, size);
 
-                cmd.DispatchCompute(m_applyDistortionCS, m_applyDistortionKernel, Mathf.CeilToInt(size.x / x), Mathf.CeilToInt(size.y / y), 1);
+                cmd.DispatchCompute(m_applyDistortionCS, m_applyDistortionKernel, Mathf.CeilToInt(size.x / x), Mathf.CeilToInt(size.y / y), XRGraphics.computePassCount);
             }
         }
 
@@ -2762,7 +2762,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
                     cmd.SetComputeBufferParam(cs, kernel, HDShaderIDs._SsrDepthPyramidMipOffsets, info.GetOffsetBufferData(m_DepthPyramidMipLevelOffsetsBuffer));
 
-                    cmd.DispatchCompute(cs, kernel, HDUtils.DivRoundUp(w, 8), HDUtils.DivRoundUp(h, 8), 1);
+                    cmd.DispatchCompute(cs, kernel, HDUtils.DivRoundUp(w, 8), HDUtils.DivRoundUp(h, 8), XRGraphics.computePassCount);
                 }
 
                 using (new ProfilingSample(cmd, "SSR - Reprojection", CustomSamplerId.SsrReprojection.GetSampler()))
@@ -2774,12 +2774,12 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._SsrLightingTextureRW, m_SsrLightingTexture);
                     cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._ColorPyramidTexture,  previousColorPyramid);
 
-                    cmd.DispatchCompute(cs, kernel, HDUtils.DivRoundUp(w, 8), HDUtils.DivRoundUp(h, 8), 1);
+                    cmd.DispatchCompute(cs, kernel, HDUtils.DivRoundUp(w, 8), HDUtils.DivRoundUp(h, 8), XRGraphics.computePassCount);
                 }
 
             	if (!hdCamera.colorPyramidHistoryIsValid)
             	{
-                	cmd.SetGlobalTexture(HDShaderIDs._SsrLightingTexture, HDUtils.clearTexture);
+                	cmd.SetGlobalTexture(HDShaderIDs._SsrLightingTexture, Texture2DX.GetClearTexture());
                 	hdCamera.colorPyramidHistoryIsValid = true; // For the next frame...
             	}
 			}
