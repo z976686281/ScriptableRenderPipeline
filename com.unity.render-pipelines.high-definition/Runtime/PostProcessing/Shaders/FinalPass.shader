@@ -19,9 +19,9 @@ Shader "Hidden/HDRP/FinalPass"
         #include "Packages/com.unity.render-pipelines.high-definition/Runtime/PostProcessing/Shaders/FXAA.hlsl"
         #include "Packages/com.unity.render-pipelines.high-definition/Runtime/PostProcessing/Shaders/RTUpscale.hlsl"
 
-        TEXTURE2D(_InputTexture);
+        TEXTURE2DX(_InputTexture);
         TEXTURE2D(_GrainTexture);
-        TEXTURE2D(_AfterPostProcessTexture);
+        TEXTURE2DX(_AfterPostProcessTexture);
         TEXTURE2D_ARRAY(_BlueNoiseTexture);
 
         SAMPLER(sampler_LinearClamp);
@@ -86,7 +86,7 @@ Shader "Hidden/HDRP/FinalPass"
             #if defined(BILINEAR) || defined(CATMULL_ROM_4) || defined(LANCZOS)
             float3 outColor = UpscaledResult(positionNDC.xy);
             #else
-            float3 outColor = LOAD_TEXTURE2D(_InputTexture, positionSS).xyz;
+            float3 outColor = LOAD_TEXTURE2DX(_InputTexture, positionSS).xyz;
             #endif
 
             #if FXAA
@@ -132,7 +132,7 @@ Shader "Hidden/HDRP/FinalPass"
 
             // Apply AfterPostProcess target
             #if APPLY_AFTER_POST
-            float4 afterPostColor = SAMPLE_TEXTURE2D_LOD(_AfterPostProcessTexture, s_point_clamp_sampler, positionNDC.xy * _ScreenToTargetScale.xy, 0);
+            float4 afterPostColor = SAMPLE_TEXTURE2DX_LOD(_AfterPostProcessTexture, s_point_clamp_sampler, positionNDC.xy * _ScreenToTargetScale.xy, 0);
             // After post objects are blended according to the method described here: https://developer.nvidia.com/gpugems/GPUGems3/gpugems3_ch23.html
             outColor.xyz = afterPostColor.a * outColor.xyz + afterPostColor.xyz;
             #endif
