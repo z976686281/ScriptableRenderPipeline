@@ -274,13 +274,15 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                         int w = camera.actualWidth;
                         int h = camera.actualHeight;
                         cmd.SetRenderTarget(source);
-                        // XRTODO: for some reasons, the entire target is clear in VR. Investigate ...
-                        if (XRGraphics.stereoRenderingMode != XRGraphics.StereoRenderingMode.SinglePassInstanced)
+
+                        // Clear guard bands only if required
+                        // XR C++ code can issue a full clear if the viewport of the device is fullscreen, bypassing the viewport from the command buffer
+                        if (w < source.rt.width || h < source.rt.height)
                         {
-                        cmd.SetViewport(new Rect(w, 0, k_RTGuardBandSize, h));
-                        cmd.ClearRenderTarget(false, true, Color.black);
-                        cmd.SetViewport(new Rect(0, h, w + k_RTGuardBandSize, k_RTGuardBandSize));
-                        cmd.ClearRenderTarget(false, true, Color.black);
+                            cmd.SetViewport(new Rect(w, 0, k_RTGuardBandSize, h));
+                            cmd.ClearRenderTarget(false, true, Color.black);
+                            cmd.SetViewport(new Rect(0, h, w + k_RTGuardBandSize, k_RTGuardBandSize));
+                            cmd.ClearRenderTarget(false, true, Color.black);
                         }
                     }
 
