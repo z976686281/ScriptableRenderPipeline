@@ -1,11 +1,16 @@
 #ifndef __SHADERBASE_H__
 #define __SHADERBASE_H__
 
+#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/Texture2DX.hlsl"
 
 #ifdef SHADER_API_PSSL
     #ifndef Texture2DMS
         #define Texture2DMS         MS_Texture2D
+    #endif
+
+    #ifndef SampleCmpLevelZero
+        #define SampleCmpLevelZero  SampleCmpLOD0
     #endif
 
     #ifndef SampleCmpLevelZero

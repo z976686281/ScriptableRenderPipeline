@@ -45,6 +45,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added software dynamic resolution support
 - Added support for "After Post-Process" render pass for unlit shader
 - Added support for textured rectangular area lights
+- Added stereo instancing macros to MSAA shaders
+- Added support for Quarter Res Raytraced Reflections (not enabled)
+- Added fade factor for decal projectors.
 - Added stereo instancing macros to most shaders used in VR
 
 ### Fixed
@@ -105,6 +108,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fixed Decals when rendering multiple camera in a single frame
 - Fixed cascade shadow count in shader
 - Fixed issue with Stacklit shader with Haze effect
+- Fixed an issue with the max sample count for the TAA
+- Fixed post-process guard band for XR
+- Fixed exposure of emissive of Unlit
+- Fixed depth only and motion vector pass for Unlit not working correctly with MSAA
 
 ### Changed
 - ColorPyramid compute shader passes is swapped to pixel shader passes on platforms where the later is faster (Nintendo Switch).
@@ -131,9 +138,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Parameter depthSlice on SetRenderTarget functions now defaults to -1 to bind the entire resource
 - Rename SampleCameraDepth() functions to LoadCameraDepth() and SampleCameraDepth(), same for SampleCameraColor() functions
 - Improved Motion Blur quality. 
-- Remove unused _ComputeEyeIndex
 - Update stereo frame settings values for single-pass instancing and double-wide
 - Rearrange FetchDepth functions to prepare for stereo-instancing
+- Remove unused _ComputeEyeIndex
 
 ## [5.2.0-preview] - 2018-11-27
 
