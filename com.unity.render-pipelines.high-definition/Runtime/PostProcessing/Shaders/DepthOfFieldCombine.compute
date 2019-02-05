@@ -1,4 +1,6 @@
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
+// XRTODO: must be before Filtering.hlsl ... refactor this?
+#include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/Texture2DX.hlsl"
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Filtering.hlsl"
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
 
@@ -18,13 +20,13 @@
 
 #pragma kernel KMainPreCombineFar
 
-TEXTURE2D(_InputTexture);
-TEXTURE2D(_InputNearTexture);
-TEXTURE2D(_InputNearAlphaTexture);
-TEXTURE2D(_InputFarTexture);
-TEXTURE2D(_InputCoCTexture);
+TEXTURE2DX(_InputTexture);
+TEXTURE2DX(_InputNearTexture);
+TEXTURE2DX(_InputNearAlphaTexture);
+TEXTURE2DX(_InputFarTexture);
+TEXTURE2DX(_InputCoCTexture);
 
-RW_TEXTURE2D(float3, _OutputTexture);
+RW_TEXTURE2DX(float3, _OutputTexture);
 
 SAMPLER(sampler_LinearClamp);
 
@@ -40,7 +42,7 @@ void MAIN(uint2 dispatchThreadId : SV_DispatchThreadID)
     PositionInputs posInputs = GetPositionInput(float2(dispatchThreadId), _ScreenSize.zw, uint2(GROUP_SIZE, GROUP_SIZE));
     float2 uv = posInputs.positionNDC * _ScreenToTargetScale.xy;
 
-    float3 outColor = LOAD_TEXTURE2D(_InputTexture, posInputs.positionSS).xyz;
+    float3 outColor = LOAD_TEXTURE2DX(_InputTexture, posInputs.positionSS).xyz;
     float4 bicubicWnd = float4(_ScreenSize.xy * _TargetScale.y * rcp(_ScreenToTargetScale.xy), 1.0 / (_ScreenSize.xy * _TargetScale.y* rcp(_ScreenToTargetScale.xy)));
 
     // Avoid bleeding with the RTHandle autosize system
@@ -53,16 +55,16 @@ void MAIN(uint2 dispatchThreadId : SV_DispatchThreadID)
         float dstAlpha = 1.0;
 
         // Fullscreen CoC
-        float coc = LOAD_TEXTURE2D(_InputCoCTexture, posInputs.positionSS).x;
+        float coc = LOAD_TEXTURE2DX(_InputCoCTexture, posInputs.positionSS).x;
 
         if (coc > 0.0)
         {
             #if FULL_RES
-            float3 farColor = LOAD_TEXTURE2D(_InputFarTexture, posInputs.positionSS).xyz;
+            float3 farColor = LOAD_TEXTURE2DX(_InputFarTexture, posInputs.positionSS).xyz;
             #elif HIGH_QUALITY
-            float3 farColor = SampleTexture2DBicubic(TEXTURE2D_PARAM(_InputFarTexture, sampler_LinearClamp), uv, bicubicWnd, maxCoord).xyz;
+            float3 farColor = SampleTexture2DBicubic(TEXTURE2DX_PARAM(_InputFarTexture, sampler_LinearClamp), uv, bicubicWnd, maxCoord).xyz;
             #else
-            float3 farColor = SAMPLE_TEXTURE2D_LOD(_InputFarTexture, sampler_LinearClamp, uv, 0.0).xyz;
+            float3 farColor = SAMPLE_TEXTURE2DX_LOD(_InputFarTexture, sampler_LinearClamp, uv, 0.0).xyz;
             #endif
 
             // Non-linear blend
@@ -80,33 +82,33 @@ void MAIN(uint2 dispatchThreadId : SV_DispatchThreadID)
     #if NEAR
     {
         #if FULL_RES
-        float3 nearColor = LOAD_TEXTURE2D(_InputNearTexture, posInputs.positionSS).xyz;
-        float alpha = LOAD_TEXTURE2D(_InputNearAlphaTexture, posInputs.positionSS).x;
+        float3 nearColor = LOAD_TEXTURE2DX(_InputNearTexture, posInputs.positionSS).xyz;
+        float alpha = LOAD_TEXTURE2DX(_InputNearAlphaTexture, posInputs.positionSS).x;
         #elif HIGH_QUALITY
-        float3 nearColor = SampleTexture2DBicubic(TEXTURE2D_PARAM(_InputNearTexture, sampler_LinearClamp), uv, bicubicWnd, maxCoord).xyz;
-        float alpha = SampleTexture2DBicubic(TEXTURE2D_PARAM(_InputNearAlphaTexture, sampler_LinearClamp), uv, bicubicWnd, maxCoord).x;
+        float3 nearColor = SampleTexture2DBicubic(TEXTURE2DX_PARAM(_InputNearTexture, sampler_LinearClamp), uv, bicubicWnd, maxCoord).xyz;
+        float alpha = SampleTexture2DBicubic(TEXTURE2DX_PARAM(_InputNearAlphaTexture, sampler_LinearClamp), uv, bicubicWnd, maxCoord).x;
         #else
-        float3 nearColor = SAMPLE_TEXTURE2D_LOD(_InputNearTexture, sampler_LinearClamp, uv, 0.0).xyz;
-        float alpha = SAMPLE_TEXTURE2D_LOD(_InputNearAlphaTexture, sampler_LinearClamp, uv, 0.0).x;
+        float3 nearColor = SAMPLE_TEXTURE2DX_LOD(_InputNearTexture, sampler_LinearClamp, uv, 0.0).xyz;
+        float alpha = SAMPLE_TEXTURE2DX_LOD(_InputNearAlphaTexture, sampler_LinearClamp, uv, 0.0).x;
         #endif
 
         outColor = lerp(outColor, nearColor, alpha);
     }
     #endif
 
-    _OutputTexture[posInputs.positionSS] = outColor;
+    _OutputTexture[COORD_TEXTURE2DX(posInputs.positionSS)] = outColor;
 }
 
 [numthreads(GROUP_SIZE, GROUP_SIZE, 1)]
 void KMainPreCombineFar(uint2 dispatchThreadId : SV_DispatchThreadID)
 {
-    float3 baseColor = LOAD_TEXTURE2D(_InputTexture, dispatchThreadId).xyz;
-    float3 farColor = LOAD_TEXTURE2D(_InputFarTexture, dispatchThreadId).xyz;
+    float3 baseColor = LOAD_TEXTURE2DX(_InputTexture, dispatchThreadId).xyz;
+    float3 farColor = LOAD_TEXTURE2DX(_InputFarTexture, dispatchThreadId).xyz;
 
     float3 dstColor = float3(0.0, 0.0, 0.0);
     float dstAlpha = 1.0;
 
-    float coc = LOAD_TEXTURE2D(_InputCoCTexture, dispatchThreadId).x;
+    float coc = LOAD_TEXTURE2DX(_InputCoCTexture, dispatchThreadId).x;
 
     if (coc > 0.0)
     {
@@ -117,5 +119,5 @@ void KMainPreCombineFar(uint2 dispatchThreadId : SV_DispatchThreadID)
         dstAlpha = saturate(1.0 - blend);
     }
 
-    _OutputTexture[dispatchThreadId] = baseColor * dstAlpha + dstColor;
+    _OutputTexture[COORD_TEXTURE2DX(dispatchThreadId)] = baseColor * dstAlpha + dstColor;
 }

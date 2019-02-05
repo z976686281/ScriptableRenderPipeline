@@ -33,7 +33,7 @@
     TEXTURE2D_ARRAY(_Env2DTextures);
 
     // XRTODO: Need to stereo-ize access
-    TEXTURE2D(_DeferredShadowTexture);
+    TEXTURE2DX(_DeferredShadowTexture);
 
     // Area shadow paper texture
 #ifdef ENABLE_RAYTRACING

@@ -1,6 +1,9 @@
 #ifndef UNITY_ATMOSPHERIC_SCATTERING_INCLUDED
 #define UNITY_ATMOSPHERIC_SCATTERING_INCLUDED
 
+// XRTODO: must be before Filtering.hlsl ... refactor this?
+#include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/Texture2DX.hlsl"
+
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/VolumeRendering.hlsl"
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Filtering.hlsl"
 
