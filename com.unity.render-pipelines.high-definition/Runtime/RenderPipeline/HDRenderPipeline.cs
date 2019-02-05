@@ -1802,11 +1802,15 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             // Because of this, we need another blit here to the final render target at the right viewport.
             if (Debug.isDebugBuild)
             {
+                StartStereoRendering(cmd, renderContext, camera);
+
                 RenderDebug(hdCamera, cmd, cullingResults);
                 using (new ProfilingSample(cmd, "Final Blit (Dev Build Only)"))
                 {
                     BlitFinalCameraTexture(cmd, hdCamera, target.id);
                 }
+
+                StopStereoRendering(cmd, renderContext, camera);
             }
 
             // Pushes to XR headset and/or display mirror
@@ -3168,6 +3172,9 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         {
             if (cam.stereoEnabled)
             {
+                // Reset viewport for C++ stereo code
+                cmd.SetViewport(cam.pixelRect);
+
                 renderContext.ExecuteCommandBuffer(cmd);
                 cmd.Clear();
                 renderContext.StartMultiEye(cam);
