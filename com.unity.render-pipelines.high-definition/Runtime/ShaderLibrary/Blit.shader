@@ -55,7 +55,6 @@ Shader "Hidden/HDRP/Blit"
             float2 uv = input.texcoord.xy;
 #if UNITY_SINGLE_PASS_STEREO
             uv.x = (uv.x + unity_StereoEyeIndex) * 0.5;
-            uv.y = 1.0 - uv.y; // Always flip Y when rendering stereo since HDRP doesn't support OpenGL
 #endif
             return SAMPLE_TEXTURE2DX_LOD(_BlitTexture, sampler_PointClamp, uv, _BlitMipLevel);
         }
@@ -66,7 +65,6 @@ Shader "Hidden/HDRP/Blit"
             float2 uv = input.texcoord.xy;
 #if UNITY_SINGLE_PASS_STEREO
             uv.x = (uv.x + unity_StereoEyeIndex) * 0.5;
-            uv.y = 1.0 - uv.y; // Always flip Y when rendering stereo since HDRP doesn't support OpenGL
 #endif
             return SAMPLE_TEXTURE2DX_LOD(_BlitTexture, sampler_LinearClamp, uv, _BlitMipLevel);
         }
