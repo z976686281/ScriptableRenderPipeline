@@ -274,10 +274,14 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                         int w = camera.actualWidth;
                         int h = camera.actualHeight;
                         cmd.SetRenderTarget(source);
+                        // XRTODO: for some reasons, the entire target is clear in VR. Investigate ...
+                        if (XRGraphics.stereoRenderingMode != XRGraphics.StereoRenderingMode.SinglePassInstanced)
+                        {
                         cmd.SetViewport(new Rect(w, 0, k_RTGuardBandSize, h));
                         cmd.ClearRenderTarget(false, true, Color.black);
                         cmd.SetViewport(new Rect(0, h, w + k_RTGuardBandSize, k_RTGuardBandSize));
                         cmd.ClearRenderTarget(false, true, Color.black);
+                        }
                     }
 
                     // TODO: Do we want user effects before post?

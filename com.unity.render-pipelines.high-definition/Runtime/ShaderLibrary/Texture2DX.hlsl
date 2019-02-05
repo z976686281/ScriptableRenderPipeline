@@ -6,8 +6,7 @@
 
 // Must be in sync with C# with property useTexArray in Texture2DX.cs
 #if defined(SHADER_API_D3D11)
-    // XRTODO: disabled until all SPI code is merged
-    //#define UNITY_TEXTURE2DX_AS_ARRAY_SUPPORTED
+    #define UNITY_TEXTURE2DX_AS_ARRAY_SUPPORTED
 #endif
 
 // Validate supported platforms
