@@ -132,6 +132,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Parameter depthSlice on SetRenderTarget functions now defaults to -1 to bind the entire resource
 - Rename SampleCameraDepth() functions to LoadCameraDepth() and SampleCameraDepth(), same for SampleCameraColor() functions
 - Improved Motion Blur quality. 
+- Rearrange FetchDepth functions to prepare for stereo-instancing
 
 ## [5.2.0-preview] - 2018-11-27
 
