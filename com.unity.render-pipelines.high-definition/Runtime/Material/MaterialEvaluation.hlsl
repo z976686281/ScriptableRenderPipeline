@@ -56,7 +56,7 @@ float GetScreenSpaceDiffuseOcclusion(float2 positionSS)
     // We store inverse AO so neutral is black. So either we sample inside or outside the texture it return 0 in case of neutral
      // Ambient occlusion use for indirect lighting (reflection probe, baked diffuse lighting)
 #ifndef _SURFACE_TYPE_TRANSPARENT
-    float indirectAmbientOcclusion = 1.0 - LOAD_TEXTURE2D(_AmbientOcclusionTexture, positionSS).x;
+    float indirectAmbientOcclusion = 1.0 - LOAD_TEXTURE2DX(_AmbientOcclusionTexture, positionSS).x;
 #else
     float indirectAmbientOcclusion = 1.0;
 #endif
