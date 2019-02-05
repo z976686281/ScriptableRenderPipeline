@@ -37,7 +37,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added Material validator in Render Pipeline Debug
 - Added code to future support of DXR (not enabled)
 - Added support of multiviewport
-- Added stereo instancing macros to most shaders used in VR
 - Added HDRenderPipeline.RequestSkyEnvironmentUpdate function to force an update from script when sky is set to OnDemand
 - Added a Lighting and BackLighting slots in Lit, StackLit, Fabric and Hair master nodes
 - Added support for overriding terrain detail rendering shaders, via the render pipeline editor resources asset
@@ -46,7 +45,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added software dynamic resolution support
 - Added support for "After Post-Process" render pass for unlit shader
 - Added support for textured rectangular area lights
-- Added stereo instancing macros to MSAA shaders
+- Added stereo instancing macros to most shaders used in VR
 
 ### Fixed
 - Fixed logic to disable FPTL with stereo rendering
