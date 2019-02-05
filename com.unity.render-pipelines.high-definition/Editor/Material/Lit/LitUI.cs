@@ -475,7 +475,6 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
                         // encode back GUID and it's hash
                         diffusionProfileAsset[layerIndex].vectorValue = newGuid;
-                        Debug.Log("Update diffusion profile diffusionProfile hash from: " + diffusionProfileHash[layerIndex].floatValue + " to " + hash);
                         diffusionProfileHash[layerIndex].floatValue = hash;
                     }
                 }

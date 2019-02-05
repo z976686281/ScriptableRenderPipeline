@@ -40,8 +40,11 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         Vector4[]                   worldScales;
         Vector4[]                   filterKernels;
         float[]                     diffusionProfileHashes;
-        DiffusionProfileSettings[]  defaultDiffusionProfileSettings;
+        DiffusionProfileSettings[]  hdAssetDiffusionProfileList;
+        DiffusionProfileSettings    defaultDiffusionProfile;
         int                         activeDiffusionProfileCount;
+        public uint                 texturingModeFlags;        // 1 bit/profile: 0 = PreAndPostScatter, 1 = PostScatter
+        public uint                 transmissionFlags;         // 1 bit/profile: 0 = regular, 1 = thin
 
         public SubsurfaceScatteringManager()
         {
@@ -84,14 +87,13 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
             // fill the list with the max number of diffusion profile so we dont have
             // the error: exceeds previous array size (5 vs 3). Cap to previous size.
-             // TODO: constant
-            thicknessRemaps = new Vector4[17];
-            shapeParams = new Vector4[17];
-            transmissionTintsAndFresnel0 = new Vector4[17];
-            disabledTransmissionTintsAndFresnel0 = new Vector4[17];
-            worldScales = new Vector4[17];
-            filterKernels = new Vector4[17];
-            diffusionProfileHashes = new float[17];
+            thicknessRemaps = new Vector4[DiffusionProfileConstants.DIFFUSION_PROFILE_COUNT];
+            shapeParams = new Vector4[DiffusionProfileConstants.DIFFUSION_PROFILE_COUNT];
+            transmissionTintsAndFresnel0 = new Vector4[DiffusionProfileConstants.DIFFUSION_PROFILE_COUNT];
+            disabledTransmissionTintsAndFresnel0 = new Vector4[DiffusionProfileConstants.DIFFUSION_PROFILE_COUNT];
+            worldScales = new Vector4[DiffusionProfileConstants.DIFFUSION_PROFILE_COUNT];
+            filterKernels = new Vector4[DiffusionProfileConstants.DIFFUSION_PROFILE_COUNT * DiffusionProfileConstants.SSS_N_SAMPLES_NEAR_FIELD];
+            diffusionProfileHashes = new float[DiffusionProfileConstants.DIFFUSION_PROFILE_COUNT];
         }
 
         public RTHandleSystem.RTHandle GetSSSBuffer(int index)
@@ -121,7 +123,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             m_CopyStencilForSplitLighting.SetInt(HDShaderIDs._StencilRef, (int)StencilLightingUsage.SplitLighting);
             m_CopyStencilForSplitLighting.SetInt(HDShaderIDs._StencilMask, (int)HDRenderPipeline.StencilBitMask.LightingMask);
             
-            defaultDiffusionProfileSettings = hdAsset.diffusionProfileSettingsList;
+            hdAssetDiffusionProfileList = hdAsset.diffusionProfileSettingsList;
+            defaultDiffusionProfile = hdAsset.defaultDiffusionProfileSettings;
         }
 
         public void Cleanup()
@@ -148,7 +151,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
         void UpdateCurrentDiffusionProfileSettings()
         {
-            var currentDiffusionProfiles = defaultDiffusionProfileSettings;
+            var currentDiffusionProfiles = hdAssetDiffusionProfileList;
             var diffusionProfileOverride = VolumeManager.instance.stack.GetComponent<DiffusionProfileOverride>();
 
             // If there is a diffusion profile volume override, we merge diffusion profiles that are overwritten
@@ -157,23 +160,31 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 currentDiffusionProfiles = diffusionProfileOverride.GetMergedDiffusionProfileSettings();
             }
 
-            int i = 0;
+            // The first profile of the list is the default diffusion profile, used either when the diffusion profile
+            // on the material isn't assigned or when the diffusion profile can't be displayed (too many on the frame)
+            SetDiffusionProfileAtIndex(defaultDiffusionProfile, 0);
+            diffusionProfileHashes[0] = DiffusionProfileConstants.DIFFUSION_PROFILE_NEUTRAL_ID;
+
+            int i = 1;
             foreach (var v in currentDiffusionProfiles)
             {
                 if (v == null)
                     continue;
-
-                thicknessRemaps[i] = v.thicknessRemaps[1];
-                shapeParams[i] = v.shapeParams[1];
-                transmissionTintsAndFresnel0[i] = v.transmissionTintsAndFresnel0[1];
-                disabledTransmissionTintsAndFresnel0[i] = v.disabledTransmissionTintsAndFresnel0[1];
-                worldScales[i] = v.worldScales[1];
-                filterKernels[i] = v.filterKernels[1];
-                diffusionProfileHashes[i] = HDShadowUtils.Asfloat(v.profiles[0].hash);
-                i++;
+                SetDiffusionProfileAtIndex(v, i++);
             }
 
             activeDiffusionProfileCount = i;
+        }
+
+        void SetDiffusionProfileAtIndex(DiffusionProfileSettings profile, int index)
+        {
+            thicknessRemaps[index] = profile.thicknessRemaps;
+            shapeParams[index] = profile.shapeParams;
+            transmissionTintsAndFresnel0[index] = profile.transmissionTintsAndFresnel0;
+            disabledTransmissionTintsAndFresnel0[index] = profile.disabledTransmissionTintsAndFresnel0;
+            worldScales[index] = profile.worldScales;
+            filterKernels[index] = profile.filterKernels;
+            diffusionProfileHashes[index] = HDShadowUtils.Asfloat(profile.profile.hash);
         }
 
         public void PushGlobalParams(HDCamera hdCamera, CommandBuffer cmd)
@@ -190,16 +201,12 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             cmd.SetGlobalInt(HDShaderIDs._EnableSubsurfaceScattering, hdCamera.frameSettings.IsEnabled(FrameSettingsField.SubsurfaceScattering) ? 1 : 0);
             unsafe
             {
-                // TODO !!
                 // Warning: Unity is not able to losslessly transfer integers larger than 2^24 to the shader system.
                 // Therefore, we bitcast uint to float in C#, and bitcast back to uint in the shader.
-                // uint texturingModeFlags = sssParameters[0].texturingModeFlags;
-                // uint transmissionFlags = sssParameters[0].transmissionFlags; // TODO: move these to HDRP asset ?
-                // cmd.SetGlobalFloat(HDShaderIDs._TexturingModeFlags, *(float*)&texturingModeFlags);
-                // cmd.SetGlobalFloat(HDShaderIDs._TransmissionFlags, *(float*)&transmissionFlags);
-                
-                cmd.SetGlobalFloat(HDShaderIDs._TexturingModeFlags, 0);
-                cmd.SetGlobalFloat(HDShaderIDs._TransmissionFlags, 0);
+                uint texturingModeFlags = this.texturingModeFlags;
+                uint transmissionFlags = this.transmissionFlags;
+                cmd.SetGlobalFloat(HDShaderIDs._TexturingModeFlags, *(float*)&texturingModeFlags);
+                cmd.SetGlobalFloat(HDShaderIDs._TransmissionFlags, *(float*)&transmissionFlags);
             }
             cmd.SetGlobalVectorArray(HDShaderIDs._ThicknessRemaps, thicknessRemaps);
             cmd.SetGlobalVectorArray(HDShaderIDs._ShapeParams, shapeParams);
@@ -264,7 +271,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 {
                     // Warning: Unity is not able to losslessly transfer integers larger than 2^24 to the shader system.
                     // Therefore, we bitcast uint to float in C#, and bitcast back to uint in the shader.
-                    uint texturingModeFlags = 0; // TODO: change this (maybe inside the diffusion profile settings)
+                    uint texturingModeFlags = this.texturingModeFlags;
                     cmd.SetComputeFloatParam(m_SubsurfaceScatteringCS, HDShaderIDs._TexturingModeFlags, *(float*)&texturingModeFlags);
                 }
 

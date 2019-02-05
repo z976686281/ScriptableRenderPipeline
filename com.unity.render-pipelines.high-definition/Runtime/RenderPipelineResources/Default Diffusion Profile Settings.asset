@@ -13,6 +13,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b2686e09ec7aef44bad2843e4416f057, type: 3}
   m_Name: Default Diffusion Profile Settings
   m_EditorClassIdentifier: 
+  profile:
+    name: Skin
+    scatteringDistance: {r: 0.7568628, g: 0.32156864, b: 0.20000002, a: 1}
+    transmissionTint: {r: 0.7568628, g: 0.32156864, b: 0.20000002, a: 1}
+    texturingMode: 0
+    transmissionMode: 0
+    thicknessRemap: {x: 0, y: 8.152544}
+    worldScale: 1
+    ior: 1.4
+    hash: 1612348458
+  m_Version: 1
   profiles:
   - name: Skin
     scatteringDistance: {r: 0.7568628, g: 0.32156864, b: 0.20000002, a: 1}
@@ -22,4 +33,4 @@ MonoBehaviour:
     thicknessRemap: {x: 0, y: 8.152544}
     worldScale: 1
     ior: 1.4
-    hash: 538606635
+    hash: 1612348458

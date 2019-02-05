@@ -121,6 +121,9 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         [SerializeField]
         public DiffusionProfileSettings[] diffusionProfileSettingsList;
 
+        [NonSerialized]
+        public DiffusionProfileSettings defaultDiffusionProfileSettings;
+
         // HDRP use GetRenderingLayerMaskNames to create its light linking system
         // Mean here we define our name for light linking.
         [System.NonSerialized]

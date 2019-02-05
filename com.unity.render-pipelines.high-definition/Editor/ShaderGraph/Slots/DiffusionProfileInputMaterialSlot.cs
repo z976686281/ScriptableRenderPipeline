@@ -44,42 +44,31 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             if (matOwner == null)
                 throw new Exception(string.Format("Slot {0} either has no owner, or the owner is not a {1}", this, typeof(AbstractMaterialNode)));
 
-            string diffusionProfileGUID = "";
-            if (diffusionProfile != null)
-                diffusionProfileGUID = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(diffusionProfile));
-            
-            // Note: Unity can't parse float values with exponential notation so we just can't
+            // Note: Unity ShaderLab can't parse float values with exponential notation so we just can't
             // store the hash nor the asset GUID here :(
-            var difffusionProfileHash = new Vector1ShaderProperty
+            var diffusionProfileHash = new Vector1ShaderProperty
             {
                 overrideReferenceName = "_DiffusionProfileHash",
-                // value = (diffusionProfile != null) ? diffusionProfile.profiles[0].hash : 0
+                hidden = true,
                 value = 0
             };
             var diffusionProfileAsset = new Vector4ShaderProperty
             {
                 overrideReferenceName = "_DiffusionProfileAsset",
+                hidden = true,
                 value = Vector4.zero
-                // value = (diffusionProfile != null) ? HDEditorUtils.ConvertGUIDToVector4(diffusionProfileGUID) : Vector4.zero
             };
 
-            Debug.Log("Diffusion profile properties added !");
-            properties.AddShaderProperty(difffusionProfileHash);
+            properties.AddShaderProperty(diffusionProfileHash);
             properties.AddShaderProperty(diffusionProfileAsset);
-
-            properties.AddShaderProperty(new ColorShaderProperty
-            {
-                overrideReferenceName = "_A1B2C3D4EF",
-                value = Color.white
-            });
         }
 
         public override string GetDefaultValue(GenerationMode generationMode)
         {
             if (m_DiffusionProfile == null)
-                return "0";
+                return "_DiffusionProfileHash";
             else
-                return "asfloat(uint(" + m_DiffusionProfile.profiles[0].hash.ToString() + "))";
+                return "((asuint(_DiffusionProfileHash) != 0) ? _DiffusionProfileHash : asfloat(uint(" + m_DiffusionProfile.profiles[0].hash + ")))";
         }
 
         public override void CopyValuesFrom(MaterialSlot foundSlot)

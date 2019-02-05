@@ -12,7 +12,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
     public class DiffusionProfileHashTable
     {
         [System.NonSerialized]
-        static HashSet<uint>                    diffusionProfileHashes = new HashSet< uint >();
+        static Dictionary<int,  uint>           diffusionProfileHashes = new Dictionary<int, uint>();
         [System.NonSerialized]
         static Queue<DiffusionProfileSettings>  diffusionProfileToUpdate = new Queue<DiffusionProfileSettings>();
 
@@ -25,14 +25,19 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
         static uint GetDiffusionProfileHash(DiffusionProfileSettings asset)
         {
-            return (uint)AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(asset)).GetHashCode();
+            uint hash32 = (uint)AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(asset)).GetHashCode();
+            uint mantissa = hash32 & 0x7FFFFF;
+            uint exponent = 0b10000000; // 0 as exponent
+
+            // only store the first 23 bits so when the hash is converted to float, it doesn't write into
+            // the exponent part of the float (which avoids having NaNs, inf or precisions issues)
+            return (exponent << 23) | hash32;
         }
 
         static uint GenerateUniqueHash(DiffusionProfileSettings asset)
         {
             uint hash = GetDiffusionProfileHash(asset);
-            Debug.Log("Generating new hash for asset " + asset);
-            return GetCollisionLessHash(hash);
+            return GetCollisionLessHash(hash, asset);
         }
 
         static void UpdateDiffusionProfileHashes()
@@ -45,25 +50,22 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                 if (profile == null)
                     continue;
 
-                uint hash = profile.profiles[0].hash;
+                uint hash = profile.profile.hash;
 
                 // If the hash is 0, then we need to generate a new one (it means that the profile was just created)
                 if (hash == 0)
                 {
-                    Debug.Log("Empty hash in asset: " + profile);
-                    profile.profiles[0].hash = GenerateUniqueHash(profile);
+                    profile.profile.hash = GenerateUniqueHash(profile);
                     EditorUtility.SetDirty(profile);
                 }
-                // If the hash is already in the list, it means that it was duplicated
-                else if (diffusionProfileHashes.Contains(hash))
+                // If the asset is not in the list, we regenerate it's hash using the GUID (which leads to the same result every time)
+                else if (!diffusionProfileHashes.ContainsKey(profile.GetInstanceID()))
                 {
-                    foreach (var h in diffusionProfileHashes)
-                        Debug.Log("h: " + h);
-                    profile.profiles[0].hash = GenerateUniqueHash(profile);
+                    profile.profile.hash = GenerateUniqueHash(profile);
                     EditorUtility.SetDirty(profile);
                 }
                 else // otherwise, no issue, we don't change the hash and we keep it to check for collisions
-                    diffusionProfileHashes.Add(profile.profiles[0].hash);
+                    diffusionProfileHashes.Add(profile.GetInstanceID(), profile.profile.hash);
             }
         }
 
@@ -73,11 +75,11 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             diffusionProfileToUpdate.Enqueue(asset);
         }
 
-        static uint GetCollisionLessHash(uint hash)
+        static uint GetCollisionLessHash(uint hash, DiffusionProfileSettings asset)
         {
-            while (diffusionProfileHashes.Contains(hash))
+            while (diffusionProfileHashes.ContainsValue(hash) || hash == DiffusionProfileConstants.DIFFUSION_PROFILE_NEUTRAL_ID)
             {
-                Debug.LogWarning("Collision found !!!!, generating a new hash");
+                Debug.LogWarning("Collision found in asset: " + asset + ", generating a new hash, previous hash: " + hash);
                 hash++;
             }
             return hash;

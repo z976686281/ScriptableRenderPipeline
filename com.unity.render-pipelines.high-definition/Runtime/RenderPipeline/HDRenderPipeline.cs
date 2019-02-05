@@ -281,6 +281,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             // It's done here because we know every HDRP assets have been imported before
             UpgradeResourcesIfNeeded();
 
+            CreateDefaultDiffusionProfile();
 
             // Initial state of the RTHandle system.
             // Tells the system that we will require MSAA or not so that we can avoid wasteful render texture allocation.
@@ -391,6 +392,14 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             m_LightLoop.InitRaytracing(m_RayTracingManager);
             m_AmbientOcclusionSystem.InitRaytracing(m_RayTracingManager, m_SharedRTManager);
 #endif
+        }
+
+        void CreateDefaultDiffusionProfile()
+        {
+            if (m_Asset.defaultDiffusionProfileSettings == null)
+            {
+                m_Asset.defaultDiffusionProfileSettings = ScriptableObject.CreateInstance<DiffusionProfileSettings>();
+            }
         }
 
         void UpgradeResourcesIfNeeded()
@@ -772,7 +781,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             m_CurrentHeight = hdCamera.actualHeight;
         }
 
-        public void PushGlobalParams(HDCamera hdCamera, CommandBuffer cmd, DiffusionProfileSettings sssParameters)
+        public void PushGlobalParams(HDCamera hdCamera, CommandBuffer cmd)
         {
             using (new ProfilingSample(cmd, "Push Global Parameters", CustomSamplerId.PushGlobalParameters.GetSampler()))
             {
@@ -1454,7 +1463,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
             renderContext.SetupCameraProperties(camera, camera.stereoEnabled);
 
-            PushGlobalParams(hdCamera, cmd, diffusionProfileSettings);
+            PushGlobalParams(hdCamera, cmd);
 
             // TODO: Find a correct place to bind these material textures
             // We have to bind the material specific global parameters in this mode
