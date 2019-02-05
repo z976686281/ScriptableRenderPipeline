@@ -3172,6 +3172,9 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         {
             if (cam.stereoEnabled)
             {
+                // Reset viewport for C++ stereo code
+                cmd.SetViewport(cam.pixelRect);
+
                 renderContext.ExecuteCommandBuffer(cmd);
                 cmd.Clear();
                 renderContext.StartMultiEye(cam);
