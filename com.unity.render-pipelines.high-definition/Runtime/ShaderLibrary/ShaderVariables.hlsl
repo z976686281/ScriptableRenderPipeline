@@ -308,11 +308,6 @@ float4x4 _PrevViewProjMatrixStereo[2];
 float4   _WorldSpaceCameraPosStereo[2];
 float4   _WorldSpaceCameraPosStereoEyeOffset[2];
 float4   _PrevCamPosRWSStereo[2];
-#if SHADER_STAGE_COMPUTE
-// Currently the Unity engine doesn't automatically update stereo indices, offsets, and matrices for compute shaders.
-// Instead, we manually update _ComputeEyeIndex in SRP code.
-float _ComputeEyeIndex;
-#endif
 CBUFFER_END
 
 #endif // USING_STEREO_MATRICES
