@@ -493,6 +493,9 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             // During forward or GBuffer pass we must tag the lighting
             // If GBuffer don't have a depth prepass we must tag DoesntReceiveSSR (so we always tag it for safety)
             // Motion vector have its own tag ObjectVelocity
+            // Note: we always render first all depth only THEN all depth + velocity. This is why we don't need to test/overwrite velocity during depth prepass (and so don't need to have the write mask)
+            // as we are always quarante that we will overwrite the written velocity if we draw a new object closer.
+            // In the case where we don't have depth prepass for deferred, we render velocity pass after GBuffer pass, so the condition still true and GBuffer don't need to handle velocity either.
             int stencilRef = (int)StencilLightingUsage.RegularLighting;
             int stencilWriteMask = (int)HDRenderPipeline.StencilBitMask.LightingMask;
             int stencilRefDepth = 0;
@@ -510,12 +513,13 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             if (material.HasProperty(kReceivesSSR) && material.GetInt(kReceivesSSR) == 0)
             {
                 stencilRefDepth |= (int)HDRenderPipeline.StencilBitMask.DoesntReceiveSSR;
-                stencilWriteMaskDepth |= (int)HDRenderPipeline.StencilBitMask.DoesntReceiveSSR;
                 stencilRefGBuffer |= (int)HDRenderPipeline.StencilBitMask.DoesntReceiveSSR;
-                stencilWriteMaskGBuffer |= (int)HDRenderPipeline.StencilBitMask.DoesntReceiveSSR;
                 stencilRefMV |= (int)HDRenderPipeline.StencilBitMask.DoesntReceiveSSR;
-                stencilWriteMaskMV |= (int)HDRenderPipeline.StencilBitMask.DoesntReceiveSSR;
             }
+
+            stencilWriteMaskDepth |= (int)HDRenderPipeline.StencilBitMask.DoesntReceiveSSR | (int)HDRenderPipeline.StencilBitMask.DecalsForwardOutputNormalBuffer;
+            stencilWriteMaskGBuffer |= (int)HDRenderPipeline.StencilBitMask.DoesntReceiveSSR | (int)HDRenderPipeline.StencilBitMask.DecalsForwardOutputNormalBuffer;
+            stencilWriteMaskMV |= (int)HDRenderPipeline.StencilBitMask.DoesntReceiveSSR | (int)HDRenderPipeline.StencilBitMask.DecalsForwardOutputNormalBuffer;
 
             // As we tag both during velocity pass and Gbuffer pass we need a separate state and we need to use the write mask
             material.SetInt(kStencilRef, stencilRef);

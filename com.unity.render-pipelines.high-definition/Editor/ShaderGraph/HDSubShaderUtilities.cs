@@ -999,10 +999,10 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
         public static void GetStencilStateForDepthOrMV(bool receiveDecals, bool receiveSSR, bool useObjectVelocity, ref Pass pass)
         {
-            int stencilWriteMask = receiveDecals ? (int)HDRenderPipeline.StencilBitMask.DecalsForwardOutputNormalBuffer : 0;
+            int stencilWriteMask = (int)HDRenderPipeline.StencilBitMask.DecalsForwardOutputNormalBuffer;
             int stencilRef = receiveDecals ? (int)HDRenderPipeline.StencilBitMask.DecalsForwardOutputNormalBuffer : 0;
 
-            stencilWriteMask |= !receiveSSR ? (int)HDRenderPipeline.StencilBitMask.DoesntReceiveSSR : 0;
+            stencilWriteMask |= (int)HDRenderPipeline.StencilBitMask.DoesntReceiveSSR;
             stencilRef |= !receiveSSR ? (int)HDRenderPipeline.StencilBitMask.DoesntReceiveSSR : 0;
 
             stencilWriteMask |= useObjectVelocity ? (int)HDRenderPipeline.StencilBitMask.ObjectVelocity : 0;
@@ -1059,8 +1059,10 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             int stencilWriteMask = (int)HDRenderPipeline.StencilBitMask.LightingMask;
             int stencilRef = useSplitLighting ? (int)StencilLightingUsage.SplitLighting : (int)StencilLightingUsage.RegularLighting;
 
-            stencilWriteMask |= !receiveSSR ? (int)HDRenderPipeline.StencilBitMask.DoesntReceiveSSR : 0;
+            stencilWriteMask |= (int)HDRenderPipeline.StencilBitMask.DoesntReceiveSSR;
             stencilRef |= !receiveSSR ? (int)HDRenderPipeline.StencilBitMask.DoesntReceiveSSR : 0;
+
+            stencilWriteMask |= (int)HDRenderPipeline.StencilBitMask.DecalsForwardOutputNormalBuffer;
 
             pass.StencilOverride = new List<string>()
             {

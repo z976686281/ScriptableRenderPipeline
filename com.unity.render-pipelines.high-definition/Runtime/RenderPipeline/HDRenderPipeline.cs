@@ -1556,7 +1556,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 if (m_LightLoop.GetFeatureVariantsEnabled() || hdCamera.frameSettings.IsEnabled(FrameSettingsField.SSR))
                 {
                     // For material classification we use compute shader and so can't read into the stencil, so prepare it.
-                    using (new ProfilingSample(cmd, "Clear and copy stencil texture", CustomSamplerId.ClearAndCopyStencilTexture.GetSampler()))
+                    using (new ProfilingSample(cmd, "Clear and copy stencil texture for material classification", CustomSamplerId.ClearAndCopyStencilTexture.GetSampler()))
                     {
 #if UNITY_SWITCH
                         // Faster on Switch.
