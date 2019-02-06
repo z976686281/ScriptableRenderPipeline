@@ -41,7 +41,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
             // If the volume is null it means that we're editing the component from the asset
             // So we can't access the bounds of the volume to fill diffusion profiles used in the volume
-            if (m_Volume != null)
+            if (m_Volume != null && !m_Volume.isGlobal)
             {
                 if (GUILayout.Button("Fill profiles with scene materials"))
                     FillProfileListWithScene();
@@ -70,28 +70,24 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         {
             var profiles = new HashSet<DiffusionProfileSettings>();
             if (m_Volume.isGlobal)
-            {
-                Debug.Log("TODO !");
-            }
-            else
-            {
-                var volumeCollider = m_Volume.GetComponent<Collider>();
+                return;
 
-                // Get all mesh renderers that are within the current volume
-                var diffusionProfiles = new List<DiffusionProfileSettings>();
-                foreach (var meshRenderer in Object.FindObjectsOfType<MeshRenderer>())
+            var volumeCollider = m_Volume.GetComponent<Collider>();
+
+            // Get all mesh renderers that are within the current volume
+            var diffusionProfiles = new List<DiffusionProfileSettings>();
+            foreach (var meshRenderer in Object.FindObjectsOfType<MeshRenderer>())
+            {
+                var colliders = Physics.OverlapBox(meshRenderer.bounds.center, meshRenderer.bounds.size / 2);
+                if (colliders.Contains(volumeCollider))
                 {
-                    var colliders = Physics.OverlapBox(meshRenderer.bounds.center, meshRenderer.bounds.size / 2);
-                    if (colliders.Contains(volumeCollider))
+                    foreach (var mat in meshRenderer.sharedMaterials)
                     {
-                        foreach (var mat in meshRenderer.sharedMaterials)
-                        {
-                            var profile = GetMaterialDiffusionProfile(mat);
+                        var profile = GetMaterialDiffusionProfile(mat);
 
-                            Debug.Log("Add profile: " + profile);
-                            if (profile != null)
-                                profiles.Add(profile);
-                        }
+                        Debug.Log("Add profile: " + profile);
+                        if (profile != null)
+                            profiles.Add(profile);
                     }
                 }
             }

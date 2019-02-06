@@ -68,7 +68,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             if (m_DiffusionProfile == null)
                 return "_DiffusionProfileHash";
             else
-                return "((asuint(_DiffusionProfileHash) != 0) ? _DiffusionProfileHash : asfloat(uint(" + m_DiffusionProfile.profiles[0].hash + ")))";
+                return "((asuint(_DiffusionProfileHash) != 0) ? _DiffusionProfileHash : asfloat(uint(" + m_DiffusionProfile.profile.hash + ")))";
         }
 
         public override void CopyValuesFrom(MaterialSlot foundSlot)

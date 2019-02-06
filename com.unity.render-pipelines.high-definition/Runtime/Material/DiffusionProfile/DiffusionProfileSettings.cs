@@ -204,67 +204,50 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
         public void UpdateCache()
         {
-            for (int i = 0; i < DiffusionProfileConstants.DIFFUSION_PROFILE_COUNT - 1; i++)
-            {
-                UpdateCache(i);
-            }
+            if (filterKernels == null)
+                filterKernels = new Vector4[DiffusionProfileConstants.SSS_N_SAMPLES_NEAR_FIELD];
 
-            // Fill the neutral profile.
-            int neutralId = DiffusionProfileConstants.DIFFUSION_PROFILE_NEUTRAL_ID;
-
-            worldScales = Vector4.one;
-            shapeParams = Vector4.zero;
-            transmissionTintsAndFresnel0.w = 0.04f; // Match DEFAULT_SPECULAR_VALUE defined in Lit.hlsl
-
-            filterKernels = new Vector4[DiffusionProfileConstants.SSS_N_SAMPLES_NEAR_FIELD];
-
-            for (int j = 0, n = DiffusionProfileConstants.SSS_N_SAMPLES_NEAR_FIELD; j < n; j++)
-            {
-                filterKernels[n + j].x = 0f;
-                filterKernels[n + j].y = 1f;
-                filterKernels[n + j].z = 0f;
-                filterKernels[n + j].w = 1f;
-            }
-        }
-
-        public void UpdateCache(int p)
-        {
-            // 'p' is the profile array index. 'i' is the index in the shader (accounting for the neutral profile).
-            int i = p + 1;
-
-            // Erase previous value (This need to be done here individually as in the SSS editor we edit individual component)
-            uint mask = 1u << i;
-            texturingModeFlags &= ~mask;
-            mask = 1u << i;
-            transmissionFlags &= ~mask;
-
-            texturingModeFlags |= (uint)profile.texturingMode    << i;
-            transmissionFlags  |= (uint)profile.transmissionMode << i;
-            thicknessRemaps[i]  = new Vector4(profile.thicknessRemap.x, profile.thicknessRemap.y - profile.thicknessRemap.x, 0f, 0f);
-            worldScales[i]      = new Vector4(profile.worldScale, 1.0f / profile.worldScale, 0f, 0f);
+            thicknessRemaps  = new Vector4(profile.thicknessRemap.x, profile.thicknessRemap.y - profile.thicknessRemap.x, 0f, 0f);
+            worldScales      = new Vector4(profile.worldScale, 1.0f / profile.worldScale, 0f, 0f);
 
             // Premultiply S by ((-1.0 / 3.0) * LOG2_E) on the CPU.
             const float log2e = 1.44269504088896340736f;
             const float k     = (-1.0f / 3.0f) * log2e;
 
-            shapeParams[i]   = profile.shapeParam * k;
-            shapeParams[i].w = profile.maxRadius;
+            shapeParams   = profile.shapeParam * k;
+            shapeParams.w = profile.maxRadius;
             // Convert ior to fresnel0
             float fresnel0 = (profile.ior - 1.0f) / (profile.ior + 1.0f);
             fresnel0 *= fresnel0; // square
-            transmissionTintsAndFresnel0[i] = new Vector4(profile.transmissionTint.r * 0.25f, profile.transmissionTint.g * 0.25f, profile.transmissionTint.b * 0.25f, fresnel0); // Premultiplied
-            disabledTransmissionTintsAndFresnel0[i] = new Vector4(0.0f, 0.0f, 0.0f, fresnel0);
+            transmissionTintsAndFresnel0 = new Vector4(profile.transmissionTint.r * 0.25f, profile.transmissionTint.g * 0.25f, profile.transmissionTint.b * 0.25f, fresnel0); // Premultiplied
+            disabledTransmissionTintsAndFresnel0 = new Vector4(0.0f, 0.0f, 0.0f, fresnel0);
 
-            for (int j = 0, n = DiffusionProfileConstants.SSS_N_SAMPLES_NEAR_FIELD; j < n; j++)
+            for (int n = 0; n < DiffusionProfileConstants.SSS_N_SAMPLES_NEAR_FIELD; n++)
             {
-                filterKernels[n * i + j].x = profile.filterKernelNearField[j].x;
-                filterKernels[n * i + j].y = profile.filterKernelNearField[j].y;
+                filterKernels[n].x = profile.filterKernelNearField[n].x;
+                filterKernels[n].y = profile.filterKernelNearField[n].y;
 
-                if (j < DiffusionProfileConstants.SSS_N_SAMPLES_FAR_FIELD)
+                if (n < DiffusionProfileConstants.SSS_N_SAMPLES_FAR_FIELD)
                 {
-                    filterKernels[n * i + j].z = profile.filterKernelFarField[j].x;
-                    filterKernels[n * i + j].w = profile.filterKernelFarField[j].y;
+                    filterKernels[n].z = profile.filterKernelFarField[n].x;
+                    filterKernels[n].w = profile.filterKernelFarField[n].y;
                 }
+            }
+        }
+
+        // Initialize the settings for the default diffusion  profile
+        public void SetDefaultParams()
+        {
+            worldScales = Vector4.one;
+            shapeParams = Vector4.zero;
+            transmissionTintsAndFresnel0.w = 0.04f; // Match DEFAULT_SPECULAR_VALUE defined in Lit.hlsl
+
+            for (int n = 0; n < DiffusionProfileConstants.SSS_N_SAMPLES_NEAR_FIELD; n++)
+            {
+                filterKernels[n].x = 0f;
+                filterKernels[n].y = 1f;
+                filterKernels[n].z = 0f;
+                filterKernels[n].w = 1f;
             }
         }
 

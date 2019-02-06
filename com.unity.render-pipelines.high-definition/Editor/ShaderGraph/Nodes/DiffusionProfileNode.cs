@@ -56,7 +56,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             uint hash = 0;
             
             if (m_DiffusionProfileAsset != null)
-                hash = (m_DiffusionProfileAsset.profiles[0].hash);
+                hash = (m_DiffusionProfileAsset.profile.hash);
             
             visitor.AddShaderChunk(precision + " " + GetVariableNameForSlot(0) + " = asfloat(uint(" + hash + "));", true);
         }

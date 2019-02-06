@@ -54,31 +54,25 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             m_ProfileMaterial       = CoreUtils.CreateEngineMaterial("Hidden/HDRP/DrawDiffusionProfile");
             m_TransmittanceMaterial = CoreUtils.CreateEngineMaterial("Hidden/HDRP/DrawTransmittanceGraph");
 
-            int count = DiffusionProfileConstants.DIFFUSION_PROFILE_COUNT - 1;
+            var serializedProfile = properties.Find(x => x.profile);
 
-            var serializedProfiles = properties.Find(x => x.profiles);
+            var rp = new RelativePropertyFetcher<DiffusionProfile>(serializedProfile);
 
-            for (int i = 0; i < count; i++)
+            m_Profile = new Profile
             {
-                var serializedProfile = serializedProfiles.GetArrayElementAtIndex(i);
-                var rp = new RelativePropertyFetcher<DiffusionProfile>(serializedProfile);
+                self = serializedProfile,
+                objReference = m_Target.profile,
 
-                m_Profile = new Profile
-                {
-                    self = serializedProfile,
-                    objReference = m_Target.profiles[i],
+                name = rp.Find(x => x.name),
 
-                    name = rp.Find(x => x.name),
-
-                    scatteringDistance = rp.Find(x => x.scatteringDistance),
-                    transmissionTint = rp.Find(x => x.transmissionTint),
-                    texturingMode = rp.Find(x => x.texturingMode),
-                    transmissionMode = rp.Find(x => x.transmissionMode),
-                    thicknessRemap = rp.Find(x => x.thicknessRemap),
-                    worldScale = rp.Find(x => x.worldScale),
-                    ior = rp.Find(x => x.ior)
-                };
-            }
+                scatteringDistance = rp.Find(x => x.scatteringDistance),
+                transmissionTint = rp.Find(x => x.transmissionTint),
+                texturingMode = rp.Find(x => x.texturingMode),
+                transmissionMode = rp.Find(x => x.transmissionMode),
+                thicknessRemap = rp.Find(x => x.thicknessRemap),
+                worldScale = rp.Find(x => x.worldScale),
+                ior = rp.Find(x => x.ior)
+            };
         }
 
         void OnDisable()

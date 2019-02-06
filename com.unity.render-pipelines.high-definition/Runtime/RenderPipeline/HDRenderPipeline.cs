@@ -39,6 +39,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         readonly HDRenderPipelineAsset m_Asset;
         public HDRenderPipelineAsset asset { get { return m_Asset; } }
 
+<<<<<<< HEAD
         DiffusionProfileSettings m_InternalSSSAsset;
         public DiffusionProfileSettings diffusionProfileSettings
         {
@@ -59,11 +60,9 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             }
         }
         public RenderPipelineSettings currentPlatformRenderPipelineSettings { get { return m_Asset.currentPlatformRenderPipelineSettings; } }
-
-        public bool IsInternalDiffusionProfile(DiffusionProfileSettings profile)
-        {
-            return m_InternalSSSAsset == profile;
-        }
+=======
+        public RenderPipelineSettings renderPipelineSettings { get { return m_Asset.renderPipelineSettings; } }
+>>>>>>> 6cefdcabc1... Cleanup and flags management for diffusion profiles
 
         readonly RenderPipelineMaterial m_DeferredMaterial;
         readonly List<RenderPipelineMaterial> m_MaterialList = new List<RenderPipelineMaterial>();
@@ -399,6 +398,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             if (m_Asset.defaultDiffusionProfileSettings == null)
             {
                 m_Asset.defaultDiffusionProfileSettings = ScriptableObject.CreateInstance<DiffusionProfileSettings>();
+                m_Asset.defaultDiffusionProfileSettings.SetDefaultParams();
             }
         }
 

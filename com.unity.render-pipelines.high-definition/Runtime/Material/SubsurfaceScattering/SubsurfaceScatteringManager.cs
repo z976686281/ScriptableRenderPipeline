@@ -178,13 +178,22 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
         void SetDiffusionProfileAtIndex(DiffusionProfileSettings profile, int index)
         {
+            // TODO: cache and watch for changes
             thicknessRemaps[index] = profile.thicknessRemaps;
             shapeParams[index] = profile.shapeParams;
             transmissionTintsAndFresnel0[index] = profile.transmissionTintsAndFresnel0;
             disabledTransmissionTintsAndFresnel0[index] = profile.disabledTransmissionTintsAndFresnel0;
             worldScales[index] = profile.worldScales;
-            filterKernels[index] = profile.filterKernels;
+            Array.Copy(profile.filterKernels, 0, filterKernels, index * DiffusionProfileConstants.SSS_N_SAMPLES_FAR_FIELD, DiffusionProfileConstants.SSS_N_SAMPLES_FAR_FIELD);
             diffusionProfileHashes[index] = HDShadowUtils.Asfloat(profile.profile.hash);
+
+            // Erase previous value (This need to be done here individually as in the SSS editor we edit individual component)
+            uint mask = 1u << index;
+            texturingModeFlags &= ~mask;
+            transmissionFlags &= ~mask;
+            
+            texturingModeFlags |= (uint)profile.profile.texturingMode    << index;
+            transmissionFlags  |= (uint)profile.profile.transmissionMode << index;
         }
 
         public void PushGlobalParams(HDCamera hdCamera, CommandBuffer cmd)

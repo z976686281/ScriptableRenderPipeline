@@ -31,7 +31,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                 {
                     guid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(diffusionProfile));
                     newGuid = HDEditorUtils.ConvertGUIDToVector4(guid);
-                    hash = HDShadowUtils.Asfloat(diffusionProfile.profiles[0].hash);
+                    hash = HDShadowUtils.Asfloat(diffusionProfile.profile.hash);
                 }
 
                 // encode back GUID and it's hash
