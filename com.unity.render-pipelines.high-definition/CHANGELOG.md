@@ -114,6 +114,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fixed depth only and motion vector pass for Unlit not working correctly with MSAA
 - Fixed an issue with stencil buffer copy causing unnecessary compute dispatches for lighting
 - Fixed issue with stencil not correctly setup for various master node and shader for the depth pass, motion vector pass and GBuffer/Forward pass
+- Fixed issue with SRP batcher and DebugDisplay variant of lit shader
 
 ### Changed
 - ColorPyramid compute shader passes is swapped to pixel shader passes on platforms where the later is faster (Nintendo Switch).

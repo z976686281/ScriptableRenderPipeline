@@ -531,7 +531,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             int stencilRefMV = (int)HDRenderPipeline.StencilBitMask.ObjectVelocity;
             int stencilWriteMaskMV = (int)HDRenderPipeline.StencilBitMask.ObjectVelocity;
 
-            if (ssrEnabled)
+            if (!ssrEnabled)
             {
                 stencilRefDepth |= (int)HDRenderPipeline.StencilBitMask.DoesntReceiveSSR;
                 stencilWriteMaskDepth |= (int)HDRenderPipeline.StencilBitMask.DoesntReceiveSSR;
