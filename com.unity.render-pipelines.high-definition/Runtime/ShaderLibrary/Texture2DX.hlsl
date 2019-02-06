@@ -96,6 +96,9 @@
     #if defined(UNITY_STEREO_INSTANCING_ENABLED)
         static uint unity_StereoEyeIndex;
     #elif defined(UNITY_SINGLE_PASS_STEREO) // XRTODO: remove once SinglePassInstanced is working
+        // Workaround for lighting issues with double-wide
+        #define LIGHTLOOP_DISABLE_TILE_AND_CLUSTER
+
         #if SHADER_STAGE_COMPUTE
         #else
             CBUFFER_START(UnityStereoEyeIndex)
