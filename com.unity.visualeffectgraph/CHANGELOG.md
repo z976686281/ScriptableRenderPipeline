@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add seed slot to constant random mode of Attribute from curve and map
 - Add customizable function in VariantProvider to replace the default cartesian product
 - Add Inverse Lerp node
+- Expose light probes parameters in VisualEffect inspector
 
 ### Fixed
 - Some fixes in noise library
@@ -24,6 +25,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fix fog on decals
 - Saturate alpha component in outputs
 - Fixed scaleY in ConnectTarget
+- Incorrect toggle rectangle in VisualEffect inspector
+- Shader compilation with SimpleLit and debug display
 
 ## [5.2.0-preview] - 2018-11-27
 ### Added

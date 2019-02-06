@@ -11,7 +11,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         Pass m_PassMETA = new Pass()
         {
             Name = "META",
-            LightMode = "Meta",
+            LightMode = "META",
             TemplateName = "StackLitPass.template",
             MaterialName = "StackLit",
             ShaderPassName = "SHADERPASS_LIGHT_TRANSPORT",
@@ -130,7 +130,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
         Pass m_PassDepthForwardOnly = new Pass()
         {
-            Name = "DepthOnly",
+            Name = "DepthForwardOnly",
             LightMode = "DepthForwardOnly",
             TemplateName = "StackLitPass.template",
             MaterialName = "StackLit",
@@ -209,7 +209,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
         Pass m_PassMotionVectors = new Pass()
         {
-            Name = "Motion Vectors",
+            Name = "MotionVectors",
             LightMode = "MotionVectors",
             TemplateName = "StackLitPass.template",
             MaterialName = "StackLit",
@@ -276,7 +276,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
         Pass m_PassDistortion = new Pass()
         {
-            Name = "Distortion",
+            Name = "DistortionVectors",
             LightMode = "DistortionVectors",
             TemplateName = "StackLitPass.template",
             MaterialName = "StackLit",
@@ -330,7 +330,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
         Pass m_PassForwardOnly = new Pass()
         {
-            Name = "Forward",
+            Name = "ForwardOnly",
             LightMode = "ForwardOnly",
             TemplateName = "StackLitPass.template",
             MaterialName = "StackLit",
@@ -391,6 +391,8 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                 StackLitMasterNode.HazinessSlotId,
                 StackLitMasterNode.HazeExtentSlotId,
                 StackLitMasterNode.HazyGlossMaxDielectricF0SlotId,
+                StackLitMasterNode.LightingSlotId,
+                StackLitMasterNode.BackLightingSlotId,
             },
             VertexShaderSlots = new List<int>()
             {
@@ -575,7 +577,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         // geometricSpecularAA, energyConservingSpecular, specularOcclusion
         //
 
-        private static HashSet<string> GetActiveFieldsFromMasterNode(INode iMasterNode, Pass pass)
+        private static HashSet<string> GetActiveFieldsFromMasterNode(AbstractMaterialNode iMasterNode, Pass pass)
         {
             HashSet<string> activeFields = new HashSet<string>();
 
@@ -674,11 +676,12 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                 {
                     activeFields.Add("DualSpecularLobeParametrization.HazyGloss");
                     // Option for baseParametrization == Metallic && DualSpecularLobeParametrization == HazyGloss:
-                    if (masterNode.capHazinessWrtMetallic.isOn)
+                    if (masterNode.capHazinessWrtMetallic.isOn && pass.PixelShaderUsesSlot(StackLitMasterNode.HazyGlossMaxDielectricF0SlotId))
                     {
-                        // assert metallic, but masternode should deal with having a consistent
-                        // property config with UpdateNodeAfterDeserialization() etc.
-                        if (pass.PixelShaderUsesSlot(StackLitMasterNode.HazyGlossMaxDielectricF0SlotId))
+                        // check the supporting slot is there (although masternode should deal with having a consistent property config)
+                        var maxDielectricF0Slot = masterNode.FindSlot<Vector1MaterialSlot>(StackLitMasterNode.HazyGlossMaxDielectricF0SlotId);
+
+                        if (maxDielectricF0Slot != null)
                         {
                             // Again we assume masternode has HazyGlossMaxDielectricF0 which should always be the case
                             // if capHazinessWrtMetallic.isOn.
@@ -804,6 +807,15 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             if (masterNode.IsSlotConnected(StackLitMasterNode.CoatNormalSlotId) && pass.PixelShaderUsesSlot(StackLitMasterNode.CoatNormalSlotId))
             {
                 activeFields.Add("CoatNormal");
+            }
+
+            if (masterNode.IsSlotConnected(StackLitMasterNode.LightingSlotId)&& pass.PixelShaderUsesSlot(StackLitMasterNode.LightingSlotId))
+            {
+                activeFields.Add("LightingGI");
+            }
+            if (masterNode.IsSlotConnected(StackLitMasterNode.BackLightingSlotId)&& pass.PixelShaderUsesSlot(StackLitMasterNode.BackLightingSlotId))
+            {
+                activeFields.Add("BackLightingGI");
             }
 
             return activeFields;

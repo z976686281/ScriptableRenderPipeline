@@ -107,6 +107,8 @@ Shader "HDRP/Lit"
         _DistortionBlurRemapMin("DistortionBlurRemapMin", Float) = 0.0
         _DistortionBlurRemapMax("DistortionBlurRemapMax", Float) = 1.0
 
+            
+        [ToggleUI]  _UseShadowThreshold("_UseShadowThreshold", Float) = 0.0
         [ToggleUI]  _AlphaCutoffEnable("Alpha Cutoff Enable", Float) = 0.0
         _AlphaCutoff("Alpha Cutoff", Range(0.0, 1.0)) = 0.5 
         _AlphaCutoffShadow("_AlphaCutoffShadow", Range(0.0, 1.0)) = 0.5
@@ -326,7 +328,7 @@ Shader "HDRP/Lit"
 
         Pass
         {
-            Name "SceneSelectionPass" // Name is not used
+            Name "SceneSelectionPass"
             Tags { "LightMode" = "SceneSelectionPass" }
 
             Cull Off
@@ -354,7 +356,7 @@ Shader "HDRP/Lit"
         // Caution: The outline selection in the editor use the vertex shader/hull/domain shader of the first pass declare. So it should not bethe  meta pass.
         Pass
         {
-            Name "GBuffer"  // Name is not used
+            Name "GBuffer"
             Tags { "LightMode" = "GBuffer" } // This will be only for opaque object based on the RenderQueue index
 
             Cull [_CullMode]
@@ -407,7 +409,7 @@ Shader "HDRP/Lit"
         Pass
         {
             Name "META"
-            Tags{ "LightMode" = "Meta" }
+            Tags{ "LightMode" = "META" }
 
             Cull Off
 
@@ -448,7 +450,6 @@ Shader "HDRP/Lit"
 
             #define SHADERPASS SHADERPASS_SHADOWS
             #define USE_LEGACY_UNITY_MATRIX_VARIABLES
-            #define CUTOFF_TRANSPARENT_DEPTH_SHADOWS
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Material.hlsl"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Lit/Lit.hlsl"
@@ -509,7 +510,7 @@ Shader "HDRP/Lit"
 
         Pass
         {
-            Name "Motion Vectors"
+            Name "MotionVectors"
             Tags{ "LightMode" = "MotionVectors" } // Caution, this need to be call like this to setup the correct parameters by C++ (legacy Unity)
 
             // If velocity pass (motion vectors) is enabled we tag the stencil so it don't perform CameraMotionVelocity
@@ -549,7 +550,7 @@ Shader "HDRP/Lit"
 
         Pass
         {
-            Name "Distortion" // Name is not used
+            Name "DistortionVectors"
             Tags { "LightMode" = "DistortionVectors" } // This will be only for transparent object based on the RenderQueue index
 
             Blend [_DistortionSrcBlend] [_DistortionDstBlend], [_DistortionBlurSrcBlend] [_DistortionBlurDstBlend]
@@ -627,7 +628,7 @@ Shader "HDRP/Lit"
 
             #define SHADERPASS SHADERPASS_FORWARD
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
-    #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Material.hlsl"
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Material.hlsl"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/Lighting.hlsl"
 
         #ifdef DEBUG_DISPLAY
@@ -659,7 +660,7 @@ Shader "HDRP/Lit"
 
         Pass
         {
-            Name "Forward" // Name is not used
+            Name "Forward"
             Tags { "LightMode" = "Forward" } // This will be only for transparent object based on the RenderQueue index
 
             Stencil
@@ -699,7 +700,7 @@ Shader "HDRP/Lit"
 
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/Lighting.hlsl"
-    #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Material.hlsl"
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Material.hlsl"
 
         #ifdef DEBUG_DISPLAY
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Debug/DebugDisplay.hlsl"
@@ -741,7 +742,7 @@ Shader "HDRP/Lit"
             #define SHADERPASS SHADERPASS_DEPTH_ONLY
             #define CUTOFF_TRANSPARENT_DEPTH_POSTPASS
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
-    #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Material.hlsl"
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Material.hlsl"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Lit/Lit.hlsl"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Lit/ShaderPass/LitDepthPass.hlsl"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Lit/LitData.hlsl"
@@ -758,7 +759,7 @@ Shader "HDRP/Lit"
     {
         Pass
         {
-            Name "RTRaytrace_Reflections"
+            Name "ReflectionDXR"
             Tags{ "LightMode" = "ReflectionDXR" }
 
             HLSLPROGRAM
@@ -776,6 +777,7 @@ Shader "HDRP/Lit"
 
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Material.hlsl"
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/Raytracing/Shaders/ShaderVariablesRaytracing.hlsl"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/Raytracing/Shaders/ShaderVariablesRaytracingLightLoop.hlsl"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/Lighting.hlsl"
  
@@ -794,7 +796,7 @@ Shader "HDRP/Lit"
 
         Pass
         {
-            Name "RTRaytrace_Forward"
+            Name "ForwardDXR"
             Tags{ "LightMode" = "ForwardDXR" }
 
             HLSLPROGRAM
@@ -812,6 +814,7 @@ Shader "HDRP/Lit"
 
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Material.hlsl"
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/Raytracing/Shaders/ShaderVariablesRaytracing.hlsl"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/Raytracing/Shaders/ShaderVariablesRaytracingLightLoop.hlsl"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/Lighting.hlsl"
  
@@ -830,8 +833,8 @@ Shader "HDRP/Lit"
 
         Pass
         {
-            Name "RTRaytrace_Visibility"
-            Tags{ "LightMode" = "ShadowsDXR" }
+            Name "VisibilityDXR"
+            Tags{ "LightMode" = "VisibilityDXR" }
 
             HLSLPROGRAM
 
@@ -842,6 +845,7 @@ Shader "HDRP/Lit"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Material.hlsl"
 
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/Raytracing/Shaders/ShaderVariablesRaytracing.hlsl"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/Raytracing/Shaders/RaytracingIntersection.hlsl"
 
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Lit/Lit.hlsl"
