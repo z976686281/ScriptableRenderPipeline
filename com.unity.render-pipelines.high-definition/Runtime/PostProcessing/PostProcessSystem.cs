@@ -2069,15 +2069,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 m_FinalPassMaterial.SetTexture(HDShaderIDs._AfterPostProcessTexture, Texture2DX.GetBlackTexture());
             }
 
-            // This assumes that for now, posts are always off when double wide is enabled
-            if (camera.camera.stereoEnabled && (XRGraphics.stereoRenderingMode == XRGraphics.StereoRenderingMode.SinglePass))
-            {
-                HDUtils.BlitCameraTextureStereoDoubleWide(cmd, source, destination);
-            }
-            else
-            {
-                HDUtils.DrawFullScreen(cmd, backBufferRect, m_FinalPassMaterial, destination);
-            }
+            HDUtils.DrawFullScreen(cmd, backBufferRect, m_FinalPassMaterial, destination);
         }
 
         #endregion
