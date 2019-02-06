@@ -119,6 +119,10 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
         protected const string kStencilRef = "_StencilRef";
         protected const string kStencilWriteMask = "_StencilWriteMask";
+        protected const string kStencilRefDepth = "_StencilRefDepth";
+        protected const string kStencilWriteMaskDepth = "_StencilWriteMaskDepth";
+        protected const string kStencilRefGBuffer = "_StencilRefGBuffer";
+        protected const string kStencilWriteMaskGBuffer = "_StencilWriteMaskGBuffer";
         protected const string kStencilRefMV = "_StencilRefMV";
         protected const string kStencilWriteMaskMV = "_StencilWriteMaskMV";
 
@@ -485,25 +489,43 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                 }
             }
 
-            // Set the reference value for the stencil test.
+            // During prepass or motion vector pass we must tag DoesntReceiveSSR (as motion vector pass can replace depth prepass)
+            // During forward or GBuffer pass we must tag the lighting
+            // If GBuffer don't have a depth prepass we must tag DoesntReceiveSSR (so we always tag it for safety)
+            // Motion vector have its own tag ObjectVelocity
             int stencilRef = (int)StencilLightingUsage.RegularLighting;
             int stencilWriteMask = (int)HDRenderPipeline.StencilBitMask.LightingMask;
+            int stencilRefDepth = 0;
+            int stencilWriteMaskDepth = 0;
+            int stencilRefGBuffer = (int)StencilLightingUsage.RegularLighting;
+            int stencilWriteMaskGBuffer = (int)HDRenderPipeline.StencilBitMask.LightingMask;
+            int stencilRefMV = (int)HDRenderPipeline.StencilBitMask.ObjectVelocity;
+            int stencilWriteMaskMV = (int)HDRenderPipeline.StencilBitMask.ObjectVelocity;
+
             if (material.HasProperty(kMaterialID) && (int)material.GetFloat(kMaterialID) == (int)BaseLitGUI.MaterialId.LitSSS)
             {
-                stencilRef = (int)StencilLightingUsage.SplitLighting;
+                stencilRefGBuffer = stencilRef = (int)StencilLightingUsage.SplitLighting;
             }
 
-            if(material.HasProperty(kReceivesSSR) && material.GetInt(kReceivesSSR) == 0)
+            if (material.HasProperty(kReceivesSSR) && material.GetInt(kReceivesSSR) == 0)
             {
-                stencilWriteMask |= (int)HDRenderPipeline.StencilBitMask.DoesntReceiveSSR;
-                stencilRef |= (int)HDRenderPipeline.StencilBitMask.DoesntReceiveSSR;
+                stencilRefDepth |= (int)HDRenderPipeline.StencilBitMask.DoesntReceiveSSR;
+                stencilWriteMaskDepth |= (int)HDRenderPipeline.StencilBitMask.DoesntReceiveSSR;
+                stencilRefGBuffer |= (int)HDRenderPipeline.StencilBitMask.DoesntReceiveSSR;
+                stencilWriteMaskGBuffer |= (int)HDRenderPipeline.StencilBitMask.DoesntReceiveSSR;
+                stencilRefMV |= (int)HDRenderPipeline.StencilBitMask.DoesntReceiveSSR;
+                stencilWriteMaskMV |= (int)HDRenderPipeline.StencilBitMask.DoesntReceiveSSR;
             }
 
             // As we tag both during velocity pass and Gbuffer pass we need a separate state and we need to use the write mask
             material.SetInt(kStencilRef, stencilRef);
             material.SetInt(kStencilWriteMask, stencilWriteMask);
-            material.SetInt(kStencilRefMV, (int)HDRenderPipeline.StencilBitMask.ObjectVelocity);
-            material.SetInt(kStencilWriteMaskMV, (int)HDRenderPipeline.StencilBitMask.ObjectVelocity);
+            material.SetInt(kStencilRefDepth, stencilRefDepth);
+            material.SetInt(kStencilWriteMaskDepth, stencilWriteMaskDepth);
+            material.SetInt(kStencilRefGBuffer, stencilRefGBuffer);
+            material.SetInt(kStencilWriteMaskGBuffer, stencilWriteMaskGBuffer);
+            material.SetInt(kStencilRefMV, stencilRefMV);
+            material.SetInt(kStencilWriteMaskMV, stencilWriteMaskMV);
 
             if (material.HasProperty(kDisplacementMode))
             {

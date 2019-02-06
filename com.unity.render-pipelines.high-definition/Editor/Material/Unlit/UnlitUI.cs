@@ -46,6 +46,13 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         protected MaterialProperty emissiveIntensity = null;
         protected const string kEmissiveIntensity = "_EmissiveIntensity";
 
+        protected const string kStencilRef = "_StencilRef";
+        protected const string kStencilWriteMask = "_StencilWriteMask";
+        protected const string kStencilRefDepth = "_StencilRefDepth";
+        protected const string kStencilWriteMaskDepth = "_StencilWriteMaskDepth";
+        protected const string kStencilRefMV = "_StencilRefMV";
+        protected const string kStencilWriteMaskMV = "_StencilWriteMaskMV";
+
         override protected void FindMaterialProperties(MaterialProperty[] props)
         {
             color = FindProperty(kColor, props);
@@ -162,6 +169,25 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             SetupBaseUnlitMaterialPass(material);
 
             CoreUtils.SetKeyword(material, "_EMISSIVE_COLOR_MAP", material.GetTexture(kEmissiveColorMap));
+
+            // During prepass or motion vector pass we must tag DoesntReceiveSSR (as motion vector pass can replace depth prepass)
+            // During forward or GBuffer pass we must tag the lighting
+            // If GBuffer don't have a depth prepass we must tag DoesntReceiveSSR (so we always tag it for safety)
+            // Motion vector have its own tag ObjectVelocity
+            int stencilRef = (int)StencilLightingUsage.NoLighting;
+            int stencilWriteMask = (int)HDRenderPipeline.StencilBitMask.LightingMask;
+            int stencilRefDepth = (int)HDRenderPipeline.StencilBitMask.DoesntReceiveSSR;
+            int stencilWriteMaskDepth = (int)HDRenderPipeline.StencilBitMask.DoesntReceiveSSR;
+            int stencilRefMV = (int)HDRenderPipeline.StencilBitMask.ObjectVelocity | (int)HDRenderPipeline.StencilBitMask.DoesntReceiveSSR;
+            int stencilWriteMaskMV = (int)HDRenderPipeline.StencilBitMask.ObjectVelocity | (int)HDRenderPipeline.StencilBitMask.DoesntReceiveSSR;
+
+            // As we tag both during velocity pass and Gbuffer pass we need a separate state and we need to use the write mask
+            material.SetInt(kStencilRef, stencilRef);
+            material.SetInt(kStencilWriteMask, stencilWriteMask);
+            material.SetInt(kStencilRefDepth, stencilRefDepth);
+            material.SetInt(kStencilWriteMaskDepth, stencilWriteMaskDepth);
+            material.SetInt(kStencilRefMV, stencilRefMV);
+            material.SetInt(kStencilWriteMaskMV, stencilWriteMaskMV);
         }
     }
 } // namespace UnityEditor

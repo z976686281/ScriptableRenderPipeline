@@ -246,10 +246,18 @@ Shader "HDRP/LayeredLitTessellation"
         _TransparentSortPriority("_TransparentSortPriority", Float) = 0
 
         // Stencil state
+        // Forward
         [HideInInspector] _StencilRef("_StencilRef", Int) = 2 // StencilLightingUsage.RegularLighting
-        [HideInInspector] _StencilWriteMask("_StencilWriteMask", Int) = 7 // StencilMask.Lighting  (fixed at compile time)
-        [HideInInspector] _StencilRefMV("_StencilRefMV", Int) = 128 // StencilLightingUsage.RegularLighting  (fixed at compile time)
-        [HideInInspector] _StencilWriteMaskMV("_StencilWriteMaskMV", Int) = 128 // StencilMask.ObjectsVelocity  (fixed at compile time)
+        [HideInInspector] _StencilWriteMask("_StencilWriteMask", Int) = 7 // StencilMask.Lighting
+        // GBuffer
+        [HideInInspector] _StencilRefGBuffer("_StencilRefGBuffer", Int) = 2 // StencilLightingUsage.RegularLighting
+        [HideInInspector] _StencilWriteMaskGBuffer("_StencilWriteMaskGBuffer", Int) = 7 // StencilMask.Lighting
+        // Depth prepass
+        [HideInInspector] _StencilRefDepth("_StencilRefDepth", Int) = 0 // Nothing
+        [HideInInspector] _StencilWriteMaskDepth("_StencilWriteMaskDepth", Int) = 32 // DoesntReceiveSSR
+        // Motion vector pass
+        [HideInInspector] _StencilRefMV("_StencilRefMV", Int) = 128 // StencilMask.ObjectsVelocity
+        [HideInInspector] _StencilWriteMaskMV("_StencilWriteMaskMV", Int) = 128 // StencilMask.ObjectsVelocity
 
         // Blending state
         [HideInInspector] _SurfaceType("__surfacetype", Float) = 0.0
@@ -558,8 +566,8 @@ Shader "HDRP/LayeredLitTessellation"
 
             Stencil
             {
-                WriteMask [_StencilWriteMask]
-                Ref [_StencilRef]
+                WriteMask [_StencilWriteMaskGBuffer]
+                Ref [_StencilRefGBuffer]
                 Comp Always
                 Pass Replace
             }
@@ -717,8 +725,8 @@ Shader "HDRP/LayeredLitTessellation"
             // To be able to tag stencil with disableSSR information for forward
             Stencil
             {
-                WriteMask [_StencilWriteMask]
-                Ref [_StencilRef]
+                WriteMask [_StencilWriteMaskDepth]
+                Ref [_StencilRefDepth]
                 Comp Always
                 Pass Replace
             }
