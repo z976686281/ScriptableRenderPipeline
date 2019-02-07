@@ -49,6 +49,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added support for Quarter Res Raytraced Reflections (not enabled)
 - Added fade factor for decal projectors.
 - Added stereo instancing macros to most shaders used in VR
+- Added Texture2DX system to selectively expand macros to texture array for single-pass stereo instancing
 
 ### Fixed
 - Fixed logic to disable FPTL with stereo rendering
