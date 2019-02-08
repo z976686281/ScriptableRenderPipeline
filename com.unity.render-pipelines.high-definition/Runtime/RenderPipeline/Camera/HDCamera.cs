@@ -425,8 +425,13 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             if (ShaderConfig.s_CameraRelativeRendering != 0)
             {
                 prevWorldSpaceCameraPos = worldSpaceCameraPos - prevWorldSpaceCameraPos;
-                Matrix4x4 cameraDisplacement = Matrix4x4.Translate(prevWorldSpaceCameraPos);
-                prevViewProjMatrix *= cameraDisplacement; // Now prevViewProjMatrix correctly transforms this frame's camera-relative positionWS
+                // This fixes issue with cameraDisplacement stacking in prevViewProjMatrix when same camera renders multiple times each logical frame 
+                // causing glitchy motion blur when editor paused.
+                if (m_LastFrameActive != Time.frameCount)
+                {
+                    Matrix4x4 cameraDisplacement = Matrix4x4.Translate(prevWorldSpaceCameraPos);
+                    prevViewProjMatrix *= cameraDisplacement; // Now prevViewProjMatrix correctly transforms this frame's camera-relative positionWS
+                }
             }
             else
             {
@@ -593,10 +598,10 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                         HDRenderPipeline hdPipeline = RenderPipelineManager.currentPipeline as HDRenderPipeline;
                         // If the override layer is "Everything", we fall-back to "Everything" for the current layer mask to avoid issues by having no current layer
                         // In practice we should never have "Everything" as an override mask as it does not make sense (a warning is issued in the UI)
-                        if (hdPipeline.asset.renderPipelineSettings.lightLoopSettings.skyLightingOverrideLayerMask == -1)
+                        if (hdPipeline.asset.currentPlatformRenderPipelineSettings.lightLoopSettings.skyLightingOverrideLayerMask == -1)
                             volumeLayerMask = -1;
                         else
-                            volumeLayerMask = (-1 & ~hdPipeline.asset.renderPipelineSettings.lightLoopSettings.skyLightingOverrideLayerMask);
+                            volumeLayerMask = (-1 & ~hdPipeline.asset.currentPlatformRenderPipelineSettings.lightLoopSettings.skyLightingOverrideLayerMask);
                     }
                 }
             }
