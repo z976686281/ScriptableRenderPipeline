@@ -520,13 +520,19 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
             // Set the reference values for the stencil test
 
-            // During prepass or motion vector pass we must tag DoesntReceiveSSR (as motion vector pass can replace depth prepass)
-            // During forward or GBuffer pass we must tag the lighting
-            // If GBuffer don't have a depth prepass we must tag DoesntReceiveSSR (so we always tag it for safety)
-            // Motion vector have its own tag ObjectVelocity
-            // Note: we always render first all depth only THEN all depth + velocity. This is why we don't need to test/overwrite velocity during depth prepass (and so don't need to have the write mask)
-            // as we are always quarante that we will overwrite the written velocity if we draw a new object closer.
-            // In the case where we don't have depth prepass for deferred, we render velocity pass after GBuffer pass, so the condition still true and GBuffer don't need to handle velocity either.
+            // Stencil usage rules:
+            // DoesntReceiveSSR and DecalsForwardOutputNormalBuffer need to be tagged during depth prepass
+            // LightingMask need to be tagged during either GBuffer or Forward pass
+            // ObjectVelocity need to be tagged in velocity pass.
+            // As velocity pass can be use as a replacement of depth prepass it also need to have DoesntReceiveSSR and DecalsForwardOutputNormalBuffer
+            // Object velocity is always render after a full depth buffer (if there is no depth prepass for GBuffer all object motion vectors are render after GBuffer)
+            // so we have a guarantee than when we write object velocity no other object will be draw on top (and so would have require to overwrite velocity).
+            // Final combination is:
+            // Prepass: DoesntReceiveSSR,  DecalsForwardOutputNormalBuffer
+            // Motion vectors: DoesntReceiveSSR,  DecalsForwardOutputNormalBuffer, ObjectVelocity
+            // GBuffer: LightingMask, DecalsForwardOutputNormalBuffer, ObjectVelocity
+            // Forward: LightingMask
+
             int stencilRef = (int)StencilLightingUsage.RegularLighting;
             int stencilWriteMask = (int)HDRenderPipeline.StencilBitMask.LightingMask;
             int stencilRefDepth = 0;
