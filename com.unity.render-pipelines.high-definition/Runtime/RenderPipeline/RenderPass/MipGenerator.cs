@@ -156,6 +156,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
             if (preferFragment)
             {
+                Debug.Assert(!Texture2DX.useTexArray, "Fragment version of mip generator is not compatible with texture array!");
+
                 int tempTargetWidth = srcMipWidth >> 1;
                 int tempTargetHeight = srcMipHeight >> 1;
 
@@ -182,8 +184,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     m_PropertyBlock.SetFloat(HDShaderIDs._BlitMipLevel, srcMipLevel);
                     cmd.SetRenderTarget(destination, srcMipLevel + 1, CubemapFace.Unknown, -1);
                     cmd.DrawProcedural(Matrix4x4.identity, HDUtils.GetBlitMaterial(cmd, source.dimension), 1, MeshTopology.Triangles, 3, 1, m_PropertyBlock);
-
-                    // Note: HDUtils.GetBlitMaterial(..) will set the correct value for the global keyword FORCE_NO_TEXTURE2DX_ARRAY used in the following color pyramid material
 
                     // Blur horizontal.
                     m_PropertyBlock.SetTexture(HDShaderIDs._Source, destination);
