@@ -98,7 +98,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
             // Project-wise LUT size for all grading operations - meaning that internal LUTs and
             // user-provided LUTs will have to be this size
-            var settings = hdAsset.renderPipelineSettings.postProcessSettings;
+            var settings = hdAsset.currentPlatformRenderPipelineSettings.postProcessSettings;
             m_LutSize = settings.lutSize;
             var lutFormat = (GraphicsFormat)settings.lutFormat;
 
@@ -1234,6 +1234,11 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             // -----------------------------------------------------------------------------
 
             bool scattering = SystemInfo.IsFormatSupported(GraphicsFormat.R32_UInt, FormatUsage.LoadStore) && SystemInfo.IsFormatSupported(GraphicsFormat.R16_UInt, FormatUsage.LoadStore);
+            // TODO: Remove this line when atomic bug in HLSLcc is fixed. 
+            scattering = scattering && (SystemInfo.graphicsDeviceType != GraphicsDeviceType.Vulkan);
+            // TODO: Write a version that uses structured buffer instead of texture to do atomic as Metal doesn't support atomics on textures.
+            scattering = scattering && (SystemInfo.graphicsDeviceType != GraphicsDeviceType.Metal);
+
             int tileSize = 32;
 
             if (scattering)

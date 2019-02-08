@@ -49,6 +49,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added support for Quarter Res Raytraced Reflections (not enabled)
 - Added fade factor for decal projectors.
 - Added stereo instancing macros to most shaders used in VR
+- Added multi edition support for HDRenderPipelineAsset
 
 ### Fixed
 - Fixed logic to disable FPTL with stereo rendering
@@ -113,8 +114,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fixed exposure of emissive of Unlit
 - Fixed depth only and motion vector pass for Unlit not working correctly with MSAA
 - Fixed an issue with stencil buffer copy causing unnecessary compute dispatches for lighting
-- Fixed issue with stencil not correctly setup for various master node and shader for the depth pass, motion vector pass and GBuffer/Forward pass
+- Fixed multi edition issue in FrameSettings
 - Fixed issue with SRP batcher and DebugDisplay variant of lit shader
+- Fixed issue with debug material mode not doing alpha test
+- Fixed issue with stencil not correctly setup for various master node and shader for the depth pass, motion vector pass and GBuffer/Forward pass
 
 ### Changed
 - ColorPyramid compute shader passes is swapped to pixel shader passes on platforms where the later is faster (Nintendo Switch).
@@ -144,6 +147,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Update stereo frame settings values for single-pass instancing and double-wide
 - Rearrange FetchDepth functions to prepare for stereo-instancing
 - Remove unused _ComputeEyeIndex
+- Updated HDRenderPipelineAsset inspector
 - Re-enable SRP batcher for metal
 
 ## [5.2.0-preview] - 2018-11-27
