@@ -216,7 +216,9 @@ namespace UnityEditor.ShaderGraph.Drawing
                 {
                     var nodeView = selection.First();
                     if (nodeView.node.documentationURL != null)
+                    {
                         System.Diagnostics.Process.Start(nodeView.node.documentationURL);
+                    }
                 }
             }
         }
@@ -472,7 +474,10 @@ namespace UnityEditor.ShaderGraph.Drawing
                 if (edgeView != null)
                 {
                     var nodeView = (IShaderNodeView)edgeView.input.node;
+                    if (nodeView.node != null)
+                    {
                         nodesToUpdate.Add(nodeView);
+                    }
 
                     edgeView.output.Disconnect(edgeView);
                     edgeView.input.Disconnect(edgeView);
