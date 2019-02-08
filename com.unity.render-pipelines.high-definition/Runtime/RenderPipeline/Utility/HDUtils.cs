@@ -36,11 +36,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             HDRenderPipeline hdPipeline = RenderPipelineManager.currentPipeline as HDRenderPipeline;
             if (hdPipeline != null)
             {
-                // With texture array enabled, we still need the normal version for other systems like atlas
-                if (Texture2DX.useTexArray)
-                    CoreUtils.SetKeyword(cmd, "FORCE_NO_TEXTURE2DX_ARRAY", dimension != TextureDimension.Tex2DArray);
-
-                return hdPipeline.GetBlitMaterial();
+                return hdPipeline.GetBlitMaterial(dimension == TextureDimension.Tex2DArray);
             }
 
             return null;
