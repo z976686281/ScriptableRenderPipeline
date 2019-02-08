@@ -115,6 +115,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         Material m_ErrorMaterial;
 
         Material m_Blit;
+        Material m_BlitTexArray;
         MaterialPropertyBlock m_BlitPropertyBlock = new MaterialPropertyBlock();
 
 
@@ -225,7 +226,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         Vector4 m_PyramidScaleLod = new Vector4();
         Vector4 m_PyramidScale = new Vector4();
 
-        public Material GetBlitMaterial() { return m_Blit; }
+        public Material GetBlitMaterial(bool useTexArray) { return useTexArray ? m_BlitTexArray : m_Blit; }
 
         ComputeBuffer m_DepthPyramidMipLevelOffsetsBuffer = null;
 
@@ -618,6 +619,13 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             m_DebugColorPicker = CoreUtils.CreateEngineMaterial(m_Asset.renderPipelineResources.shaders.debugColorPickerPS);
             m_Blit = CoreUtils.CreateEngineMaterial(m_Asset.renderPipelineResources.shaders.blitPS);
             m_ErrorMaterial = CoreUtils.CreateEngineMaterial("Hidden/InternalErrorShader");
+
+            // With texture array enabled, we still need the normal blit version for other systems like atlas
+            if (Texture2DX.useTexArray)
+            {
+                m_Blit.EnableKeyword("FORCE_NO_TEXTURE2DX_ARRAY");
+                m_BlitTexArray = CoreUtils.CreateEngineMaterial(m_Asset.renderPipelineResources.shaders.blitPS);
+            }
         }
 
         void InitializeRenderStateBlocks()
@@ -686,6 +694,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             CoreUtils.Destroy(m_DebugFullScreen);
             CoreUtils.Destroy(m_DebugColorPicker);
             CoreUtils.Destroy(m_Blit);
+            CoreUtils.Destroy(m_BlitTexArray);
             CoreUtils.Destroy(m_CopyDepth);
             CoreUtils.Destroy(m_ErrorMaterial);
 
