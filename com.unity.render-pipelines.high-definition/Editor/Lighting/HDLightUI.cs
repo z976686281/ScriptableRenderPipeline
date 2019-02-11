@@ -129,11 +129,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                     DrawEmissionAdvancedContent
                     ),
                 CED.FoldoutGroup(s_Styles.volumetricHeader, Expandable.Volumetric, k_ExpandedState, DrawVolumetric),
-#if ENABLE_RAYTRACING
                 CED.Conditional((serialized, owner) => serialized.editorLightShape != LightShape.Tube,
-#else
-                CED.Conditional((serialized, owner) => serialized.editorLightShape != LightShape.Rectangle && serialized.editorLightShape != LightShape.Tube,
-#endif
                     CED.AdvancedFoldoutGroup(s_Styles.shadowHeader, Expandable.Shadows, k_ExpandedState,
                         (serialized, owner) => GetAdvanced(Advanceable.Shadow, serialized, owner),
                         (serialized, owner) => SwitchAdvanced(Advanceable.Shadow, serialized, owner),
@@ -619,6 +615,14 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                 }
                 
                 EditorGUILayout.Slider(serialized.serializedShadowData.viewBiasScale, 0.0f, 15.0f, s_Styles.viewBiasScale);
+                if (serialized.editorLightShape == LightShape.Rectangle)
+                {
+                    EditorGUILayout.Slider(serialized.serializedLightData.areaLightShadowCone, 10.0f, 179.0f, s_Styles.areaLightShadowCone);
+#if ENABLE_RAYTRACING
+                EditorGUILayout.PropertyField(serialized.serializedLightData.useRasterizedShadow, s_Styles.useRasterizedShadow);
+#endif
+                }
+
             }
         }
 
