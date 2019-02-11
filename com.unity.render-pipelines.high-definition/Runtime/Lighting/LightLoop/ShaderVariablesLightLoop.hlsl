@@ -40,4 +40,9 @@
     TEXTURE2D_ARRAY(_AreaShadowTexture);
 #endif
 
+// Move this here since it's used by both LightLoop.hlsl and RaytracingLightLoop.hlsl
+bool IsMatchingLightLayer(uint lightLayers, uint renderingLayers)
+{
+	return (lightLayers & renderingLayers) != 0;
+}
 #endif
