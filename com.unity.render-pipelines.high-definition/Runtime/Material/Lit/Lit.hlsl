@@ -32,6 +32,8 @@
 // Uncomment this to get speed (to measure), let it comment to get quality
 // #define FORWARD_MATERIAL_READ_FROM_WRITTEN_NORMAL_BUFFER
 
+#define RASTERIZED_AREA_LIGHT_SHADOWS 1
+
 //-----------------------------------------------------------------------------
 // Texture and constant buffer declaration
 //-----------------------------------------------------------------------------
@@ -1593,10 +1595,12 @@ DirectLighting EvaluateBSDF_Rect(   LightLoopContext lightLoopContext,
 #endif // ENABLE_RAYTRACING
         if (lightData.shadowIndex != -1)
         {
+#if RASTERIZED_AREA_LIGHT_SHADOWS
             // lightData.positionRWS now contains the Light vector. 
             float areaShadow = GetAreaLightAttenuation(lightLoopContext.shadowContext, posInput.positionSS, posInput.positionWS, bsdfData.normalWS, lightData.shadowIndex, normalize(lightData.positionRWS), length(lightData.positionRWS));
             lighting.diffuse *= areaShadow;
             lighting.specular *= areaShadow;
+#endif
         }
 
 
