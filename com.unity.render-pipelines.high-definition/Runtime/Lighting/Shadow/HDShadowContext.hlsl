@@ -16,6 +16,7 @@ struct HDShadowContext
 
 TEXTURE2D(_ShadowmapAtlas);
 TEXTURE2D(_ShadowmapCascadeAtlas);
+TEXTURE2D(_AreaShadowmapAtlas);
 
 StructuredBuffer<HDShadowData>              _HDShadowDatas;
 // Only the first element is used since we only support one directional light

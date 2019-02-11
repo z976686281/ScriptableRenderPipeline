@@ -13,21 +13,25 @@
 
 #ifdef SHADOW_LOW
 #define PUNCTUAL_FILTER_ALGORITHM(sd, posSS, posTC, sampleBias, tex, samp) SampleShadow_PCF_Tent_3x3(_ShadowAtlasSize.zwxy, posTC, sampleBias, tex, samp)
+#define AREA_FILTER_ALGORITHM(sd, posSS, posTC, sampleBias, tex, samp) SampleShadow_PCF_Tent_3x3(_AreaShadowAtlasSize.zwxy, posTC, sampleBias, tex, samp)
 #define DIRECTIONAL_FILTER_ALGORITHM(sd, posSS, posTC, sampleBias, tex, samp) SampleShadow_PCF_Tent_5x5(_CascadeShadowAtlasSize.zwxy, posTC, sampleBias, tex, samp)
 #endif
 #ifdef SHADOW_MEDIUM
 #define PUNCTUAL_FILTER_ALGORITHM(sd, posSS, posTC, sampleBias, tex, samp) SampleShadow_PCF_Tent_5x5(_ShadowAtlasSize.zwxy, posTC, sampleBias, tex, samp)
+#define AREA_FILTER_ALGORITHM(sd, posSS, posTC, sampleBias, tex, samp) SampleShadow_PCF_Tent_5x5(_AreaShadowAtlasSize.zwxy, posTC, sampleBias, tex, samp)
 #define DIRECTIONAL_FILTER_ALGORITHM(sd, posSS, posTC, sampleBias, tex, samp) SampleShadow_PCF_Tent_7x7(_CascadeShadowAtlasSize.zwxy, posTC, sampleBias, tex, samp)
 #endif
 // Note: currently quality settings for PCSS need to be expose in UI and is control in HDLightUI.cs file IsShadowSettings
 #ifdef SHADOW_HIGH
 #define PUNCTUAL_FILTER_ALGORITHM(sd, posSS, posTC, sampleBias, tex, samp) SampleShadow_PCSS(posTC, posSS, sd.shadowMapSize.xy * _ShadowAtlasSize.zw, sd.atlasOffset, sampleBias, sd.shadowFilterParams0.x, sd.shadowFilterParams0.w, asint(sd.shadowFilterParams0.y), asint(sd.shadowFilterParams0.z), tex, samp, s_point_clamp_sampler)
+#define AREA_FILTER_ALGORITHM(sd, posSS, posTC, sampleBias, tex, samp) SampleShadow_PCSS(posTC, posSS, sd.shadowMapSize.xy * _AreaShadowAtlasSize.zw, sd.atlasOffset, sampleBias, sd.shadowFilterParams0.x, sd.shadowFilterParams0.w, asint(sd.shadowFilterParams0.y), asint(sd.shadowFilterParams0.z), tex, samp, s_point_clamp_sampler)
 // Currently PCSS is broken on directional light
 #define DIRECTIONAL_FILTER_ALGORITHM(sd, posSS, posTC, sampleBias, tex, samp) SampleShadow_PCSS(posTC, posSS, sd.shadowMapSize.xy * _CascadeShadowAtlasSize.zw, sd.atlasOffset, sampleBias, sd.shadowFilterParams0.x, sd.shadowFilterParams0.w, asint(sd.shadowFilterParams0.y), asint(sd.shadowFilterParams0.z), tex, samp, s_point_clamp_sampler)
 #endif
 
 #ifdef SHADOW_VERY_HIGH
 #define PUNCTUAL_FILTER_ALGORITHM(sd, posSS, posTC, sampleBias, tex, samp) SampleShadow_PCSS(posTC, posSS, sd.shadowMapSize.xy * _ShadowAtlasSize.zw, sd.atlasOffset, sampleBias, sd.shadowFilterParams0.x, sd.shadowFilterParams0.w, asint(sd.shadowFilterParams0.y), asint(sd.shadowFilterParams0.z), tex, samp, s_point_clamp_sampler)
+#define AREA_FILTER_ALGORITHM(sd, posSS, posTC, sampleBias, tex, samp) SampleShadow_PCSS(posTC, posSS, sd.shadowMapSize.xy * _AreaShadowAtlasSize.zw, sd.atlasOffset, sampleBias, sd.shadowFilterParams0.x, sd.shadowFilterParams0.w, asint(sd.shadowFilterParams0.y), asint(sd.shadowFilterParams0.z), tex, samp, s_point_clamp_sampler)
 #define USE_IMPROVED_MOMENT_SHADOWS
 #define DIRECTIONAL_FILTER_ALGORITHM(sd, posSS, posTC, sampleBias, tex, samp) SampleShadow_IMS(sd, posTC, sampleBias.x, sd.shadowFilterParams0.x, sd.shadowFilterParams0.y, sd.shadowFilterParams0.z)
 #endif
@@ -276,6 +280,30 @@ float EvalShadow_PunctualDepth(HDShadowData sd, Texture2D tex, SamplerComparison
     /* sample the texture */
     return PUNCTUAL_FILTER_ALGORITHM(sd, positionSS, posTC, sampleBias, tex, samp);
 }
+
+//
+//  Area light shadows
+//
+float EvalShadow_AreaDepth(HDShadowData sd, Texture2D tex, SamplerComparisonState sampComp, float2 positionSS, float3 positionWS, float3 normalWS, float3 L, float L_dist, bool perspective)
+{
+    /* in stereo, translate input position to the same space as shadows for proper sampling and bias */
+    positionWS = StereoCameraRelativeEyeToCenter(positionWS);
+
+    /* bias the world position */
+    float recvBiasWeight = EvalShadow_ReceiverBiasWeight(sd, _AreaShadowAtlasSize.zw, sd.atlasOffset, sd.viewBias, sd.edgeTolerance, sd.flags, tex, sampComp, positionWS, normalWS, L, L_dist, perspective);
+    positionWS = EvalShadow_ReceiverBias(sd.viewBias, sd.normalBias, positionWS, normalWS, L, L_dist, recvBiasWeight, perspective);
+    /* get shadowmap texcoords */
+    float3 posTC = EvalShadow_GetTexcoordsAtlas(sd, _AreaShadowAtlasSize.zw, positionWS, perspective);
+    /* get the per sample bias */
+    float2 sampleBias = EvalShadow_SampleBias_Persp(positionWS, normalWS, posTC);
+
+    return PUNCTUAL_FILTER_ALGORITHM(sd, positionSS, posTC, sampleBias, tex, sampComp);
+
+    // return SampleShadow_EVSM_1tap(posTC, lightLeakBias, varianceBias, exponents, false, tex, samp, true);
+     //return 
+}
+
+
 
 //
 //  Directional shadows (cascaded shadow map)
