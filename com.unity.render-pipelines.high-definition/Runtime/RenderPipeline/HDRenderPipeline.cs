@@ -1149,6 +1149,16 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                             {
                                 visibleProbe.SetTexture(ProbeSettings.Mode.Realtime, HDRenderUtilities.CreatePlanarProbeRenderTarget(desiredPlanarProbeSize));
                             }
+                            // Set the viewer's camera as the default camera anchor
+                            for (var i = 0; i < cameraSettings.Count; ++i)
+                            {
+                                var v = cameraSettings[i];
+                                if (v.volumes.anchorOverride == null)
+                                {
+                                    v.volumes.anchorOverride = viewerTransform;
+                                    cameraSettings[i] = v;
+                                }
+                            }
                             break;
                     }
 
@@ -1552,7 +1562,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 StartStereoRendering(cmd, renderContext, camera);
 
                 if (!hdCamera.frameSettings.SSAORunsAsync())
-                    m_AmbientOcclusionSystem.Render(cmd, hdCamera, m_SharedRTManager, renderContext);
+                    m_AmbientOcclusionSystem.Render(cmd, hdCamera, m_SharedRTManager, renderContext, m_FrameCount);
 
                 // Clear and copy the stencil texture needs to be moved to before we invoke the async light list build,
                 // otherwise the async compute queue can end up using that texture before the graphics queue is done with it.
@@ -1613,7 +1623,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 {
 #if ENABLE_RAYTRACING
                     // Let's render the screen space area light shadows
-                    bool areaShadowsRendered = m_RaytracingShadows.RenderAreaShadows(hdCamera, cmd, renderContext);
+                    bool areaShadowsRendered = m_RaytracingShadows.RenderAreaShadows(hdCamera, cmd, renderContext, m_FrameCount);
                     PushFullScreenDebugTexture(hdCamera, cmd, m_RaytracingShadows.GetShadowedIntegrationTexture(), FullScreenDebugMode.RaytracedAreaShadow);
                     if (areaShadowsRendered)
                     {
@@ -2020,15 +2030,24 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             DebugDisplaySettings debugDisplaySettings = (camera.cameraType == CameraType.Reflection || camera.cameraType == CameraType.Preview) ? s_NeutralDebugDisplaySettings : m_DebugDisplaySettings;
 
             // Disable post process if we enable debug mode or if the post process layer is disabled
-            if (debugDisplaySettings.IsDebugDisplayRemovePostprocess())
+            if (debugDisplaySettings.IsDebugDisplayEnabled())
             {
-                currentFrameSettings.SetEnabled(FrameSettingsField.Postprocess, false);
-            }
+                if (debugDisplaySettings.IsDebugDisplayRemovePostprocess())
+                {
+                    currentFrameSettings.SetEnabled(FrameSettingsField.Postprocess, false);
+                }
 
-            // Disable SSS if luxmeter is enabled
-            if (debugDisplaySettings.data.lightingDebugSettings.debugLightingMode == DebugLightingMode.LuxMeter)
-            {
-                currentFrameSettings.SetEnabled(FrameSettingsField.SubsurfaceScattering, false);
+                // Disable exposure if required
+                if (!debugDisplaySettings.DebugNeedsExposure())
+                {
+                    currentFrameSettings.SetEnabled(FrameSettingsField.ExposureControl, false);
+                }
+
+                // Disable SSS if luxmeter is enabled
+                if (debugDisplaySettings.data.lightingDebugSettings.debugLightingMode == DebugLightingMode.LuxMeter)
+                {
+                    currentFrameSettings.SetEnabled(FrameSettingsField.SubsurfaceScattering, false);
+                }
             }
 
             hdCamera = HDCamera.Get(camera) ?? HDCamera.Create(camera);
@@ -3093,7 +3112,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 // Clear the HDR target
                 using (new ProfilingSample(cmd, "Clear HDR target", CustomSamplerId.ClearHDRTarget.GetSampler()))
                 {
-                    if (hdCamera.clearColorMode == HDAdditionalCameraData.ClearColorMode.BackgroundColor ||
+                    if (hdCamera.clearColorMode == HDAdditionalCameraData.ClearColorMode.Color ||
                         // If the luxmeter is enabled, the sky isn't rendered so we clear the background color
                         m_DebugDisplaySettings.data.lightingDebugSettings.debugLightingMode == DebugLightingMode.LuxMeter ||
                         // If we want the sky but the sky don't exist, still clear with background color
