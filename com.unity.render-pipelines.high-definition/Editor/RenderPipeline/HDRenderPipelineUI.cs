@@ -190,7 +190,6 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
             EditorGUILayout.Space();
 
-            EditorGUILayout.PropertyField(serialized.diffusionProfileSettings, diffusionProfileSettingsContent);
             // EditorGUILayout.PropertyField(serialized.allowShaderVariantStripping, enableShaderVariantStrippingContent);
             diffusionProfileUI.drawElement = DrawDiffusionProfileElement;
             diffusionProfileUI.OnGUI(serialized.diffusionProfileSettingsList);

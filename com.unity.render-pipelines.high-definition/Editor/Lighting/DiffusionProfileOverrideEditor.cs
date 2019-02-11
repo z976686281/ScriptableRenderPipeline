@@ -5,6 +5,8 @@ using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.Rendering;
 using System.Linq;
+using System;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor.Experimental.Rendering.HDPipeline
 {
@@ -104,18 +106,14 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
         DiffusionProfileSettings GetMaterialDiffusionProfile(Material mat)
         {
-            if (!mat.HasProperty(HDShaderIDs._MaterialID))
-            {
-                Debug.Log("Material " + mat + "has no MaterialID");
+            if (!mat.HasProperty(HDShaderIDs._DiffusionProfileAsset))
                 return null;
-            }
             
-            var materialID = (MaterialId)mat.GetInt(HDShaderIDs._MaterialID);
-
-            if (materialID != MaterialId.LitSSS && materialID != MaterialId.LitTranslucent)
-                return null;
-
             string guid = HDEditorUtils.ConvertVector4ToGUID(mat.GetVector(HDShaderIDs._DiffusionProfileAsset));
+            
+            if (String.IsNullOrEmpty(guid))
+                return null;
+            
             return AssetDatabase.LoadAssetAtPath<DiffusionProfileSettings>(AssetDatabase.GUIDToAssetPath(guid));
         }
     }

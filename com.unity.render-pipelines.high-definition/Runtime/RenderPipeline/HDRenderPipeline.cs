@@ -280,8 +280,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             // It's done here because we know every HDRP assets have been imported before
             UpgradeResourcesIfNeeded();
 
-            CreateDefaultDiffusionProfile();
-
             // Initial state of the RTHandle system.
             // Tells the system that we will require MSAA or not so that we can avoid wasteful render texture allocation.
             // TODO: Might want to initialize to at least the window resolution to avoid un-necessary re-alloc in the player
@@ -391,15 +389,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             m_LightLoop.InitRaytracing(m_RayTracingManager);
             m_AmbientOcclusionSystem.InitRaytracing(m_RayTracingManager, m_SharedRTManager);
 #endif
-        }
-
-        void CreateDefaultDiffusionProfile()
-        {
-            if (m_Asset.defaultDiffusionProfileSettings == null)
-            {
-                m_Asset.defaultDiffusionProfileSettings = ScriptableObject.CreateInstance<DiffusionProfileSettings>();
-                m_Asset.defaultDiffusionProfileSettings.SetDefaultParams();
-            }
         }
 
         void UpgradeResourcesIfNeeded()

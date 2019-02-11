@@ -13,7 +13,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
     }
 
     [Serializable]
-    public sealed class DiffusionProfile
+    public sealed class DiffusionProfile : IEquatable<DiffusionProfile>
     {
         public enum TexturingMode : uint
         {
@@ -59,7 +59,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             transmissionMode   = TransmissionMode.ThinObject;
             thicknessRemap     = new Vector2(0f, 5f);
             worldScale         = 1f;
-            ior                = 1.4f; // TYpical value for skin specular reflectance
+            ior                = 1.4f; // Typical value for skin specular reflectance
         }
 
         public void Validate()
@@ -176,6 +176,26 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             }
 
             return r;
+        }
+
+        public bool Equals(DiffusionProfile other)
+        {
+            if (other == null)
+                return false;
+
+            return  scatteringDistance == other.scatteringDistance &&
+                    transmissionTint == other.transmissionTint &&
+                    texturingMode == other.texturingMode &&
+                    transmissionMode == other.transmissionMode &&
+                    thicknessRemap == other.thicknessRemap &&
+                    worldScale == other.worldScale &&
+                    ior == other.ior &&
+                    shapeParam == other.shapeParam &&
+                    maxRadius == other.maxRadius &&
+                    filterKernelNearField == other.filterKernelNearField &&
+                    filterKernelFarField == other.filterKernelFarField &&
+                    halfRcpWeightedVariances == other.halfRcpWeightedVariances &&
+                    filterKernelBasic == other.filterKernelBasic;
         }
     }
 

@@ -43,7 +43,8 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
             m_DiffusionProfileList.drawElementCallback = (rect, index, active, focused) => {
                 rect.height = EditorGUIUtility.singleLineHeight;
-                drawElement(parameter.GetArrayElementAtIndex(index), rect, index);
+                if (drawElement != null)
+                    drawElement(parameter.GetArrayElementAtIndex(index), rect, index);
             };
         }
     }

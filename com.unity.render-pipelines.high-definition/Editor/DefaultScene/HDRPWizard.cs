@@ -241,7 +241,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                 
                 DiffusionProfileSettings defaultDiffusionProfile = AssetDatabase.LoadAssetAtPath<DiffusionProfileSettings>(defaultDiffusionProfileSettingsPath);
                 
-                hdrpAsset.diffusionProfileSettings = defaultDiffusionProfile;
+                hdrpAsset.diffusionProfileSettingsList[0] = defaultDiffusionProfile;
 
                 AssetDatabase.CreateAsset(hdrpAsset, "Assets/" + HDProjectSettings.projectSettingsFolderPath + "/" + hdrpAsset.name + ".asset");
 

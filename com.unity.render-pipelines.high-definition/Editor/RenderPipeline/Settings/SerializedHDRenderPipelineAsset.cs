@@ -8,7 +8,6 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         public SerializedObject serializedObject;
 
         public SerializedProperty renderPipelineResources;
-        public SerializedProperty diffusionProfileSettings;
         public SerializedProperty diffusionProfileSettingsList; 
         public SerializedProperty allowShaderVariantStripping;
         public SerializedProperty enableSRPBatcher;

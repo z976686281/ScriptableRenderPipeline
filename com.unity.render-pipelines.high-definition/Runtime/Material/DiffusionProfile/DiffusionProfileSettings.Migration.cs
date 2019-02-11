@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using UnityEngine.Rendering;
 
 namespace UnityEngine.Experimental.Rendering.HDPipeline
 {
@@ -31,18 +32,28 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 if (d.profiles == null)
                     return;
                 
-                Debug.Log("UPGRADE OF: " + d);
+                var hdAsset = GraphicsSettings.renderPipelineAsset as HDRenderPipelineAsset;
+                if (hdAsset == null)
+                    throw new Exception("Can't upgrade diffusion profile when the HDRenderPipeline asset is not assigned in Graphic Settings");
+
+                var defaultProfile = new DiffusionProfile("");
 
                 // Iterate over the diffusion profile settings and generate one new asset for each
                 // diffusion profile which have been modified
                 int count = 0;
                 foreach (var profile in d.profiles)
                 {
-                    if (profile != default(DiffusionProfile))
-                    {
+                    if (!profile.Equals(defaultProfile))
                         CreateNewDiffusionProfile(d, profile, count++);
-                    }
                 }
+#if UNITY_EDITOR
+                // If the diffusion profile settings we're upgrading was assigned to the HDAsset in use
+                // Then we need to go over all materials and upgrade them
+                if (hdAsset.diffusionProfileSettings == d)
+                {
+                    Debug.Log("TODO: upgrade all materials");
+                }
+#endif
 #pragma warning restore 618
             })
         );
@@ -58,8 +69,11 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 #if UNITY_EDITOR
             var newDiffusionProfile = ScriptableObject.CreateInstance<DiffusionProfileSettings>();
             newDiffusionProfile.name = asset.name;
+            newDiffusionProfile.profile = profile;
+            profile.Validate();
+            newDiffusionProfile.UpdateCache();
 
-            var path = Path.GetDirectoryName(UnityEditor.AssetDatabase.GetAssetPath(asset));
+            var path = UnityEditor.AssetDatabase.GetAssetPath(asset);
             path = UnityEditor.AssetDatabase.GenerateUniqueAssetPath(path);
             UnityEditor.AssetDatabase.CreateAsset(newDiffusionProfile, path);
 #endif
