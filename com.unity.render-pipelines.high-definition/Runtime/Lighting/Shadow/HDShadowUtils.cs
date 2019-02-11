@@ -224,29 +224,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             return deviceProj * view;
         }
 
-        // TODO_FCC: This needs to be squished in spot light case above
-        static Matrix4x4 ExtractAreaLightMatrix(VisibleLight vl, float nearPlane, float guardAngle, Vector3 shadowPosition, Vector2 shapeSize, out Matrix4x4 view, out Matrix4x4 proj, out Matrix4x4 deviceProj, out Matrix4x4 vpinverse, out Vector4 lightDir, out ShadowSplitData splitData)
-        {
-            splitData = new ShadowSplitData();
-            splitData.cullingSphere.Set(0.0f, 0.0f, 0.0f, float.NegativeInfinity);
-            splitData.cullingPlaneCount = 0;
-            // get lightDir
-            lightDir = vl.light.transform.forward;
-            // calculate view
-            Matrix4x4 scaleMatrix = Matrix4x4.identity;
-            scaleMatrix.m22 = -1.0f;
-            view = scaleMatrix * vl.localToWorldMatrix.inverse;
-            // calculate projection
-            float fov = vl.spotAngle + guardAngle;
-            float nearZ = Mathf.Max(nearPlane, k_MinShadowNearPlane);
-            float aspectRatio = shapeSize.x / shapeSize.y;
-            proj = Matrix4x4.Perspective(fov, aspectRatio, nearZ, vl.range);
-            // and the compound (deviceProj will potentially inverse-Z)
-            deviceProj = GL.GetGPUProjectionMatrix(proj, false);
-            InvertPerspective(ref deviceProj, ref view, out vpinverse);
-            return deviceProj * view;
-        }
-
         static Matrix4x4 ExtractPointLightMatrix(VisibleLight vl, uint faceIdx, float nearPlane, float guardAngle, out Matrix4x4 view, out Matrix4x4 proj, out Matrix4x4 deviceProj, out Matrix4x4 vpinverse, out Vector4 lightDir, out ShadowSplitData splitData)
         {
             if (faceIdx > (uint)CubemapFace.NegativeZ)
