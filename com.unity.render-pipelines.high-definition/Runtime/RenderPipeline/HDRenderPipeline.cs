@@ -3223,7 +3223,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         {
             if (cam.stereoEnabled)
             {
-                // Reset viewport for C++ stereo code
+                // Reset scissor and viewport for C++ stereo code
+                cmd.DisableScissorRect();
                 cmd.SetViewport(cam.pixelRect);
 
                 renderContext.ExecuteCommandBuffer(cmd);
