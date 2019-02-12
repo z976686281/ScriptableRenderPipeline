@@ -9,7 +9,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
     {
         // Ray count UAV
         RTHandleSystem.RTHandle m_RayCountTex = null;
-        RTHandleSystem.RTHandle m_TotalRayCountTex = null;
         static Texture2D s_DebugFontTex = null;
         static ComputeBuffer s_TotalRayCountBuffer = null;
                 
@@ -26,14 +25,15 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
         struct RayCountReadback
         {
-            public void SetRetired()
+            public static RayCountReadback SetRetired()
             {
-                retired = true;
+                RayCountReadback overWrite = new RayCountReadback();
+                overWrite.retired = true;
+                return overWrite;
             }
-
+            public bool retired;
             public ComputeBuffer rayCountBuffer;
             public AsyncGPUReadbackRequest rayCountReadback;
-            public bool retired;
             public float deltaTime;
         };
         private static bool ReadbackIsRetired(RayCountReadback s)
@@ -61,7 +61,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             CoreUtils.Destroy(m_DrawRayCount);
 
             RTHandles.Release(m_RayCountTex);
-            RTHandles.Release(m_TotalRayCountTex);
             CoreUtils.SafeRelease(s_TotalRayCountBuffer);
         }
 
@@ -100,7 +99,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                             if (sampleCount.Length > 0 && sampleCount[0] != 0)
                             {
                                 latestSample = sampleCount[0] / rayCountReadbacks[i].deltaTime;
-                                rayCountReadbacks[i].SetRetired();
+                                rayCountReadbacks[i] = RayCountReadback.SetRetired();
+                                bool test = rayCountReadbacks[i].retired;
                             }
                         }
                         else
@@ -110,7 +110,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     }
                     else
                     {
-                        rayCountReadbacks[i].SetRetired();
+                        rayCountReadbacks[i] = RayCountReadback.SetRetired();
                     }
                 }
 
