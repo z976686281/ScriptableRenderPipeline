@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using UnityEngine.Rendering;
+using System.Linq;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -49,7 +50,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 foreach (var profile in d.profiles)
                 {
                     if (!profile.Equals(defaultProfile))
-                        newProfiles[index] = (CreateNewDiffusionProfile(d, profile, index));
+                        newProfiles[index] = CreateNewDiffusionProfile(d, profile, index);
                     index++;
                 }
 #if UNITY_EDITOR
@@ -57,6 +58,11 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 // Then we need to go over all materials and upgrade them
                 if (hdAsset.diffusionProfileSettings == d)
                 {
+                    // Assign the new diffusion profile assets into the HD asset
+                    hdAsset.diffusionProfileSettingsList = new DiffusionProfileSettings[newProfiles.Keys.Max() + 1];
+                    foreach (var kp in newProfiles)
+                         hdAsset.diffusionProfileSettingsList[kp.Key] = kp.Value;
+                    
                     Debug.Log("Upgrade all materials !");
                     var materialGUIDs = AssetDatabase.FindAssets("t:Material");
                     foreach (var guid in materialGUIDs)

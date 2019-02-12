@@ -4,6 +4,8 @@ using UnityEditor.Graphing;
 using UnityEditor.ShaderGraph;
 using UnityEditor.ShaderGraph.Drawing.Controls;
 using UnityEngine.Experimental.Rendering.HDPipeline;
+using System;
+using UnityEngine.Rendering;
 
 namespace UnityEditor.Experimental.Rendering.HDPipeline
 {
@@ -22,6 +24,9 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             // This still needs to be added.
             get { return "https://github.com/Unity-Technologies/ShaderGraph/wiki/Diffusion-Profile-Node"; }
         }
+
+        [SerializeField, Obsolete("Use m_DiffusionProfileAsset instead.")]
+        PopupList m_DiffusionProfile = new PopupList();
 
         [SerializeField]
         DiffusionProfileSettings    m_DiffusionProfileAsset;
@@ -49,6 +54,21 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         {
             AddSlot(new Vector1MaterialSlot(kOutputSlotId, kOutputSlotName, kOutputSlotName, SlotType.Output, 0.0f));
             RemoveSlotsNameNotMatching(new[] { kOutputSlotId });
+
+            UpgradeIfNeeded();
+        }
+
+        void UpgradeIfNeeded()
+        {
+#pragma warning disable 618
+            // When the node is upgraded we set the selected entry to -1
+            if (m_DiffusionProfile.selectedEntry == -1)
+            {
+                var hdAsset = GraphicsSettings.renderPipelineAsset as HDRenderPipelineAsset;
+                diffusionProfile = hdAsset.diffusionProfileSettingsList[m_DiffusionProfile.selectedEntry];
+                m_DiffusionProfile.selectedEntry = -1;
+            }
+#pragma warning restore 618
         }
 
         public void GenerateNodeCode(ShaderGenerator visitor, GraphContext graphContext, GenerationMode generationMode)
