@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 - Added software dynamic resolution support
-- Added support for overriding terrain detail rendering shaders, via the render pipeline editor resources asset
+- Added support for overriding Shaders that render terrain details. You can override them via the render pipeline editor resources asset.
 
 ### Fixed
 - Fixed a case of ambient lighting flickering because of previews
