@@ -190,6 +190,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         float m_LastTime, m_Time;
 
         public int GetCurrentShadowCount() { return m_LightLoop.GetCurrentShadowCount(); }
+        public float GetRaysPerFrame() { return m_RayTracingManager.rayCountManager.latestRaysPerSecond; }
         public int GetDecalAtlasMipCount()
         {
             int highestDim = Math.Max(currentPlatformRenderPipelineSettings.decalSettings.atlasWidth, currentPlatformRenderPipelineSettings.decalSettings.atlasHeight);
@@ -381,7 +382,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
             m_MRTWithSSS = new RenderTargetIdentifier[2 + m_SSSBufferManager.sssBufferCount];
 #if ENABLE_RAYTRACING
-            m_RayTracingManager.Init(m_Asset.currentPlatformRenderPipelineSettings, m_Asset.renderPipelineResources, m_BlueNoise);
+            m_RayTracingManager.Init(m_Asset.currentPlatformRenderPipelineSettings, m_Asset.renderPipelineResources, m_BlueNoise, m_DebugDisplaySettings);
             m_RaytracingReflections.Init(m_Asset, m_SkyManager, m_RayTracingManager, m_SharedRTManager);
             m_RaytracingShadows.Init(m_Asset, m_RayTracingManager, m_SharedRTManager, m_LightLoop, m_GbufferManager);
             m_RaytracingRenderer.Init(m_Asset, m_SkyManager, m_RayTracingManager, m_SharedRTManager);
@@ -1417,7 +1418,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
 #if ENABLE_RAYTRACING
             // Must update after getting DebugDisplaySettings
-            m_RayTracingManager.rayCountManager.Update(cmd, hdCamera, m_CurrentDebugDisplaySettings.data.countRays);
+            m_RayTracingManager.rayCountManager.Update(cmd, hdCamera);
 #endif
 
             m_DbufferManager.enableDecals = false;
@@ -3054,7 +3055,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 }
 
 #if ENABLE_RAYTRACING
-                m_RayTracingManager.rayCountManager.RenderRayCount(cmd, hdCamera, m_CurrentDebugDisplaySettings.data.rayCountFontColor);
+                m_RayTracingManager.rayCountManager.RenderRayCount(cmd, hdCamera, m_CurrentDebugDisplaySettings.data.raysPerFrameFontColor);
 #endif
 
                 m_LightLoop.RenderDebugOverlay(hdCamera, cmd, m_CurrentDebugDisplaySettings, ref x, ref y, overlaySize, hdCamera.actualWidth, cullResults, m_IntermediateAfterPostProcessBuffer);

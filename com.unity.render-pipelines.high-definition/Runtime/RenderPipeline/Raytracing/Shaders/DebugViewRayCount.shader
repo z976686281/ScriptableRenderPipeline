@@ -65,12 +65,12 @@ Shader "Hidden/HDRP/DebugViewRayCount"
             #define TOTAL_STRING_SIZE 7
             static const uint TotalName[MAX_STRING_SIZE] = {'T','o','t','a','l',':',' ','\0','\0','\0','\0','\0','\0','\0','\0','\0'};
             #define MRPF_STRING_SIZE 12
-            static const uint MGPFName[MAX_STRING_SIZE] = {' ', 'm','r','a','y','s','/','f','r','a','m','e','\0','\0','\0','\0'};
+            static const uint MGPFName[MAX_STRING_SIZE] = {' ', 'M','r','a','y','s','/','f','r','a','m','e','\0','\0','\0','\0'};
 
             // Helper function to write strings
             void WriteMegaraysPerFrame(uint targetWord[MAX_STRING_SIZE], uint stringSize, float3 fontColor, uint2 unormCoord, inout uint2 displayUnormCoord, inout float3 result)
             {
-                for(int i = 0; i < stringSize; ++i)
+                for(uint i = 0; i < stringSize; ++i)
                 {
                     DrawCharacter(targetWord[i], fontColor, unormCoord, displayUnormCoord, result);
                 }

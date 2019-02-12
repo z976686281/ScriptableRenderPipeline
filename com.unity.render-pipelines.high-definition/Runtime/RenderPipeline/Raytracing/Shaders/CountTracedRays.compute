@@ -5,6 +5,7 @@
 
 RWTexture2D<uint4> _RayCountTexture;
 RWStructuredBuffer<uint> _TotalRayCountBuffer;
+RWTexture2D<float> _TotalRayCountTexture;
 
 groupshared uint aoRayCountPerThreadGroup;
 groupshared uint reflectionRayCountPerThreadGroup;
@@ -49,5 +50,6 @@ void CS_CountRays(uint3 globalId : SV_DispatchThreadID, uint3 localId : SV_Group
         InterlockedAdd(_TotalRayCountBuffer[0], aoRayCountPerThreadGroup);
         InterlockedAdd(_TotalRayCountBuffer[1], reflectionRayCountPerThreadGroup);
         InterlockedAdd(_TotalRayCountBuffer[2], areaShadowRayCountPerThreadGroup);
+		_TotalRayCountTexture[uint2(0, 0)] = (float)_TotalRayCountBuffer[0] + (float)_TotalRayCountBuffer[1] + (float)_TotalRayCountBuffer[2];
     }
 }

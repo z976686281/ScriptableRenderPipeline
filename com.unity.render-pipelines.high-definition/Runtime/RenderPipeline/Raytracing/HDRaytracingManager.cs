@@ -146,7 +146,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             }
         }
 
-        public void Init(RenderPipelineSettings settings, RenderPipelineResources resources, BlueNoise blueNoise)
+        public void Init(RenderPipelineSettings settings, RenderPipelineResources resources, BlueNoise blueNoise, DebugDisplaySettings currentDebugDisplaySettings)
         {
             // Keep track of the resources
             m_Resources = resources;
@@ -191,7 +191,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 RegisterFilter(filterArray[filterIdx]);
             }
 
-            m_RayCountManager.Init(resources);
+            m_RayCountManager.Init(resources, currentDebugDisplaySettings);
 
 #if UNITY_EDITOR
             // We need to invalidate the acceleration structures in case the hierarchy changed
