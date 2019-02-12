@@ -99,7 +99,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
                             if (sampleCount.Length > 0 && sampleCount[k_NumRaySources] != 0)
                             {
-                                latestSample = (float)sampleCount.ToArray()[k_NumRaySources] / rayCountReadbacks[i].deltaTime;
+                                latestSample = sampleCount[k_NumRaySources] / rayCountReadbacks[i].deltaTime;
                                 rayCountReadbacks[i].SetRetired();
                             }
                         }
