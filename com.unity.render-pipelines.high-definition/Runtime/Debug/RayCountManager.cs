@@ -12,19 +12,17 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         RTHandleSystem.RTHandle m_TotalRayCountTex = null;
         static Texture2D s_DebugFontTex = null;
         static ComputeBuffer s_TotalRayCountBuffer = null;
-
-        // Material used to blit the output texture into the camera render target
-        Material m_Blit;
-        Material m_DrawRayCount;
+                
+        Material m_Blit; // Material used to blit the output texture into the camera render target
+        Material m_DrawRayCount; // Material used to draw ray count onto colorbuffer
         MaterialPropertyBlock m_DrawRayCountProperties = new MaterialPropertyBlock();
-        // Raycount shader
-        ComputeShader m_RayCountCompute;
+        ComputeShader m_RayCountCompute; // Raycount shader
         float m_LatestRayCount;
         DebugDisplaySettings m_DebugDisplaySettings;
 
         int _TotalRayCountBuffer = Shader.PropertyToID("_TotalRayCountBuffer");
-        int _TotalRayCountTex = Shader.PropertyToID("_TotalRayCountTexture");
         int _FontColor = Shader.PropertyToID("_FontColor");
+        static int k_NumRaySources = 3; // AO, Reflection, Area shadows
 
         struct RayCountReadback
         {
@@ -33,7 +31,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 retired = true;
             }
 
-            public RenderTexture rayCountTexture;
+            public ComputeBuffer rayCountBuffer;
             public AsyncGPUReadbackRequest rayCountReadback;
             public bool retired;
             public float deltaTime;
@@ -53,8 +51,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             s_DebugFontTex = renderPipelineResources.textures.debugFontTex;
             // UINT textures must use UINT32, since groupshared uint used to synchronize counts is allocated as a UINT32
             m_RayCountTex = RTHandles.Alloc(Vector2.one, filterMode: FilterMode.Point, colorFormat: GraphicsFormat.R32G32B32A32_UInt, enableRandomWrite: true, useMipMap: false, name: "RayCountTex");
-            s_TotalRayCountBuffer = new ComputeBuffer(3, sizeof(uint));
-            m_TotalRayCountTex = RTHandles.Alloc(1, 1, filterMode: FilterMode.Point, colorFormat: GraphicsFormat.R32_SFloat, enableRandomWrite: true, useMipMap: false, name: "RayCountTex");
+            s_TotalRayCountBuffer = new ComputeBuffer(k_NumRaySources + 1, sizeof(uint));
             m_DebugDisplaySettings = currentDebugDisplaySettings;
         }
 
@@ -64,6 +61,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             CoreUtils.Destroy(m_DrawRayCount);
 
             RTHandles.Release(m_RayCountTex);
+            RTHandles.Release(m_TotalRayCountTex);
             CoreUtils.SafeRelease(s_TotalRayCountBuffer);
         }
 
@@ -97,12 +95,11 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     {
                         if (rayCountReadbacks[i].rayCountReadback.done)
                         {
-                            NativeArray<float> sampleCount = rayCountReadbacks[i].rayCountReadback.GetData<float>();
+                            NativeArray<uint> sampleCount = rayCountReadbacks[i].rayCountReadback.GetData<uint>();
 
-                            if (sampleCount.Length > 0 && sampleCount[0] != 0)
+                            if (sampleCount.Length > 0 && sampleCount[k_NumRaySources] != 0)
                             {
-                                float value = sampleCount[0];
-                                latestSample = sampleCount[0] / rayCountReadbacks[i].deltaTime;
+                                latestSample = (float)sampleCount.ToArray()[k_NumRaySources] / rayCountReadbacks[i].deltaTime;
                                 rayCountReadbacks[i].SetRetired();
                             }
                         }
@@ -159,15 +156,14 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     dispatchHeight = (int)((height + groupSizeY - 1) / groupSizeY);
                     cmd.SetComputeTextureParam(m_RayCountCompute, countKernelIdx, HDShaderIDs._RayCountTexture, m_RayCountTex);
                     cmd.SetComputeBufferParam(m_RayCountCompute, countKernelIdx, _TotalRayCountBuffer, s_TotalRayCountBuffer);
-                    cmd.SetComputeTextureParam(m_RayCountCompute, countKernelIdx, _TotalRayCountTex, m_TotalRayCountTex);
                     cmd.DispatchCompute(m_RayCountCompute, countKernelIdx, dispatchWidth, dispatchHeight, 1);
 
                     // Read back from GPU
                     // This is necessarily out of sync, but the hope is that over enough samples, it'll average
                     // out to something close to what we want anyways. 
                     RayCountReadback singleReadBack;
-                    singleReadBack.rayCountTexture = m_TotalRayCountTex;
-                    singleReadBack.rayCountReadback = AsyncGPUReadback.Request(m_TotalRayCountTex);
+                    singleReadBack.rayCountBuffer = s_TotalRayCountBuffer;
+                    singleReadBack.rayCountReadback = AsyncGPUReadback.Request(s_TotalRayCountBuffer);
                     singleReadBack.retired = false;
                     singleReadBack.deltaTime = Time.smoothDeltaTime;
 

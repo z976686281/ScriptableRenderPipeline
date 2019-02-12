@@ -5,11 +5,11 @@
 
 RWTexture2D<uint4> _RayCountTexture;
 RWStructuredBuffer<uint> _TotalRayCountBuffer;
-RWTexture2D<float> _TotalRayCountTexture;
 
 groupshared uint aoRayCountPerThreadGroup;
 groupshared uint reflectionRayCountPerThreadGroup;
 groupshared uint areaShadowRayCountPerThreadGroup;
+groupshared uint totalRayCountPerThreadGroup;
 
 [numthreads(1,1,1)]
 void CS_Clear(uint3 globalID : SV_DispatchThreadID)
@@ -17,6 +17,7 @@ void CS_Clear(uint3 globalID : SV_DispatchThreadID)
     _TotalRayCountBuffer[0] = 0;
     _TotalRayCountBuffer[1] = 0;
     _TotalRayCountBuffer[2] = 0;
+	_TotalRayCountBuffer[3] = 0;
 }
 
 [numthreads(8,8,1)]
@@ -31,6 +32,7 @@ void CS_CountRays(uint3 globalId : SV_DispatchThreadID, uint3 localId : SV_Group
         aoRayCountPerThreadGroup = 0;
         reflectionRayCountPerThreadGroup = 0;
         areaShadowRayCountPerThreadGroup = 0;
+		totalRayCountPerThreadGroup = 0;
     }
 		
     GroupMemoryBarrierWithGroupSync();
@@ -38,10 +40,12 @@ void CS_CountRays(uint3 globalId : SV_DispatchThreadID, uint3 localId : SV_Group
     const uint aoRayCount           = (uint)_RayCountTexture[globalId.xy].x;
     const uint reflectionRayCount   = (uint)_RayCountTexture[globalId.xy].y;
     const uint areaShadowRayCount   = (uint)_RayCountTexture[globalId.xy].z;
+	const uint totalRayCount		= aoRayCount + reflectionRayCount + areaShadowRayCount;
 	
     InterlockedAdd(aoRayCountPerThreadGroup,            aoRayCount);
     InterlockedAdd(reflectionRayCountPerThreadGroup,    reflectionRayCount);
     InterlockedAdd(areaShadowRayCountPerThreadGroup,    areaShadowRayCount);
+	InterlockedAdd(totalRayCountPerThreadGroup, totalRayCount);
 	
     GroupMemoryBarrierWithGroupSync();
 		
@@ -50,6 +54,6 @@ void CS_CountRays(uint3 globalId : SV_DispatchThreadID, uint3 localId : SV_Group
         InterlockedAdd(_TotalRayCountBuffer[0], aoRayCountPerThreadGroup);
         InterlockedAdd(_TotalRayCountBuffer[1], reflectionRayCountPerThreadGroup);
         InterlockedAdd(_TotalRayCountBuffer[2], areaShadowRayCountPerThreadGroup);
-		_TotalRayCountTexture[uint2(0, 0)] = (float)_TotalRayCountBuffer[0] + (float)_TotalRayCountBuffer[1] + (float)_TotalRayCountBuffer[2];
+		InterlockedAdd(_TotalRayCountBuffer[3], totalRayCountPerThreadGroup);
     }
 }
