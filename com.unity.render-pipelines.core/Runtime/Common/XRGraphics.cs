@@ -136,6 +136,7 @@ namespace UnityEngine.Rendering
         {
             get
             {
+                // XRTODO: need to also check if stereo is enabled in camera!
                 if (stereoRenderingMode == StereoRenderingMode.SinglePassInstanced)
                     return eyeCount;
 

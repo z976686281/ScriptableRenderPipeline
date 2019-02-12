@@ -4,7 +4,16 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [6.0.0-preview] - 2019-xx-xx
+## [6.1.0-preview] - 2019-XX-XX
+
+### Added
+
+### Fixed
+
+### Changed
+- Removed unsupported Clear Depth checkbox in Camera inspector
+
+## [6.0.0-preview] - 2019-02-23
 
 ### Added
 - Added new API to perform a camera rendering
@@ -49,6 +58,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added support for Quarter Res Raytraced Reflections (not enabled)
 - Added fade factor for decal projectors.
 - Added stereo instancing macros to most shaders used in VR
+- Added emissive property for decal material (non-shader graph)
 - Added multi edition support for HDRenderPipelineAsset
 - Added Texture2DX system to selectively expand macros to texture array for single-pass stereo instancing
 
@@ -118,6 +128,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fixed multi edition issue in FrameSettings
 - Fixed issue with SRP batcher and DebugDisplay variant of lit shader
 - Fixed issue with debug material mode not doing alpha test
+- Fixed "Attempting to draw with missing UAV bindings" errors on Vulkan
+- Fixed pre-exposure incorrectly apply to preview
+- Fixed issue with duplicate 3D texture in 3D texture altas of volumetric
+- Fixed Camera rendering order (base on the depth parameter)
 
 ### Changed
 - ColorPyramid compute shader passes is swapped to pixel shader passes on platforms where the later is faster (Nintendo Switch).

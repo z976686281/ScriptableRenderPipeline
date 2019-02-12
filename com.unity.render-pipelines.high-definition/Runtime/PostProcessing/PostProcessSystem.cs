@@ -416,8 +416,20 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 // Final pass
                 using (new ProfilingSample(cmd, "Final Pass", CustomSamplerId.FinalPost.GetSampler()))
                 {
+                    // XRTODO: remove once SPI is working
+                    bool restoreSinglePass = false;
+                    if (camera.camera.stereoEnabled && XRGraphics.stereoRenderingMode == XRGraphics.StereoRenderingMode.SinglePass)
+                    {
+                        cmd.SetSinglePassStereo(SinglePassStereoMode.None);
+                        restoreSinglePass = true;
+                    }
+
                     DoFinalPass(cmd, camera, blueNoise, source, afterPostProcessTexture, finalRT, flipY);
                     PoolSource(ref source, null);
+
+                    // XRTODO: remove once SPI is working
+                    if (restoreSinglePass)
+                        cmd.SetSinglePassStereo(SinglePassStereoMode.SideBySide);
                 }
             }
 
