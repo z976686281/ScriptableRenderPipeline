@@ -109,7 +109,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             if (!mat.HasProperty(HDShaderIDs._DiffusionProfileAsset))
                 return null;
             
-            string guid = HDEditorUtils.ConvertVector4ToGUID(mat.GetVector(HDShaderIDs._DiffusionProfileAsset));
+            string guid = HDUtils.ConvertVector4ToGUID(mat.GetVector(HDShaderIDs._DiffusionProfileAsset));
             
             if (String.IsNullOrEmpty(guid))
                 return null;

@@ -1,6 +1,10 @@
 using System;
 using System.IO;
+using System.Collections.Generic;
 using UnityEngine.Rendering;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace UnityEngine.Experimental.Rendering.HDPipeline
 {
@@ -40,30 +44,59 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
                 // Iterate over the diffusion profile settings and generate one new asset for each
                 // diffusion profile which have been modified
-                int count = 0;
+                int index = 0;
+                var newProfiles = new Dictionary<int, DiffusionProfileSettings>();
                 foreach (var profile in d.profiles)
                 {
                     if (!profile.Equals(defaultProfile))
-                        CreateNewDiffusionProfile(d, profile, count++);
+                        newProfiles[index] = (CreateNewDiffusionProfile(d, profile, index));
+                    index++;
                 }
 #if UNITY_EDITOR
                 // If the diffusion profile settings we're upgrading was assigned to the HDAsset in use
                 // Then we need to go over all materials and upgrade them
                 if (hdAsset.diffusionProfileSettings == d)
                 {
-                    Debug.Log("TODO: upgrade all materials");
+                    Debug.Log("Upgrade all materials !");
+                    var materialGUIDs = AssetDatabase.FindAssets("t:Material");
+                    foreach (var guid in materialGUIDs)
+                    {
+                        var mat = AssetDatabase.LoadAssetAtPath<Material>(AssetDatabase.GUIDToAssetPath(guid));
+                        UpgradeMaterial(mat, newProfiles);
+                    }
                 }
 #endif
 #pragma warning restore 618
             })
         );
 
-        static void CreateNewDiffusionProfile(DiffusionProfileSettings asset, DiffusionProfile profile, int count)
+#if UNITY_EDITOR
+        public static void UpgradeMaterial(Material mat, Dictionary<int, DiffusionProfileSettings> replacementProfiles)
         {
-            if (count == 0)
+            // if the material don't have a diffusion profile
+            if (!mat.HasProperty("_DiffusionProfile"))
+                return;
+            // or if it already have been upgraded
+            if (mat.HasProperty("_DiffusionProfileAsset"))
+                return;
+
+            int index = mat.GetInt("_DiffusionProfile");
+            if (!replacementProfiles.ContainsKey(index))
+                return;
+
+            var newProfile = replacementProfiles[index];
+            string diffusionProfileGUID = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(newProfile));
+            mat.SetVector("_DiffusionProfileAsset", HDUtils.ConvertGUIDToVector4(diffusionProfileGUID));
+            mat.SetFloat("_DiffusionProfileHash", HDShadowUtils.Asfloat(newProfile.profile.hash));
+        }
+#endif
+
+        static DiffusionProfileSettings CreateNewDiffusionProfile(DiffusionProfileSettings asset, DiffusionProfile profile, int index)
+        {
+            if (index == 0)
             {
                 asset.profile = profile;
-                return;
+                return null;
             }
 
 #if UNITY_EDITOR
@@ -73,10 +106,11 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             profile.Validate();
             newDiffusionProfile.UpdateCache();
 
-            var path = UnityEditor.AssetDatabase.GetAssetPath(asset);
-            path = UnityEditor.AssetDatabase.GenerateUniqueAssetPath(path);
-            UnityEditor.AssetDatabase.CreateAsset(newDiffusionProfile, path);
+            var path = AssetDatabase.GetAssetPath(asset);
+            path = AssetDatabase.GenerateUniqueAssetPath(path);
+            AssetDatabase.CreateAsset(newDiffusionProfile, path);
 #endif
+            return newDiffusionProfile;
         }
     }
 }

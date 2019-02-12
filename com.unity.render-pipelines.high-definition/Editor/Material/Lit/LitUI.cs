@@ -455,7 +455,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                 using (new EditorGUILayout.HorizontalScope())
                 {
                     // We can't cache these fields because of several edge cases like undo/redo or pressing escape in the object picker
-                    string guid = HDEditorUtils.ConvertVector4ToGUID(diffusionProfileAsset[layerIndex].vectorValue);
+                    string guid = HDUtils.ConvertVector4ToGUID(diffusionProfileAsset[layerIndex].vectorValue);
                     DiffusionProfileSettings diffusionProfile = AssetDatabase.LoadAssetAtPath<DiffusionProfileSettings>(AssetDatabase.GUIDToAssetPath(guid));
 
                     // is it okay to do this every frame ?
@@ -469,7 +469,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                         if (diffusionProfile != null)
                         {
                             guid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(diffusionProfile));
-                            newGuid = HDEditorUtils.ConvertGUIDToVector4(guid);
+                            newGuid = HDUtils.ConvertGUIDToVector4(guid);
                             hash = HDShadowUtils.Asfloat(diffusionProfile.profile.hash);
                         }
 

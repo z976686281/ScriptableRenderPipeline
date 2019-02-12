@@ -16,7 +16,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
         public static void OnGUI(MaterialProperty diffusionProfileAsset, MaterialProperty diffusionProfileHash)
         {
-            string guid = HDEditorUtils.ConvertVector4ToGUID(diffusionProfileAsset.vectorValue);
+            string guid = HDUtils.ConvertVector4ToGUID(diffusionProfileAsset.vectorValue);
             DiffusionProfileSettings diffusionProfile = AssetDatabase.LoadAssetAtPath<DiffusionProfileSettings>(AssetDatabase.GUIDToAssetPath(guid));
 
             // is it okay to do this every frame ?
@@ -30,7 +30,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                 if (diffusionProfile != null)
                 {
                     guid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(diffusionProfile));
-                    newGuid = HDEditorUtils.ConvertGUIDToVector4(guid);
+                    newGuid = HDUtils.ConvertGUIDToVector4(guid);
                     hash = HDShadowUtils.Asfloat(diffusionProfile.profile.hash);
                 }
 
