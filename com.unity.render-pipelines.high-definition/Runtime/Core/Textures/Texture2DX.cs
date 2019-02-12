@@ -31,6 +31,7 @@ namespace UnityEngine.Experimental.Rendering
                 // TEXTURE2DX macros will now expand to TEXTURE2D_ARRAY
                 dimension = TextureDimension.Tex2DArray;
 
+                // XRTODO: need to also check if stereo is enabled in camera!
                 if (XRGraphics.stereoRenderingMode == XRGraphics.StereoRenderingMode.SinglePassInstanced)
                 {
                     // Add a new dimension
