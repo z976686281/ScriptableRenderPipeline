@@ -97,9 +97,9 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                         {
                             NativeArray<uint> sampleCount = rayCountReadbacks[i].rayCountReadback.GetData<uint>();
 
-                            if (sampleCount.Length > 0 && sampleCount[k_NumRaySources] != 0)
+                            if (sampleCount.Length > 0 && sampleCount[0] != 0)
                             {
-                                latestSample = sampleCount[k_NumRaySources] / rayCountReadbacks[i].deltaTime;
+                                latestSample = sampleCount[0] / rayCountReadbacks[i].deltaTime;
                                 rayCountReadbacks[i].SetRetired();
                             }
                         }
@@ -163,7 +163,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     // out to something close to what we want anyways. 
                     RayCountReadback singleReadBack;
                     singleReadBack.rayCountBuffer = s_TotalRayCountBuffer;
-                    singleReadBack.rayCountReadback = AsyncGPUReadback.Request(s_TotalRayCountBuffer);
+                    singleReadBack.rayCountReadback = AsyncGPUReadback.Request(s_TotalRayCountBuffer, sizeof(uint), k_NumRaySources * sizeof(uint));
                     singleReadBack.retired = false;
                     singleReadBack.deltaTime = Time.smoothDeltaTime;
 
