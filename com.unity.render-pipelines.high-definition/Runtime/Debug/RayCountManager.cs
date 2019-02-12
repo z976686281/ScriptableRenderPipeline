@@ -100,7 +100,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                             {
                                 latestSample = sampleCount[0] / rayCountReadbacks[i].deltaTime;
                                 rayCountReadbacks[i] = RayCountReadback.SetRetired();
-                                bool test = rayCountReadbacks[i].retired;
                             }
                         }
                         else
@@ -113,9 +112,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                         rayCountReadbacks[i] = RayCountReadback.SetRetired();
                     }
                 }
-
                 rayCountReadbacks.RemoveAll(ReadbackIsRetired);
-
                 return latestSample;
             }
         }
