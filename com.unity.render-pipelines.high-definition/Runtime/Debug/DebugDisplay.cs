@@ -85,7 +85,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             // Raytracing
 #if ENABLE_RAYTRACING
             public bool countRays = false;
-            public float raysPerFrame = 0.0f;
             public bool showRaysPerFrame = false;
             public Color raysPerFrameFontColor = Color.white;
 #endif
