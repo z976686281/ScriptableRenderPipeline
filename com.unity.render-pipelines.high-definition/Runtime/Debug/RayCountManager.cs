@@ -83,47 +83,46 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             }
         }
 
-        public float latestRaysPerSecond
+        public float GetRaysPerFrame()
         {
-            get
+            if (!m_DebugDisplaySettings.data.countRays)
+                return 0.0f;
+            else
             {
-                if (!m_DebugDisplaySettings.data.countRays)
-                    return 0.0f;
-                else
+                float latestSample = 0;
+                // Get the latest readback that finished
+                for (int i = 0; i < rayCountReadbacks.Count; i++)
                 {
-                    float latestSample = 0.0f;
-                    // Get the latest readback that finished
-                    for (int i = 0; i < rayCountReadbacks.Count; i++)
+                    if (rayCountReadbacks[i].rayCountReadback.hasError == false)
                     {
-                        if (rayCountReadbacks[i].rayCountReadback.hasError == false)
+                        if (rayCountReadbacks[i].rayCountReadback.done)
                         {
-                            if (rayCountReadbacks[i].rayCountReadback.done)
-                            {
-                                NativeArray<float> sampleCount = rayCountReadbacks[i].rayCountReadback.GetData<float>();
+                            NativeArray<float> sampleCount = rayCountReadbacks[i].rayCountReadback.GetData<float>();
 
-                                if (sampleCount.Length > 0 && sampleCount[0] != 0)
-                                {
-                                    latestSample = sampleCount[0] / rayCountReadbacks[i].deltaTime;
-                                    rayCountReadbacks[i].SetRetired();
-                                }
-                            }
-                            else
+                            if (sampleCount.Length > 0 && sampleCount[0] != 0)
                             {
-                                rayCountReadbacks[i].rayCountReadback.Update();
+                                float value = sampleCount[0];
+                                latestSample = sampleCount[0] / rayCountReadbacks[i].deltaTime;
+                                rayCountReadbacks[i].SetRetired();
                             }
                         }
                         else
                         {
-                            rayCountReadbacks[i].SetRetired();
+                            rayCountReadbacks[i].rayCountReadback.Update();
                         }
                     }
-
-                    rayCountReadbacks.RemoveAll(ReadbackIsRetired);
-
-                    return latestSample;
+                    else
+                    {
+                        rayCountReadbacks[i].SetRetired();
+                    }
                 }
+
+                rayCountReadbacks.RemoveAll(ReadbackIsRetired);
+
+                return latestSample;
             }
         }
+
 
         public void ClearRayCount(CommandBuffer cmd, HDCamera camera)
         {

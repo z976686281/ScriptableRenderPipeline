@@ -190,7 +190,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         float m_LastTime, m_Time;
 
         public int GetCurrentShadowCount() { return m_LightLoop.GetCurrentShadowCount(); }
-        public float GetRaysPerFrame() { return m_RayTracingManager.rayCountManager.latestRaysPerSecond; }
+        public float GetRaysPerFrame() { return m_RayTracingManager.rayCountManager.GetRaysPerFrame(); }
         public int GetDecalAtlasMipCount()
         {
             int highestDim = Math.Max(currentPlatformRenderPipelineSettings.decalSettings.atlasWidth, currentPlatformRenderPipelineSettings.decalSettings.atlasHeight);
