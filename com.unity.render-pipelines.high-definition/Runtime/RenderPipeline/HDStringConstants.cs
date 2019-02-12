@@ -30,6 +30,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         public static readonly string s_MeshDecals3RTStr = "DBufferMesh_3RT";
         public static readonly string s_ShaderGraphMeshDecals4RT = "ShaderGraph_DBufferMesh4RT";
         public static readonly string s_ShaderGraphMeshDecals3RT = "ShaderGraph_DBufferMesh3RT";
+        public static readonly string s_MeshDecalsForwardEmissive = "Mesh_Emissive";
 
         // ShaderPass name
         public static readonly ShaderTagId s_EmptyName = new ShaderTagId(s_EmptyStr);
@@ -55,6 +56,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         public static readonly ShaderTagId s_MeshDecals3RTName = new ShaderTagId(s_MeshDecals3RTStr);
         public static readonly ShaderTagId s_ShaderGraphMeshDecalsName4RT = new ShaderTagId(s_ShaderGraphMeshDecals4RT);
         public static readonly ShaderTagId s_ShaderGraphMeshDecalsName3RT = new ShaderTagId(s_ShaderGraphMeshDecals3RT);
+        public static readonly ShaderTagId s_MeshDecalsForwardEmissiveName = new ShaderTagId(s_MeshDecalsForwardEmissive);
 
         // Legacy name
         public static readonly ShaderTagId s_AlwaysName = new ShaderTagId("Always");
@@ -459,7 +461,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 #if ENABLE_RAYTRACING
         // Raytracing variables
         public static readonly int _RaytracedAreaShadow             = Shader.PropertyToID("_RaytracedAreaShadow");
-        public static readonly int _RaytracingNoiseTexture          = Shader.PropertyToID("_RaytracingNoiseTexture");
         public static readonly int _RaytracingNoiseResolution       = Shader.PropertyToID("_RaytracingNoiseResolution");
         public static readonly int _RaytracingNumNoiseLayers        = Shader.PropertyToID("_RaytracingNumNoiseLayers");
         public static readonly int _RaytracingRayBias               = Shader.PropertyToID("_RaytracingRayBias");
@@ -492,6 +493,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         public static readonly int _CurrentFrameTexture             = Shader.PropertyToID("_CurrentFrameTexture");
         public static readonly int _AccumulatedFrameTexture         = Shader.PropertyToID("_AccumulatedFrameTexture");
         public static readonly int _TemporalAccumuationWeight       = Shader.PropertyToID("_TemporalAccumuationWeight");
+        public static readonly int _SpatialFilterRadius             = Shader.PropertyToID("_SpatialFilterRadius");
 
         public static readonly int _RayCountTexture                 = Shader.PropertyToID("_RayCountTexture");
         public static readonly int _RayCountEnabled                 = Shader.PropertyToID("_RayCountEnabled");
@@ -625,6 +627,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         public static readonly int _GrainParams                    = Shader.PropertyToID("_GrainParams");
         public static readonly int _GrainTextureParams             = Shader.PropertyToID("_GrainTextureParams");
         public static readonly int _BlueNoiseTexture               = Shader.PropertyToID("_BlueNoiseTexture");
+        public static readonly int _OwenScrambledTexture           = Shader.PropertyToID("_OwenScrambledTexture");
+        public static readonly int _ScramblingTexture              = Shader.PropertyToID("_ScramblingTexture");
         public static readonly int _AfterPostProcessTexture        = Shader.PropertyToID("_AfterPostProcessTexture");
         public static readonly int _DitherParams                   = Shader.PropertyToID("_DitherParams");
         public static readonly int _UVTransform                    = Shader.PropertyToID("_UVTransform");
