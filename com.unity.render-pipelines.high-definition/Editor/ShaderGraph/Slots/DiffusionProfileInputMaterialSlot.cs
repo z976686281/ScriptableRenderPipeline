@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.ShaderGraph.Drawing.Controls;
 using UnityEngine.Experimental.Rendering.HDPipeline;
+using UnityEngine.Rendering;
 
 namespace UnityEditor.Experimental.Rendering.HDPipeline
 {
@@ -14,23 +15,30 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
     [FormerName("UnityEditor.ShaderGraph.DiffusionProfileInputMaterialSlot")]
     class DiffusionProfileInputMaterialSlot : Vector1MaterialSlot
     {
+        [SerializeField, Obsolete("Use m_DiffusionProfileAsset instead.")]
+        PopupList m_DiffusionProfile = new PopupList();
+
         [SerializeField]
-        DiffusionProfileSettings m_DiffusionProfile;
+        DiffusionProfileSettings m_DiffusionProfileAsset;
 
         public DiffusionProfileSettings diffusionProfile
         {
-            get { return m_DiffusionProfile; }
-            set { m_DiffusionProfile = value; }
+            get { return m_DiffusionProfileAsset; }
+            set { m_DiffusionProfileAsset = value; }
         }
 
         public DiffusionProfileInputMaterialSlot()
         {
+            // We can't upgrade here because we need to access the current render pipeline asset which is not
+            // possible outside of unity context so we wait the next editor frame to do it
+            EditorApplication.update += UpgradeIfNeeded;
         }
 
         public DiffusionProfileInputMaterialSlot(int slotId, string displayName, string shaderOutputName,
                                           ShaderStageCapability stageCapability = ShaderStageCapability.All, bool hidden = false)
             : base(slotId, displayName, shaderOutputName, SlotType.Input, 0.0f, stageCapability, hidden: hidden)
         {
+            EditorApplication.update += UpgradeIfNeeded;
         }
 
         public override VisualElement InstantiateControl()
@@ -65,10 +73,10 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
         public override string GetDefaultValue(GenerationMode generationMode)
         {
-            if (m_DiffusionProfile == null)
+            if (m_DiffusionProfileAsset == null)
                 return "_DiffusionProfileHash";
             else
-                return "((asuint(_DiffusionProfileHash) != 0) ? _DiffusionProfileHash : asfloat(uint(" + m_DiffusionProfile.profile.hash + ")))";
+                return "((asuint(_DiffusionProfileHash) != 0) ? _DiffusionProfileHash : asfloat(uint(" + m_DiffusionProfileAsset.profile.hash + ")))";
         }
 
         public override void CopyValuesFrom(MaterialSlot foundSlot)
@@ -77,8 +85,22 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
             if (slot != null)
             {
-                m_DiffusionProfile = slot.m_DiffusionProfile;
+                m_DiffusionProfileAsset = slot.m_DiffusionProfileAsset;
             }
+        }
+
+        void UpgradeIfNeeded()
+        {
+#pragma warning disable 618
+            // Once the profile is upgraded, we set the selected entry to -1
+            if (m_DiffusionProfile.selectedEntry != -1)
+            {
+                var hdAsset = GraphicsSettings.renderPipelineAsset as HDRenderPipelineAsset;
+                diffusionProfile = hdAsset.diffusionProfileSettingsList[m_DiffusionProfile.selectedEntry];
+                m_DiffusionProfile.selectedEntry = -1;
+            }
+#pragma warning restore 618
+            EditorApplication.update -= UpgradeIfNeeded;
         }
     }
 }

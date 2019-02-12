@@ -40,7 +40,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         Vector4[]                   worldScales;
         Vector4[]                   filterKernels;
         float[]                     diffusionProfileHashes;
-        DiffusionProfileSettings[]  hdAssetDiffusionProfileList;
+        HDRenderPipelineAsset       hdAsset;
         DiffusionProfileSettings    defaultDiffusionProfile;
         int                         activeDiffusionProfileCount;
         public uint                 texturingModeFlags;        // 1 bit/profile: 0 = PreAndPostScatter, 1 = PostScatter
@@ -123,7 +123,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             m_CopyStencilForSplitLighting.SetInt(HDShaderIDs._StencilRef, (int)StencilLightingUsage.SplitLighting);
             m_CopyStencilForSplitLighting.SetInt(HDShaderIDs._StencilMask, (int)HDRenderPipeline.StencilBitMask.LightingMask);
             
-            hdAssetDiffusionProfileList = hdAsset.diffusionProfileSettingsList;
+            this.hdAsset = hdAsset;
             defaultDiffusionProfile = hdAsset.defaultDiffusionProfileSettings;
         }
 
@@ -151,7 +151,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
         void UpdateCurrentDiffusionProfileSettings()
         {
-            var currentDiffusionProfiles = hdAssetDiffusionProfileList;
+            var currentDiffusionProfiles = hdAsset.diffusionProfileSettingsList;
             var diffusionProfileOverride = VolumeManager.instance.stack.GetComponent<DiffusionProfileOverride>();
 
             // If there is a diffusion profile volume override, we merge diffusion profiles that are overwritten
@@ -178,6 +178,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
         void SetDiffusionProfileAtIndex(DiffusionProfileSettings profile, int index)
         {
+            // Debug.Log("Setup diffusion profile: " + profile + ":" + index);
             // TODO: cache and watch for changes
             thicknessRemaps[index] = profile.thicknessRemaps;
             shapeParams[index] = profile.shapeParams;
@@ -199,7 +200,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         public void PushGlobalParams(HDCamera hdCamera, CommandBuffer cmd)
         {
             UpdateCurrentDiffusionProfileSettings();
-            // TODO: add a "default" diffusion profile at index 0 in the hash table (so we dont have to check against 0 in the shader)
 
             cmd.SetGlobalInt(HDShaderIDs._DiffusionProfileCount, activeDiffusionProfileCount);
 
