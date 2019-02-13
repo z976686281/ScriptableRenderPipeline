@@ -149,16 +149,10 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                             CED.Conditional((serialized, owner) => HasShadowQualitySettingsUI(HDShadowQuality.Low, serialized, owner),
                                 CED.FoldoutGroup(s_Styles.lowShadowQualitySubHeader, Expandable.ShadowQuality, k_ExpandedState, FoldoutOption.SubFoldout | FoldoutOption.Indent, DrawLowShadowSettingsContent)),
 
-#if ENABLE_RAYTRACING
                             CED.Conditional((serialized, owner) => serialized.editorLightShape != LightShape.Rectangle && serialized.editorLightShape != LightShape.Tube,
-#endif
-                            CED.FoldoutGroup(s_Styles.contactShadowsSubHeader, Expandable.ContactShadow, k_ExpandedState, FoldoutOption.SubFoldout | FoldoutOption.Indent | FoldoutOption.NoSpaceAtEnd, DrawContactShadowsContent)
+                                CED.FoldoutGroup(s_Styles.contactShadowsSubHeader, Expandable.ContactShadow, k_ExpandedState, FoldoutOption.SubFoldout | FoldoutOption.Indent | FoldoutOption.NoSpaceAtEnd, DrawContactShadowsContent)
 
-#if ENABLE_RAYTRACING
                             ),
-#else
-                            ,
-#endif
                             CED.Conditional((serialized, owner) => serialized.settings.isBakedOrMixed || serialized.settings.isCompletelyBaked,
                                 CED.space,
                                 CED.FoldoutGroup(s_Styles.bakedShadowsSubHeader, Expandable.BakedShadow, k_ExpandedState, FoldoutOption.SubFoldout | FoldoutOption.Indent | FoldoutOption.NoSpaceAtEnd, DrawBakedShadowsContent))
@@ -618,12 +612,6 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                 if (serialized.editorLightShape == LightShape.Rectangle)
                 {
                     EditorGUILayout.Slider(serialized.serializedLightData.areaLightShadowCone, 10.0f, 179.0f, s_Styles.areaLightShadowCone);
-
-                    EditorGUILayout.Slider(serialized.serializedLightData.exponent, 0.0f, 42.0f, s_Styles.exponent);
-                    EditorGUILayout.Slider(serialized.serializedLightData.varianceBias, 0.0f, 0.001f, s_Styles.varianceBias);
-                    EditorGUILayout.Slider(serialized.serializedLightData.lightLeakBias, 0.0f, 1.0f, s_Styles.lightLeakBias);
-                    EditorGUILayout.IntSlider(serialized.serializedLightData.mip, 0, 8, s_Styles.mip);
-
 #if ENABLE_RAYTRACING
                 EditorGUILayout.PropertyField(serialized.serializedLightData.useRasterizedShadow, s_Styles.useRasterizedShadow);
 #endif

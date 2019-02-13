@@ -297,11 +297,9 @@ float EvalShadow_AreaDepth(HDShadowData sd, Texture2D tex, SamplerComparisonStat
     /* get the per sample bias */
     float2 sampleBias = EvalShadow_SampleBias_Persp(positionWS, normalWS, posTC);
 
-     float2 exponents = sd.shadowFilterParams0.xx; // Pass via Cbuffer
-     float lightLeakBias = sd.shadowFilterParams0.y; // Pass via Cbuffer
-     float varianceBias = sd.shadowFilterParams0.z;
-     int mip = sd.shadowFilterParams0.w;
-    return SampleShadow_EVSM_1tap(posTC, lightLeakBias, varianceBias, exponents, false, mip, tex, s_linear_clamp_sampler);
+    return PUNCTUAL_FILTER_ALGORITHM(sd, positionSS, posTC, sampleBias, tex, sampComp);
+
+    // return SampleShadow_EVSM_1tap(posTC, lightLeakBias, varianceBias, exponents, false, tex, samp, true);
      //return 
 }
 

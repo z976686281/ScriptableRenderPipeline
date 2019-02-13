@@ -26,12 +26,11 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
         // Moment shadow data
         bool m_SupportMomentShadows;
-        bool m_SupportsEVSM2Mipped;
         RTHandleSystem.RTHandle m_AtlasMoments;
         RTHandleSystem.RTHandle m_IntermediateSummedAreaTexture;
         RTHandleSystem.RTHandle m_SummedAreaTexture;
 
-        public HDShadowAtlas(RenderPipelineResources renderPipelineResources, int width, int height, int atlasSizeShaderID, Material clearMaterial, bool supportMomentShadows, bool EVSM2Mipped = false, FilterMode filterMode = FilterMode.Bilinear, DepthBits depthBufferBits = DepthBits.Depth16, RenderTextureFormat format = RenderTextureFormat.Shadowmap, string name = "")
+        public HDShadowAtlas(RenderPipelineResources renderPipelineResources, int width, int height, int atlasSizeShaderID, Material clearMaterial, bool supportMomentShadows, FilterMode filterMode = FilterMode.Bilinear, DepthBits depthBufferBits = DepthBits.Depth16, RenderTextureFormat format = RenderTextureFormat.Shadowmap, string name = "")
         {
             this.width = width;
             this.height = height;
@@ -43,7 +42,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             m_ClearMaterial = clearMaterial;
             m_SupportMomentShadows = supportMomentShadows;
             m_RenderPipelineResources = renderPipelineResources;
-            m_SupportsEVSM2Mipped = EVSM2Mipped;
 
             AllocateRenderTexture();
         }
@@ -64,12 +62,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 string summedAreaName = m_Name + "SummedAreaFinal";
                 m_SummedAreaTexture = RTHandles.Alloc(width, height, filterMode: FilterMode.Point, colorFormat: GraphicsFormat.R32G32B32A32_SInt, enableRandomWrite: true, name: summedAreaName);
             }
-            else if(m_SupportsEVSM2Mipped)
-            {
-                string momentShadowMapName = m_Name + "Moment";
-                m_AtlasMoments = RTHandles.Alloc(width, height, filterMode: FilterMode.Point, colorFormat: GraphicsFormat.R32G32_SFloat, useMipMap: true, autoGenerateMips: false, enableRandomWrite: true, name: momentShadowMapName);
-            }
-
             identifier = new RenderTargetIdentifier(m_Atlas);
         }
 
@@ -263,88 +255,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             }
 
             cmd.SetGlobalFloat(HDShaderIDs._ZClip, 1.0f);   // Re-enable zclip globally
-        }
-
-        public void AreaShadowBlurMomentAndMip(CommandBuffer cmd, HDCamera hdCamera)
-        {
-            ComputeShader shadowBlurMomentsCS = m_RenderPipelineResources.shaders.shadowBlurMomentsCS;
-            if (!m_SupportsEVSM2Mipped || shadowBlurMomentsCS == null) return;
-            using (new ProfilingSample(cmd, "Render & Blur Moment Shadows", CustomSamplerId.RenderShadows.GetSampler()))
-            {
-                int blurMomentsKernel = shadowBlurMomentsCS.FindKernel("main_EVSM_2_9");
-                cmd.SetComputeTextureParam(shadowBlurMomentsCS, blurMomentsKernel, HDShaderIDs._DepthTexture, m_Atlas);
-                cmd.SetComputeTextureParam(shadowBlurMomentsCS, blurMomentsKernel, HDShaderIDs._OutputTexture, m_AtlasMoments);
-
-
-                // Weights.
-
-                // TODO_FCC: Set only actually used ones. This needs to be reworked. It is a temp thing for quick iteration.
-                Vector4[] blurWeights = new Vector4[3];
-                const int numberOfSamples = 9;
-                int halfSamples = Mathf.CeilToInt(numberOfSamples / 2.0f);
-                const float sigma = 3;
-                float g = 1.0f / Mathf.Sqrt(2.0f * Mathf.PI * sigma * sigma);
-
-                for (int i = 0; i < 4; ++i)
-                {
-                    blurWeights[0][i] = (g * Mathf.Exp(-(i * i) / (2 * sigma * sigma)));
-                }
-                for (int i = 4; i < 8; ++i)
-                {
-                    blurWeights[1][i - 4] = (g * Mathf.Exp(-(i * i) / (2 * sigma * sigma)));
-                }
-                for (int i = 8; i < 12; ++i)
-                {
-                    blurWeights[2][i - 8] = (g * Mathf.Exp(-(i * i) / (2 * sigma * sigma)));
-                }
-
-                float totalWeight = 0.0f;
-                for (int i = 0; i < 4; ++i)
-                {
-                    totalWeight += blurWeights[0][i];
-                }
-                for (int i = 4; i < Mathf.Min(8, halfSamples); ++i)
-                {
-                    totalWeight += blurWeights[1][i - 4];
-                }
-                for (int i = 8; i < Mathf.Min(12, halfSamples); ++i)
-                {
-                    totalWeight += blurWeights[2][i - 8];
-                }
-
-                blurWeights[0] /= totalWeight;
-                blurWeights[1] /= totalWeight;
-                blurWeights[2] /= totalWeight;
-
-                cmd.SetComputeVectorArrayParam(shadowBlurMomentsCS, HDShaderIDs._BlurWeightsStorage, blurWeights);
-                // TODO_FCC: Set exponent from UI.
-
-                // Need to blur individual requests to avoid blurring across shadow maps
-                foreach (var shadowRequest in m_ShadowRequests)
-                {
-                    cmd.SetComputeVectorParam(shadowBlurMomentsCS, HDShaderIDs._SrcRect, new Vector4(shadowRequest.atlasViewport.min.x, shadowRequest.atlasViewport.min.y, shadowRequest.atlasViewport.width, shadowRequest.atlasViewport.height));
-                    cmd.SetComputeVectorParam(shadowBlurMomentsCS, HDShaderIDs._DstRect, new Vector4(shadowRequest.atlasViewport.min.x, shadowRequest.atlasViewport.min.y, 0, 0));
-
-                    int dispatchSizeX = ((int)shadowRequest.atlasViewport.width + 15) / 16;
-                    int dispatchSizeY = ((int)shadowRequest.atlasViewport.height + 15) / 16;
-                    cmd.SetComputeVectorParam(shadowBlurMomentsCS, HDShaderIDs._EVSMParams, new Vector4(shadowRequest.evsmParams.x, shadowRequest.evsmParams.x, 0, 0));
-
-                    cmd.DispatchCompute(shadowBlurMomentsCS, blurMomentsKernel, dispatchSizeX, dispatchSizeY, 1);
-                }
-
-                // TODO_FCC: Do mip manually in the relevant viewport!
-                cmd.GenerateMips(m_AtlasMoments);
-            }
-        }
-
-        public bool HasEVSMMipped()
-        {
-            return m_SupportsEVSM2Mipped;
-        }
-
-        public RTHandleSystem.RTHandle GetMomentTexture()
-        {
-            return m_AtlasMoments;
         }
 
         public void ComputeMomentShadows(CommandBuffer cmd, HDCamera hdCamera )
