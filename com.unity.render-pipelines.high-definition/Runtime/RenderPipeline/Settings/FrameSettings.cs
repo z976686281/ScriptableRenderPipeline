@@ -274,11 +274,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
             // We have to fall back to forward-only rendering when scene view is using wireframe rendering mode
             // as rendering everything in wireframe + deferred do not play well together
-            if (GL.wireframe || stereo) //force forward mode for wireframe
+            if (GL.wireframe)
             {
-                // Stereo deferred rendering still has the following problems:
-                // XRTODO: Dispatch tile light-list compute per-eye
-                // XRTODO: Update compute lighting shaders for stereo
                 sanitazedFrameSettings.litShaderMode = LitShaderMode.Forward;
             }
             else
@@ -344,6 +341,10 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             // XRTODO: workaround for lighting issues with single-pass double-wide (disable tile lighting)
             sanitazedFrameSettings.bitDatas[(int)FrameSettingsField.BigTilePrepass] &= !stereoDoubleWide;
             sanitazedFrameSettings.bitDatas[(int)FrameSettingsField.DeferredTile] &= !stereoDoubleWide;
+
+            // XRTODO: variants support (solve how g_TileListOffset and surrounding math should work with stereo)
+            sanitazedFrameSettings.bitDatas[(int)FrameSettingsField.ComputeLightVariants] &= !stereo;
+            sanitazedFrameSettings.bitDatas[(int)FrameSettingsField.ComputeMaterialVariants] &= !stereo;
 
             // Deferred opaque are always using Fptl. Forward opaque can use Fptl or Cluster, transparent use cluster.
             // When MSAA is enabled we disable Fptl as it become expensive compare to cluster

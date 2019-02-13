@@ -254,7 +254,7 @@ void LIGHTLISTGEN(uint threadID : SV_GroupIndex, uint3 u3GroupID : SV_GroupID)
         // Additionally, we're going to have a method to select between a doublewide texture or texture array. Doubling
         // the kernels seems like a bad idea.  We could branch our texture read to switch between different texture declarations.
         uint stereoDWOffset = eyeIndex * g_screenSize.x;
-        uPixCrd.x += stereoDWOffset;
+        //uPixCrd.x += stereoDWOffset;
 #ifdef MSAA_ENABLED
         for(int i=0; i<g_iNumSamplesMSAA; i++)
         {
