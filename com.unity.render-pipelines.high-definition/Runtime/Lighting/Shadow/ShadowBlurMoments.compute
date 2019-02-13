@@ -83,20 +83,23 @@
 #pragma only_renderers d3d11 ps4 xboxone vulkan metal switch
 
 #if MAX_MSAA > 1
-Texture2DMS<float> depthTex;
+Texture2DMS<float> _DepthTexture;
 #else
-Texture2D<float>   depthTex;
+Texture2D<float>   _DepthTexture;
 #endif
 
-uniform uint4   srcRect; // .xy = offset, .zw = width/height
-uniform uint4   dstRect; // .xy = offset, .z  = array slice , .w = Flags: 1 := 16bpp, 2 := 2 channels pp, 4:= reversed z
 
-uniform float4  blurWeightsStorage[3]; // Unity expects float arrays to be tightly packed
-static float    blurWeights[12] = (float[12])blurWeightsStorage;
+CBUFFER_START(ShadowBlurMomentsUniforms)
+float4 _SrcRect;     // .xy = offset, .zw = width/height
+float4 _DstRect;     // .xy = offset, .z  = array slice , .w = Flags: 1 := 16bpp, 2 := 2 channels pp,
+float4 _EVSMParams;    // xy = exponents, zw: unused. 
+float4 _BlurWeightsStorage[3];  // Unity expects float arrays to be tightly packed
+CBUFFER_END
+
+
+static float    blurWeights[12] = (float[12])_BlurWeightsStorage;
 
 static const int kBits_16    = 1; // 16 bits per channel
-static const int kChannels_2 = 2; // 2 channels per pixel
-static const int kReversed_z = 4; // depth buffer contains reversed z
 
 #if (SHADOW_MOMENT_ALGORITHM == VSM)
 #   define SHADOW_MOMENTS 2
@@ -108,21 +111,17 @@ static const int kReversed_z = 4; // depth buffer contains reversed z
 #elif SHADOW_MOMENT_ALGORITHM == EVSM_2
 #   define SHADOW_MOMENTS 2
 
-    uniform float evsmExponent;
-
     float2 DepthToMoments( float depth )
     {
-        float2 moments = ShadowMoments_WarpDepth( depth, evsmExponent.xx );
+        float2 moments = ShadowMoments_WarpDepth( depth, _EVSMParams.xx );
         return float2( moments.x, moments.x * moments.x );
     }
 #elif SHADOW_MOMENT_ALGORITHM == EVSM_4
 #   define SHADOW_MOMENTS 4
 
-    uniform float2 evsmExponents;
-
     float4 DepthToMoments( float depth )
     {
-        float2 moments = ShadowMoments_WarpDepth( depth, evsmExponents );
+        float2 moments = ShadowMoments_WarpDepth( depth, _EVSMParams.xy );
         return float4( moments.xy, moments.xy * moments.xy );
     }
 #elif SHADOW_MOMENT_ALGORITHM == MSM
@@ -130,7 +129,7 @@ static const int kReversed_z = 4; // depth buffer contains reversed z
 
     float4 DepthToMoments( float depth )
     {
-        if( (dstRect.w & kBits_16) != 0 )
+        if( ((int)_DstRect.w & kBits_16) != 0 )
             return ShadowMoments_Encode16MSM( depth  );
         else
         {
@@ -147,7 +146,7 @@ static const int kReversed_z = 4; // depth buffer contains reversed z
 #define LDS_STRIDE (THREADS + BLUR_BORDER + BLUR_BORDER)
 
 #define moment_t  MERGE_NAME( float, SHADOW_MOMENTS )
-RWTexture2DArray<moment_t>  outputTex;
+RW_TEXTURE2D(moment_t, _OutputTexture);
 
 groupshared float  moments1[THREADS * LDS_STRIDE];  // contains the blurred first moment
 groupshared float  moments2[THREADS * LDS_STRIDE];  // contains the blurred second moment
@@ -192,14 +191,14 @@ void KERNEL_MAIN( uint3 dispatchId : SV_DispatchThreadID, uint3 groupThreadId : 
 {
 #if MAX_MSAA > 1
     uint width, height, sampleCnt;
-    depthTex.GetDimensions( width, height, sampleCnt );
+    _DepthTexture.GetDimensions( width, height, sampleCnt );
     sampleCnt = clamp( sampleCnt, 2, MAX_MSAA );
     float sampleCntRcp = 1.0 / sampleCnt;
 
     // calculate weights based on sample positions
     if( groupThreadId.x < sampleCnt )
     {
-        float2 spos = depthTex.GetSamplePosition( groupThreadId.x );
+        float2 spos = _DepthTexture.GetSamplePosition( groupThreadId.x );
         sampleWeights[groupThreadId.x] = sampleCntRcp;
     }
     if( groupThreadId.x == 0 )
@@ -216,11 +215,11 @@ void KERNEL_MAIN( uint3 dispatchId : SV_DispatchThreadID, uint3 groupThreadId : 
     // us to fetch enough data around the border of the current tile.
     // We assume that the blur filter's support does not exceed THREADS, so we fetch
     // the data in 4 blocks.
-    const bool reverse_z  = (dstRect.w & kReversed_z) != 0;
+    const bool reverse_z  = UNITY_REVERSED_Z;
     const int  blurBorder = BLUR_BORDER;
-    const int2 validSrc   = (int2) (srcRect.xy + srcRect.zw - 1);
+    const int2 validSrc   = (int2) (_SrcRect.xy + _SrcRect.zw - 1);
 
-    int2 srcIdx = ((int2) dispatchId.xy) - blurBorder.xx + (int2) srcRect.xy;
+    int2 srcIdx = ((int2) dispatchId.xy) - blurBorder.xx + (int2) _SrcRect.xy;
     int2 ldsIdx = (int2) groupThreadId.xy;
     moment_t hblurredMoments[2];
 
@@ -237,7 +236,7 @@ void KERNEL_MAIN( uint3 dispatchId : SV_DispatchThreadID, uint3 groupThreadId : 
                 UNITY_LOOP
                 for( uint is = 0; is < sampleCnt; is++ )
                 {
-                    float depth = depthTex.Load( min( srcIdx, validSrc ), is ).x;
+                    float depth = _DepthTexture.Load( min( srcIdx, validSrc ), is ).x;
                           depth = reverse_z ? (1.0 - depth) : depth;
 #   if SHADOW_MOMENT_ALGORITHM == MSM
                           // We're pancaking triangles to znear in the depth pass so depth and subsequently all moments can end up being zero.
@@ -251,7 +250,7 @@ void KERNEL_MAIN( uint3 dispatchId : SV_DispatchThreadID, uint3 groupThreadId : 
 
                 writeToShared( avgMoments, int2( ldsIdx.x, groupThreadId.y ), LDS_STRIDE );
 #else
-                float depth = depthTex.Load( int3( min( srcIdx, validSrc ), 0 ) ).x;
+                float depth = _DepthTexture.Load( int3( min( srcIdx, validSrc ), 0 ) ).x;
                       depth = reverse_z ? (1.0 - depth) : depth;
 #   if SHADOW_MOMENT_ALGORITHM == MSM
                       // We're pancaking triangles to znear in the depth pass so depth and subsequently all moments can end up being zero.
@@ -279,7 +278,7 @@ void KERNEL_MAIN( uint3 dispatchId : SV_DispatchThreadID, uint3 groupThreadId : 
         GroupMemoryBarrierWithGroupSync();
 
         ldsIdx.x  = groupThreadId.x;
-        srcIdx.x  = (int) dispatchId.x - blurBorder + srcRect.x;
+        srcIdx.x  = (int) dispatchId.x - blurBorder + _SrcRect.x;
         srcIdx.y += THREADS;
     }
 
@@ -302,10 +301,9 @@ void KERNEL_MAIN( uint3 dispatchId : SV_DispatchThreadID, uint3 groupThreadId : 
     }
 
     // and write out the result
-    if( all( dispatchId.xy < srcRect.zw ) )
+    if( all( dispatchId.xy < _SrcRect.zw ) )
     {
-        dispatchId.xy += dstRect.xy;
-        dispatchId.z   = dstRect.z;
-        outputTex[dispatchId] = vblurredMoment;
+        dispatchId.xy += _DstRect.xy;
+        _OutputTexture[dispatchId.xy] = vblurredMoment;
     }
 }
