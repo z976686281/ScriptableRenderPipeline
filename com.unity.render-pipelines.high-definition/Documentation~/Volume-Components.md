@@ -6,7 +6,7 @@ __Exponential Fog__ is an example of a Volume Override:
 
 ![](Images/VolumeComponents1.png)
 
-Each Volume Override property has a checkbox on its left. Enable the checkbox to make that property editable. This also tells HDRP to use that property for this Volume component rather than the default value. If you  disable the checkbox, HDRP ignores the property and uses the Volume’s default value for that property instead.
+Each Volume Override property has a checkbox on its left. Enable the checkbox to make that property editable. This also tells HDRP to use that property for this Volume component rather than the default value. If you disable the checkbox, HDRP ignores the property and uses the Volume’s default value for that property instead.
 
 Override checkboxes allow you to override as many or as few values on a Volume component as you want. To quickly toggle all the properties between editable or not, click the __All__ or __None__ shortcuts in the top left of the Volume Override respectively. 
 
