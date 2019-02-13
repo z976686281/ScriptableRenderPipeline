@@ -1,6 +1,6 @@
 # Volume Overrides
 
-__Volume Overrides__ are structures containing values that HDRP uses within the [Volume](Volumes.html) framework. A Volume Override replaces the default behaviour of a Volume. For example, you could use a Volume Override in your Unity Project to render a different fog color in a certain area of your Scene. 
+__Volume Overrides__ are structures containing values that override the default properties in a [Volume Profile](Volume-Profile.html). The High Definition Render Pipeline (HDRP) uses these Profiles within the [Volume](Volumes.html) framework. For example, you could use a Volume Override in your Unity Project to render a different fog color in a certain area of your Scene. 
 
 __Exponential Fog__ is an example of a Volume Override:
 
@@ -28,3 +28,4 @@ New Scene Settings GameObjects come with some default Volume Overrides, includin
 
 Now, whenever your Camera is within the bounds of this Collider, HDRP uses the Exponential Fog values from the Volume Override on the GameObject with that Collider.
 
+l
