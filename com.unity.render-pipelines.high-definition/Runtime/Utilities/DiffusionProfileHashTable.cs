@@ -37,7 +37,14 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         static uint GenerateUniqueHash(DiffusionProfileSettings asset)
         {
             uint hash = GetDiffusionProfileHash(asset);
-            return GetCollisionLessHash(hash, asset);
+            
+            while (diffusionProfileHashes.ContainsValue(hash) || hash == DiffusionProfileConstants.DIFFUSION_PROFILE_NEUTRAL_ID)
+            {
+                Debug.LogWarning("Collision found in asset: " + asset + ", generating a new hash, previous hash: " + hash);
+                hash++;
+            }
+
+            return hash;
         }
 
         static void UpdateDiffusionProfileHashes()
@@ -50,39 +57,34 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                 if (profile == null)
                     continue;
 
-                uint hash = profile.profile.hash;
-
-                // If the hash is 0, then we need to generate a new one (it means that the profile was just created)
-                if (hash == 0)
-                {
-                    profile.profile.hash = GenerateUniqueHash(profile);
-                    EditorUtility.SetDirty(profile);
-                }
-                // If the asset is not in the list, we regenerate it's hash using the GUID (which leads to the same result every time)
-                else if (!diffusionProfileHashes.ContainsKey(profile.GetInstanceID()))
-                {
-                    profile.profile.hash = GenerateUniqueHash(profile);
-                    EditorUtility.SetDirty(profile);
-                }
-                else // otherwise, no issue, we don't change the hash and we keep it to check for collisions
-                    diffusionProfileHashes.Add(profile.GetInstanceID(), profile.profile.hash);
+                UpdateDiffusionProfileHashNow(profile);
             }
+        }
+
+        public static void UpdateDiffusionProfileHashNow(DiffusionProfileSettings profile)
+        {
+            uint hash = profile.profile.hash;
+
+            // If the hash is 0, then we need to generate a new one (it means that the profile was just created)
+            if (hash == 0)
+            {
+                profile.profile.hash = GenerateUniqueHash(profile);
+                EditorUtility.SetDirty(profile);
+            }
+            // If the asset is not in the list, we regenerate it's hash using the GUID (which leads to the same result every time)
+            else if (!diffusionProfileHashes.ContainsKey(profile.GetInstanceID()))
+            {
+                profile.profile.hash = GenerateUniqueHash(profile);
+                EditorUtility.SetDirty(profile);
+            }
+            else // otherwise, no issue, we don't change the hash and we keep it to check for collisions
+                diffusionProfileHashes.Add(profile.GetInstanceID(), profile.profile.hash);
         }
 
         public static void UpdateUniqueHash(DiffusionProfileSettings asset)
         {
             // Defere the generation of the hash because we can't call AssetDatabase functions outside of editor scope
             diffusionProfileToUpdate.Enqueue(asset);
-        }
-
-        static uint GetCollisionLessHash(uint hash, DiffusionProfileSettings asset)
-        {
-            while (diffusionProfileHashes.ContainsValue(hash) || hash == DiffusionProfileConstants.DIFFUSION_PROFILE_NEUTRAL_ID)
-            {
-                Debug.LogWarning("Collision found in asset: " + asset + ", generating a new hash, previous hash: " + hash);
-                hash++;
-            }
-            return hash;
         }
     }
 }

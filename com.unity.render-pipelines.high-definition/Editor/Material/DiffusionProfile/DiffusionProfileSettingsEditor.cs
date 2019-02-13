@@ -73,6 +73,8 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                 worldScale = rp.Find(x => x.worldScale),
                 ior = rp.Find(x => x.ior)
             };
+
+            Undo.undoRedoPerformed += UpdateProfile;
         }
 
         void OnDisable()
@@ -83,6 +85,8 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             m_Profile.Release();
 
             m_Profile = null;
+            
+            Undo.undoRedoPerformed -= UpdateProfile;
         }
 
         public override void OnInspectorGUI()
@@ -137,8 +141,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                 {
                     // Validate and update the cache for this profile only
                     profile.objReference.Validate();
-                    // TODO
-                    // m_Target.UpdateCache(i);
+                    m_Target.UpdateCache();
                 }
             }
 
@@ -176,6 +179,12 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
             // Draw the transmittance graph.
             EditorGUI.DrawPreviewTexture(GUILayoutUtility.GetRect(16f, 16f), profile.transmittanceRT, m_TransmittanceMaterial, ScaleMode.ScaleToFit, 16f);
+        }
+
+        void UpdateProfile()
+        {
+            m_Target.profile.Validate();
+            m_Target.UpdateCache();
         }
     }
 }

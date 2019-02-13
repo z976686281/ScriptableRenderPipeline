@@ -34,6 +34,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             MigrationStep.New(Version.DiffusionProfileRework, (DiffusionProfileSettings d) =>
             {
 #pragma warning disable 618
+#if UNITY_EDITOR
                 if (d.profiles == null)
                     return;
                 
@@ -51,13 +52,14 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 foreach (var profile in d.profiles)
                 {
                     if (!profile.Equals(defaultProfile))
+                    {
                         newProfiles[index] = CreateNewDiffusionProfile(d, profile, index);
+                        // Update the diffusion profile hash is required for assets that are upgraded because it will
+                        // be assigned to materials right after the create of the asset so we don't wait for the auto hash update
+                        UnityEditor.Experimental.Rendering.HDPipeline.DiffusionProfileHashTable.UpdateDiffusionProfileHashNow(newProfiles[index]);
+                    }
                     index++;
                 }
-#if UNITY_EDITOR
-                // If the diffusion profile settings we're upgrading was assigned to the HDAsset in use
-                // Then we need to go over all materials and upgrade them
-
                 // Update the diffusion profiles references in all the hd assets where this profile was set
                 var hdAssetsGUIDs = AssetDatabase.FindAssets("t:HDRenderPipelineAsset");
                 foreach (var hdAssetGUID in hdAssetsGUIDs)
@@ -70,9 +72,12 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                         hdAsset.diffusionProfileSettingsList = new DiffusionProfileSettings[newProfiles.Keys.Max() + 1];
                         foreach (var kp in newProfiles)
                             hdAsset.diffusionProfileSettingsList[kp.Key] = kp.Value;
+                        UnityEditor.EditorUtility.SetDirty(hdAsset);
                     }
                 }
 
+                // If the diffusion profile settings we're upgrading was assigned to the HDAsset in use
+                // then we need to go over all materials and upgrade them
                 if (currentHDAsset.diffusionProfileSettings == d)
                 {
                     var materialGUIDs = AssetDatabase.FindAssets("t:Material");
@@ -91,18 +96,28 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 #if UNITY_EDITOR
         public static void UpgradeMaterial(Material mat, Dictionary<int, DiffusionProfileSettings> replacementProfiles)
         {
+            UpgradeMaterial(mat, replacementProfiles, "_DiffusionProfile", "_DiffusionProfileAsset", "_DiffusionProfileHash");
+            // For layered material:
+            UpgradeMaterial(mat, replacementProfiles, "_DiffusionProfile0", "_DiffusionProfileAsset0", "_DiffusionProfileHash0");
+            UpgradeMaterial(mat, replacementProfiles, "_DiffusionProfile1", "_DiffusionProfileAsset1", "_DiffusionProfileHash1");
+            UpgradeMaterial(mat, replacementProfiles, "_DiffusionProfile2", "_DiffusionProfileAsset2", "_DiffusionProfileHash2");
+            UpgradeMaterial(mat, replacementProfiles, "_DiffusionProfile3", "_DiffusionProfileAsset3", "_DiffusionProfileHash3");
+        }
+
+        static void UpgradeMaterial(Material mat, Dictionary<int, DiffusionProfileSettings> replacementProfiles, string diffusionProfile, string diffusionProfileAsset, string diffusionProfileHash)
+        {
             // if the material don't have a diffusion profile
-            if (!mat.HasProperty("_DiffusionProfile") || !mat.HasProperty("_DiffusionProfileAsset") || !mat.HasProperty("_DiffusionProfileHash"))
+            if (!mat.HasProperty(diffusionProfile) || !mat.HasProperty(diffusionProfileAsset) || !mat.HasProperty(diffusionProfileHash))
                 return;
             
             // or if it already have been upgraded
-            int index = mat.GetInt("_DiffusionProfile") - 1; // the index in the material is stored with +1 because 0 is none
-            if (index == -1)
+            int index = mat.GetInt(diffusionProfile) - 1; // the index in the material is stored with +1 because 0 is none
+            if (index < 0)
             {
                 Debug.Log("Abort: Material already upgraded !");
                 return;
             }
-            mat.SetInt("_DiffusionProfile", -1);
+            mat.SetInt(diffusionProfile, -1);
 
             if (!replacementProfiles.ContainsKey(index))
             {
@@ -114,8 +129,10 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
             var newProfile = replacementProfiles[index];
             string diffusionProfileGUID = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(newProfile));
-            mat.SetVector("_DiffusionProfileAsset", HDUtils.ConvertGUIDToVector4(diffusionProfileGUID));
-            mat.SetFloat("_DiffusionProfileHash", HDShadowUtils.Asfloat(newProfile.profile.hash));
+            mat.SetVector(diffusionProfileAsset, HDUtils.ConvertGUIDToVector4(diffusionProfileGUID));
+            mat.SetFloat(diffusionProfileHash, HDShadowUtils.Asfloat(newProfile.profile.hash));
+            if (newProfile.profile.hash == 0)
+                Debug.LogError("Diffusion profile hash of " + newProfile + " have not been initialized !");
             Debug.Log("Material successfully upgraded !");
         }
 #endif
