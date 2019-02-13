@@ -323,14 +323,14 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             return m_WillRenderShadows;
         }
 
-        public static Vector3 GetModifiedAreaLightPositionForShadows(Vector3 originalPos, Vector2 shapeSize, Vector3 forwardVec, float coneAngle)
+        public static float GetAreaLightOffsetForShadows(Vector2 shapeSize, float coneAngle)
         {
             float rectangleDiagonal = shapeSize.magnitude;
             float halfAngle = coneAngle * 0.5f;
             float cotanHalfAngle = 1.0f / Mathf.Tan(halfAngle * Mathf.Deg2Rad);
             float offset = rectangleDiagonal * cotanHalfAngle;
 
-            return originalPos - (forwardVec * offset);
+            return -offset;
         }
 
         // Must return the first executed shadow request
@@ -357,8 +357,9 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 if (lightTypeExtent == LightTypeExtent.Rectangle)
                 {
                     Vector2 shapeSize = new Vector2(shapeWidth, shapeHeight);
-                    Vector3 shadowPos = GetModifiedAreaLightPositionForShadows(visibleLight.GetPosition(), shapeSize, m_Light.transform.forward, areaLightShadowCone);
-                    HDShadowUtils.ExtractAreaLightData(hdCamera, visibleLight, lightTypeExtent, shadowPos, areaLightShadowCone, shadowNearPlane, shapeSize, viewportSize, m_ShadowData.normalBiasMax, out shadowRequest.view, out invViewProjection, out shadowRequest.projection, out shadowRequest.deviceProjection, out shadowRequest.splitData);
+                    float offset = GetAreaLightOffsetForShadows(shapeSize, areaLightShadowCone);
+                    Vector3 shadowOffset = offset * visibleLight.GetForward();
+                    HDShadowUtils.ExtractAreaLightData(hdCamera, visibleLight, lightTypeExtent, visibleLight.GetPosition() + shadowOffset, areaLightShadowCone, shadowNearPlane - offset, shapeSize, viewportSize, m_ShadowData.normalBiasMax, out shadowRequest.view, out invViewProjection, out shadowRequest.projection, out shadowRequest.deviceProjection, out shadowRequest.splitData);
                 }
                 else
                 {
