@@ -111,22 +111,11 @@ namespace UnityEngine.Experimental.Rendering.LWRP
         };
 
         const string k_ReleaseResourcesTag = "Release Resources";
-        readonly Material[] m_Materials;
+        Material m_ErrorMaterial = null;
 
-        public ScriptableRenderer(LightweightRenderPipelineAsset pipelineAsset)
+        public ScriptableRenderer()
         {
-            if (pipelineAsset == null)
-                throw new ArgumentNullException("pipelineAsset");
-
-            m_Materials = new[]
-            {
-                CoreUtils.CreateEngineMaterial("Hidden/InternalErrorShader"),
-                CoreUtils.CreateEngineMaterial(pipelineAsset.copyDepthShader),
-                CoreUtils.CreateEngineMaterial(pipelineAsset.samplingShader),
-                CoreUtils.CreateEngineMaterial(pipelineAsset.blitShader),
-                CoreUtils.CreateEngineMaterial(pipelineAsset.screenSpaceShadowShader),
-            };
-
+            m_ErrorMaterial = new Material(Shader.Find("Hidden/InternalErrorShader"));
             postProcessingContext = new PostProcessRenderContext();
         }
 
@@ -137,9 +126,6 @@ namespace UnityEngine.Experimental.Rendering.LWRP
                 perObjectLightIndices.Release();
                 perObjectLightIndices = null;
             }
-
-            for (int i = 0; i < m_Materials.Length; ++i)
-                CoreUtils.Destroy(m_Materials[i]);
         }
 
         public void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
@@ -160,19 +146,6 @@ namespace UnityEngine.Experimental.Rendering.LWRP
                 m_ActiveRenderPassQueue[i].Execute(this, context, ref renderingData);
 
             DisposePasses(ref context);
-        }
-
-        public Material GetMaterial(MaterialHandle handle)
-        {
-            int handleID = (int)handle;
-            if (handleID >= m_Materials.Length)
-            {
-                Debug.LogError(string.Format("Material {0} is not registered.",
-                    Enum.GetName(typeof(MaterialHandle), handleID)));
-                return null;
-            }
-
-            return m_Materials[handleID];
         }
 
         public void Clear()
@@ -270,14 +243,13 @@ namespace UnityEngine.Experimental.Rendering.LWRP
         [Conditional("DEVELOPMENT_BUILD"), Conditional("UNITY_EDITOR")]
         public void RenderObjectsWithError(ScriptableRenderContext context, ref CullingResults cullResults, Camera camera, FilteringSettings filterSettings, SortingCriteria sortFlags)
         {
-            Material errorMaterial = GetMaterial(MaterialHandle.Error);
-            if (errorMaterial != null)
+            if (m_ErrorMaterial != null)
             {
                 SortingSettings sortingSettings = new SortingSettings(camera) { criteria = sortFlags };
                 DrawingSettings errorSettings = new DrawingSettings(m_LegacyShaderPassNames[0], sortingSettings)
                 {
                     perObjectData = PerObjectData.None,
-                    overrideMaterial = errorMaterial,
+                    overrideMaterial = m_ErrorMaterial,
                     overrideMaterialPassIndex = 0
                 };
                 for (int i = 1; i < m_LegacyShaderPassNames.Count; ++i)
@@ -334,10 +306,29 @@ namespace UnityEngine.Experimental.Rendering.LWRP
             cameraClearFlags = CameraClearFlags.SolidColor;
 #endif
 
-            // LWRP doesn't support CameraClearFlags.DepthOnly.
-            // In case of skybox we know all pixels will be rendered to screen so
-            // we don't clear color. In Vulkan/Metal this becomes DontCare load action
-            // and in GLES, glInvalidateBuffer. 
+            // LWRP doesn't support CameraClearFlags.DepthOnly and CameraClearFlags.Nothing.
+            // CameraClearFlags.DepthOnly has the same effect of CameraClearFlags.SolidColor
+            // CameraClearFlags.Nothing clears Depth on PC/Desktop and in mobile it clears both
+            // depth and color.
+            // CameraClearFlags.Skybox clears depth only.
+
+            // Implementation details:
+            // Camera clear flags are used to initialize the attachments on the first render pass.
+            // ClearFlag is used together with Tile Load action to figure out how to clear the camera render target.
+            // In Tile Based GPUs ClearFlag.Depth + RenderBufferLoadAction.DontCare becomes DontCare load action.
+            // While ClearFlag.All + RenderBufferLoadAction.DontCare become Clear load action.
+            // In mobile we force ClearFlag.All as DontCare doesn't have noticeable perf. difference from Clear
+            // and this avoid tile clearing issue when not rendering all pixels in some GPUs.
+            // In desktop/consoles there's actually performance difference between DontCare and Clear.
+            
+            // RenderBufferLoadAction.DontCare in PC/Desktop behaves as not clearing screen
+            // RenderBufferLoadAction.DontCare in Vulkan/Metal behaves as DontCare load action
+            // RenderBufferLoadAction.DontCare in GLES behaves as glInvalidateBuffer
+
+            // Always clear on first render pass in mobile as it's same perf of DontCare and avoid tile clearing issues.
+            if (Application.isMobilePlatform)
+                return ClearFlag.All;
+
             if ((cameraClearFlags == CameraClearFlags.Skybox && RenderSettings.skybox != null) ||
                 cameraClearFlags == CameraClearFlags.Nothing)
                 return ClearFlag.Depth;

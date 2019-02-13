@@ -421,6 +421,22 @@ void ApplyDebugToSurfaceData(float3x3 worldToTangent, inout SurfaceData surfaceD
     {
         surfaceData.normalWS = worldToTangent[2];
     }
+
+    // There is no metallic with SSS and specular color mode
+    float metallic = HasFlag(surfaceData.materialFeatures, MATERIALFEATUREFLAGS_STACK_LIT_SPECULAR_COLOR | MATERIALFEATUREFLAGS_STACK_LIT_SUBSURFACE_SCATTERING | MATERIALFEATUREFLAGS_STACK_LIT_TRANSMISSION) ? 0.0 : surfaceData.metallic;
+   
+    float3 diffuseColor = ComputeDiffuseColor(surfaceData.baseColor, metallic);
+    bool specularWorkflow = HasFlag(surfaceData.materialFeatures, MATERIALFEATUREFLAGS_STACK_LIT_SPECULAR_COLOR);
+    float3 specularColor = specularWorkflow ? surfaceData.specularColor : ComputeFresnel0(surfaceData.baseColor, surfaceData.metallic, IorToFresnel0(surfaceData.dielectricIor));
+
+    if (_DebugFullScreenMode == FULLSCREENDEBUGMODE_VALIDATE_DIFFUSE_COLOR)
+    {
+        surfaceData.baseColor = pbrDiffuseColorValidate(diffuseColor, specularColor, surfaceData.metallic > 0.0, !specularWorkflow).xyz;
+    }
+    else if (_DebugFullScreenMode == FULLSCREENDEBUGMODE_VALIDATE_SPECULAR_COLOR)
+    {
+        surfaceData.baseColor = pbrSpecularColorValidate(diffuseColor, specularColor, surfaceData.metallic > 0.0, !specularWorkflow).xyz;
+    }
 #endif
 }
 
@@ -751,6 +767,11 @@ void GetBSDFDataDebug(uint paramId, BSDFData bsdfData, inout float3 result, inou
             result = TransformWorldToViewDir(bsdfData.geomNormalWS) * 0.5 + 0.5;
             break;
     }
+}
+
+void GetPBRValidatorDebug(SurfaceData surfaceData, inout float3 result)
+{
+    result = surfaceData.baseColor;
 }
 
 
@@ -2032,7 +2053,7 @@ void PreLightData_SetupOcclusion(PositionInputs posInput, BSDFData bsdfData, flo
                                                                                            N[BASE_NORMAL_IDX],
                                                                                            NdotV[BASE_NORMAL_IDX] /* clamped */,
                                                                                            preLightData.iblPerceptualRoughness[BASE_LOBEA_IDX],
-                                                                                           preLightData.orthoBasisViewNormal[BASE_NORMAL_IDX],
+                                                                                           orthoBasisViewNormal[BASE_NORMAL_IDX],
                                                                                            bentVisibilityAlgorithm,
                                                                                            useHemisphereClip,
                                                                                            bottomF0);
@@ -2044,7 +2065,7 @@ void PreLightData_SetupOcclusion(PositionInputs posInput, BSDFData bsdfData, flo
                                                                                            N[BASE_NORMAL_IDX],
                                                                                            NdotV[BASE_NORMAL_IDX] /* clamped */,
                                                                                            preLightData.iblPerceptualRoughness[BASE_LOBEB_IDX],
-                                                                                           preLightData.orthoBasisViewNormal[BASE_NORMAL_IDX],
+                                                                                           orthoBasisViewNormal[BASE_NORMAL_IDX],
                                                                                            bentVisibilityAlgorithm,
                                                                                            useHemisphereClip,
                                                                                            bottomF0);
@@ -2062,7 +2083,7 @@ void PreLightData_SetupOcclusion(PositionInputs posInput, BSDFData bsdfData, flo
                                                                                               N[COAT_NORMAL_IDX],
                                                                                               NdotV[COAT_NORMAL_IDX] /* clamped */,
                                                                                               preLightData.iblPerceptualRoughness[COAT_LOBE_IDX],
-                                                                                              preLightData.orthoBasisViewNormal[COAT_NORMAL_IDX],
+                                                                                              orthoBasisViewNormal[COAT_NORMAL_IDX],
                                                                                               bentVisibilityAlgorithm,
                                                                                               useHemisphereClip,
                                                                                               IorToFresnel0(bsdfData.coatIor));

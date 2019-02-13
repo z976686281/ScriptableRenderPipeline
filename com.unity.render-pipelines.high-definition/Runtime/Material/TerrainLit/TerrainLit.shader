@@ -69,7 +69,6 @@ Shader "HDRP/TerrainLit"
     // Define
     //-------------------------------------------------------------------------------------
 
-    #define SURFACE_GRADIENT
     #define HAVE_MESH_MODIFICATION
 
     //-------------------------------------------------------------------------------------
@@ -109,7 +108,7 @@ Shader "HDRP/TerrainLit"
         // Caution: The outline selection in the editor use the vertex shader/hull/domain shader of the first pass declare. So it should not bethe  meta pass.
         Pass
         {
-            Name "GBuffer"  // Name is not used
+            Name "GBuffer"
             Tags { "LightMode" = "GBuffer" } // This will be only for opaque object based on the RenderQueue index
 
             Cull [_CullMode]
@@ -134,6 +133,12 @@ Shader "HDRP/TerrainLit"
             #pragma multi_compile DECALS_OFF DECALS_3RT DECALS_4RT
             #pragma multi_compile _ LIGHT_LAYERS
 
+            #ifndef DEBUG_DISPLAY
+                // When we have alpha test, we will force a depth prepass so we always bypass the clip instruction in the GBuffer
+                // Don't do it with debug display mode as it is possible there is no depth prepass in this case
+                #define SHADERPASS_GBUFFER_BYPASS_ALPHA_TEST
+            #endif
+
             #define SHADERPASS SHADERPASS_GBUFFER
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
             #ifdef DEBUG_DISPLAY
@@ -153,7 +158,7 @@ Shader "HDRP/TerrainLit"
         Pass
         {
             Name "META"
-            Tags{ "LightMode" = "Meta" }
+            Tags{ "LightMode" = "META" }
 
             Cull Off
 
@@ -253,7 +258,7 @@ Shader "HDRP/TerrainLit"
 
         Pass
         {
-            Name "Forward" // Name is not used
+            Name "Forward"
             Tags{ "LightMode" = "Forward" } // This will be only for transparent object based on the RenderQueue index
 
             Stencil
@@ -282,14 +287,12 @@ Shader "HDRP/TerrainLit"
             // Supported shadow modes per light type
             #pragma multi_compile SHADOW_LOW SHADOW_MEDIUM SHADOW_HIGH SHADOW_VERY_HIGH
 
-            // #include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/Lighting/Forward.hlsl"
-            //#pragma multi_compile LIGHTLOOP_SINGLE_PASS LIGHTLOOP_TILE_PASS
-            #define LIGHTLOOP_TILE_PASS
             #pragma multi_compile USE_FPTL_LIGHTLIST USE_CLUSTERED_LIGHTLIST
 
             #define SHADERPASS SHADERPASS_FORWARD
             // In case of opaque we don't want to perform the alpha test, it is done in depth prepass and we use depth equal for ztest (setup from UI)
-            #ifndef _SURFACE_TYPE_TRANSPARENT
+            // Don't do it with debug display mode as it is possible there is no depth prepass in this case
+            #if !defined(_SURFACE_TYPE_TRANSPARENT) && !defined(DEBUG_DISPLAY)
                 #define SHADERPASS_FORWARD_BYPASS_ALPHA_TEST
             #endif
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
