@@ -179,6 +179,12 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         [Range(0.0f, 179.0f)]
         public float areaLightShadowCone = 170.0f;
 
+        // --- ESVM for area, TODO_FCC: tmp, cleanup when decided.
+        public float exponent = 20.0f;
+        public float lightLeakBias = 1.0f;
+        public float varianceBias = 0.01f;
+
+
 #if ENABLE_RAYTRACING
         public bool useRasterizedShadow = false;
 #endif
@@ -480,6 +486,11 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             shadowRequest.kernelSize = (uint)kernelSize;
             shadowRequest.lightAngle = (lightAngle * Mathf.PI / 180.0f);
             shadowRequest.maxDepthBias = maxDepthBias;
+
+            // TODO_FCC: Remove
+            shadowRequest.evsmParams.x = exponent;
+            shadowRequest.evsmParams.y = lightLeakBias;
+            shadowRequest.evsmParams.z = varianceBias;
         }
 
 #if UNITY_EDITOR

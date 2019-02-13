@@ -103,6 +103,9 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         public float                kernelSize;
         public float                lightAngle;
         public float                maxDepthBias;
+
+        // TODO_FCC: TMP REMOVE.
+        public Vector4      evsmParams;
     }
 
     public enum HDShadowQuality
@@ -191,7 +194,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             bool useMomentShadows = GetDirectionaShadowAlgorithm() == DirectionalShadowAlgorithm.IMS;
             m_CascadeAtlas = new HDShadowAtlas(renderPipelineResources, 1, 1, HDShaderIDs._CascadeShadowAtlasSize, clearMaterial, useMomentShadows, depthBufferBits: atlasDepthBits, name: "Cascade Shadow Map Atlas");
 
-            m_AreaLightShadowAtlas = new HDShadowAtlas(renderPipelineResources, width, height, HDShaderIDs._AreaShadowAtlasSize, clearMaterial, false, depthBufferBits: atlasDepthBits, name: "Area Light Shadow Map Atlas");
+            m_AreaLightShadowAtlas = new HDShadowAtlas(renderPipelineResources, width, height, HDShaderIDs._AreaShadowAtlasSize, clearMaterial, false, EVSM2Mipped: true, depthBufferBits: atlasDepthBits, name: "Area Light Shadow Map Atlas");
 
             m_ShadowDataBuffer = new ComputeBuffer(maxShadowRequests, System.Runtime.InteropServices.Marshal.SizeOf(typeof(HDShadowData)));
             m_DirectionalShadowDataBuffer = new ComputeBuffer(1, System.Runtime.InteropServices.Marshal.SizeOf(typeof(HDDirectionalShadowData)));
@@ -360,6 +363,11 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 data.shadowFilterParams0.z = shadowRequest.maxDepthBias;
             }
 
+            if(atlas.HasEVSMMipped())
+            {
+                data.shadowFilterParams0 = shadowRequest.evsmParams;
+            }
+
             return data;
         }
 
@@ -464,6 +472,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             using (new ProfilingSample(cmd, "Area Light Shadows rendering", CustomSamplerId.RenderShadows.GetSampler()))
             {
                 m_AreaLightShadowAtlas.RenderShadows(renderContext, cmd, dss);
+                m_AreaLightShadowAtlas.AreaShadowBlurMomentAndMip(cmd, hdCamera);
             }
 
 
@@ -494,6 +503,11 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             cmd.SetGlobalTexture(HDShaderIDs._ShadowmapAtlas, m_Atlas.identifier);
             cmd.SetGlobalTexture(HDShaderIDs._ShadowmapCascadeAtlas, m_CascadeAtlas.identifier);
             cmd.SetGlobalTexture(HDShaderIDs._AreaLightShadowmapAtlas, m_AreaLightShadowAtlas.identifier);
+
+            if(m_AreaLightShadowAtlas.HasEVSMMipped())
+            {
+                cmd.SetGlobalTexture(HDShaderIDs._AreaShadowmapMomentAtlas, m_AreaLightShadowAtlas.GetMomentTexture());
+            }
 
             cmd.SetGlobalInt(HDShaderIDs._CascadeShadowCount, m_CascadeCount + 1);
         }
