@@ -43,9 +43,6 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 #if ENABLE_RAYTRACING
             public SerializedProperty useRasterizedShadow;
 #endif
-            public SerializedProperty exponent;
-            public SerializedProperty lightLeakBias;
-            public SerializedProperty varianceBias;
 
             // Improved moment shadows data
             public SerializedProperty lightAngle;
@@ -133,13 +130,9 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                     sunHaloSize = o.Find(x => x.sunHaloSize),
                     areaLightCookie = o.Find(x => x.areaLightCookie),
                     areaLightShadowCone = o.Find(x => x.areaLightShadowCone),
-
 #if ENABLE_RAYTRACING
                     useRasterizedShadow = o.Find(x => x.useRasterizedShadow),
 #endif
-                    exponent = o.Find(x => x.exponent),
-                    varianceBias = o.Find(x => x.varianceBias),
-                    lightLeakBias = o.Find(x => x.lightLeakBias),
 
                     // Moment light
                     lightAngle = o.Find(x => x.lightAngle),

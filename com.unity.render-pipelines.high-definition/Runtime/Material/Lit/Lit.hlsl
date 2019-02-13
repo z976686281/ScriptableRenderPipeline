@@ -32,9 +32,7 @@
 // Uncomment this to get speed (to measure), let it comment to get quality
 // #define FORWARD_MATERIAL_READ_FROM_WRITTEN_NORMAL_BUFFER
 
-// Enable or disable support for Area light shadows as Spot light. This is off by default until we have
-// a solution that is not VGPR hungry. 
-#define RASTERIZED_AREA_LIGHT_SHADOWS 1
+#define RASTERIZED_AREA_LIGHT_SHADOWS 0
 
 //-----------------------------------------------------------------------------
 // Texture and constant buffer declaration

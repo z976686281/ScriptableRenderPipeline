@@ -106,10 +106,6 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 #if ENABLE_RAYTRACING
             public readonly GUIContent useRasterizedShadow = new GUIContent("Use Rasterized shadows", "If selected, rasterized shadows are used in place of ray traced ones");
 #endif
-            public readonly GUIContent exponent = new GUIContent("EVSM Exponent", "TODO_FCC: Remove.");
-            public readonly GUIContent lightLeakBias = new GUIContent("lightLeakBias", "TODO_FCC: Remove.");
-            public readonly GUIContent varianceBias = new GUIContent("varianceBias", "TODO_FCC: Remove.");
-
 
             // Very high shadow settings
             public readonly GUIContent lightAngle = new GUIContent("Light Angle");
