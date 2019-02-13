@@ -203,7 +203,7 @@ float SampleShadow_VSM_1tap(float3 tcs, float lightLeakBias, float varianceBias,
 //
 //                  1 tap EVSM sampling
 //
-float SampleShadow_EVSM_1tap(float3 tcs, float lightLeakBias, float varianceBias, float2 evsmExponents, bool fourMoments, Texture2D tex, SamplerState samp)
+float SampleShadow_EVSM_1tap(float3 tcs, float lightLeakBias, float varianceBias, float2 evsmExponents, bool fourMoments, int mip, Texture2D tex, SamplerState samp)
 {
 #if UNITY_REVERSED_Z
     float  depth      = 1.0 - tcs.z;
@@ -212,8 +212,7 @@ float SampleShadow_EVSM_1tap(float3 tcs, float lightLeakBias, float varianceBias
 #endif
 
     float2 warpedDepth = ShadowMoments_WarpDepth(depth, evsmExponents);
-
-    float4 moments = SAMPLE_TEXTURE2D_LOD(tex, samp, tcs.xy, 0.0);
+    float4 moments = SAMPLE_TEXTURE2D_LOD(tex, samp, tcs.xy, mip);
 
     // Derivate of warping at depth
     float2 depthScale  = evsmExponents * warpedDepth;

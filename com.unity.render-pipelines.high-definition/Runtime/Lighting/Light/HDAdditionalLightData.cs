@@ -183,6 +183,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         public float exponent = 20.0f;
         public float lightLeakBias = 1.0f;
         public float varianceBias = 0.01f;
+        public int mip = 0;
 
 
 #if ENABLE_RAYTRACING
@@ -491,6 +492,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             shadowRequest.evsmParams.x = exponent;
             shadowRequest.evsmParams.y = lightLeakBias;
             shadowRequest.evsmParams.z = varianceBias;
+            shadowRequest.evsmParams.w = mip;
         }
 
 #if UNITY_EDITOR

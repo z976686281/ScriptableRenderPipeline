@@ -46,6 +46,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             public SerializedProperty exponent;
             public SerializedProperty lightLeakBias;
             public SerializedProperty varianceBias;
+            public SerializedProperty mip;
 
             // Improved moment shadows data
             public SerializedProperty lightAngle;
@@ -140,6 +141,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                     exponent = o.Find(x => x.exponent),
                     varianceBias = o.Find(x => x.varianceBias),
                     lightLeakBias = o.Find(x => x.lightLeakBias),
+                    mip = o.Find(x => x.mip),
 
                     // Moment light
                     lightAngle = o.Find(x => x.lightAngle),

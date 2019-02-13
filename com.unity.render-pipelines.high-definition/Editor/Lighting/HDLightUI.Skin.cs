@@ -109,6 +109,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             public readonly GUIContent exponent = new GUIContent("EVSM Exponent", "TODO_FCC: Remove.");
             public readonly GUIContent lightLeakBias = new GUIContent("lightLeakBias", "TODO_FCC: Remove.");
             public readonly GUIContent varianceBias = new GUIContent("varianceBias", "TODO_FCC: Remove.");
+            public readonly GUIContent mip = new GUIContent("mip", "TODO_FCC: Remove.");
 
 
             // Very high shadow settings

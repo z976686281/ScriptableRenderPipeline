@@ -619,9 +619,10 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                 {
                     EditorGUILayout.Slider(serialized.serializedLightData.areaLightShadowCone, 10.0f, 179.0f, s_Styles.areaLightShadowCone);
 
-                    EditorGUILayout.Slider(serialized.serializedLightData.exponent, 0.0f, 40.0f, s_Styles.exponent);
-                    EditorGUILayout.Slider(serialized.serializedLightData.varianceBias, 0.0f, 0.2f, s_Styles.varianceBias);
+                    EditorGUILayout.Slider(serialized.serializedLightData.exponent, 0.0f, 42.0f, s_Styles.exponent);
+                    EditorGUILayout.Slider(serialized.serializedLightData.varianceBias, 0.0f, 0.001f, s_Styles.varianceBias);
                     EditorGUILayout.Slider(serialized.serializedLightData.lightLeakBias, 0.0f, 1.0f, s_Styles.lightLeakBias);
+                    EditorGUILayout.IntSlider(serialized.serializedLightData.mip, 0, 8, s_Styles.mip);
 
 #if ENABLE_RAYTRACING
                 EditorGUILayout.PropertyField(serialized.serializedLightData.useRasterizedShadow, s_Styles.useRasterizedShadow);

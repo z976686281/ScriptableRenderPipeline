@@ -331,6 +331,9 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
                     cmd.DispatchCompute(shadowBlurMomentsCS, blurMomentsKernel, dispatchSizeX, dispatchSizeY, 1);
                 }
+
+                // TODO_FCC: Do mip manually in the relevant viewport!
+                cmd.GenerateMips(m_AtlasMoments);
             }
         }
 
