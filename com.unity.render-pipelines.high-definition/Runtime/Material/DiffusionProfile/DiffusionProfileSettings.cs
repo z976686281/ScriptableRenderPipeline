@@ -212,13 +212,13 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         
         void OnEnable()
         {
-            k_Migration.Migrate(this);
-
             if (profile == null)
                 profile = new DiffusionProfile("Diffusion Profile ");
 
-            profile.Validate();
+            if (k_Migration.Migrate(this))
+                UnityEditor.AssetDatabase.SaveAssets();
 
+            profile.Validate();
             UpdateCache();
         }
 
