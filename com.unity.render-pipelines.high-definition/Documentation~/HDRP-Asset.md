@@ -62,7 +62,7 @@ These settings enable or disable HDRP features in your Unity Project. Unity does
 | **Distortion** | Enables support for distortion. If your Unity Project does not use distortion, disable this checkbox to reduce build time . |
 | **Transparent Backface** | Enables support for transparent back-face render passes. If your Unity Project does not need to make a transparent back-face pass, disable this checkbox to reduce build time. |
 | **Transparent Depth Prepass** | Enables support for transparent depth render prepasses. If your Unity Project does not need to make a transparent depth prepass, disable this checkbox to reduce build time . |
-| **Transparent Depth Postpass** | Enables support for transparent depth render postpasses. If your Unity Project does not make use of a transparent depth postpass. Uncheck this checkbox to reduce build time . |
+| **Transparent Depth Postpass** | Enables support for transparent depth render postpasses. If your Unity Project does not make use of a transparent depth postpass. Disable this checkbox to reduce build time . |
 
 
 
