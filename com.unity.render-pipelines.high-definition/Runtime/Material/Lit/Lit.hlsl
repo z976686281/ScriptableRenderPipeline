@@ -32,7 +32,7 @@
 // Uncomment this to get speed (to measure), let it comment to get quality
 // #define FORWARD_MATERIAL_READ_FROM_WRITTEN_NORMAL_BUFFER
 
-#define RASTERIZED_AREA_LIGHT_SHADOWS 0
+#define RASTERIZED_AREA_LIGHT_SHADOWS 1
 
 //-----------------------------------------------------------------------------
 // Texture and constant buffer declaration
@@ -1597,14 +1597,13 @@ DirectLighting EvaluateBSDF_Rect(   LightLoopContext lightLoopContext,
 
 #endif
 
-
 #if SHADEROPTIONS_RAYTRACING == 1 && (SHADERPASS == SHADERPASS_DEFERRED_LIGHTING)
     // We are using the contact shadow index for area light shadow index in case of ray tracing.
     // This should be safe as contact shadows are disabled in area lights and contactShadowIndex
-    int rayTracedAreaShadowIndex = -lightData.contactShadowIndex;
-    if(_RaytracedAreaShadow == 1 && rayTracedAreaShadowIndex != -1)
+    int rayTracedAreaShadowIndex =  -lightData.contactShadowIndex;
+    if( (_RaytracedAreaShadow == 1 && rayTracedAreaShadowIndex != -1))
     {
-        float areaShadow = LOAD_TEXTURE2D_ARRAY(_AreaShadowTexture, posInput.positionSS, lightData.shadowIndex).x;
+        float areaShadow = LOAD_TEXTURE2D_ARRAY(_AreaShadowTexture, posInput.positionSS, rayTracedAreaShadowIndex).x;
         lighting.diffuse *= areaShadow;
         lighting.specular *= areaShadow;
     }

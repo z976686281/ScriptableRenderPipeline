@@ -41,7 +41,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             public SerializedProperty areaLightCookie;   // We can't use default light cookies because the cookie gets reset by some safety measure on C++ side... :/
             public SerializedProperty areaLightShadowCone;
 #if ENABLE_RAYTRACING
-            public SerializedProperty useRasterizedShadow;
+            public SerializedProperty useRayTracedShadows;
 #endif
 
             // Improved moment shadows data
@@ -131,7 +131,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                     areaLightCookie = o.Find(x => x.areaLightCookie),
                     areaLightShadowCone = o.Find(x => x.areaLightShadowCone),
 #if ENABLE_RAYTRACING
-                    useRasterizedShadow = o.Find(x => x.useRasterizedShadow),
+                    useRayTracedShadows = o.Find(x => x.useRayTracedShadows),
 #endif
 
                     // Moment light

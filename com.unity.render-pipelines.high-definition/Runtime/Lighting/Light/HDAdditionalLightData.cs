@@ -180,7 +180,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         public float areaLightShadowCone = 170.0f;
 
 #if ENABLE_RAYTRACING
-        public bool useRasterizedShadow = false;
+        public bool useRayTracedShadows = true;
 #endif
         // Duplication of HDLightEditor.k_MinAreaWidth, maybe do something about that
         const float k_MinAreaWidth = 0.01f; // Provide a small size of 1cm for line light
@@ -257,11 +257,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             Bounds bounds;
             float cameraDistance = Vector3.Distance(camera.transform.position, transform.position);
             
-            #if ENABLE_RAYTRACING
-            m_WillRenderShadows = m_Light.shadows != LightShadows.None && frameSettings.IsEnabled(FrameSettingsField.Shadow) && lightTypeExtent == LightTypeExtent.Punctual;
-            #else
             m_WillRenderShadows = m_Light.shadows != LightShadows.None && frameSettings.IsEnabled(FrameSettingsField.Shadow);
-            #endif
 
             m_WillRenderShadows &= cullResults.GetShadowCasterBounds(lightIndex, out bounds);
             // When creating a new light, at the first frame, there is no AdditionalShadowData so we can't really render shadows

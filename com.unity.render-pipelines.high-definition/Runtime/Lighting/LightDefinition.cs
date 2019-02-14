@@ -114,7 +114,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         // We store the ray traced area shadow index as a negative value inside the contactShadowIndex.
         // Contact shadows are disabled for area lights and setting the index as negative allows for still
         // disabling contact shadows in the shader code (checks for => 0)
-        public int     rayTracedAreaShadowIndex { get => contactShadowIndex; set => contactShadowIndex = -value; }
+        public int     rayTracedAreaShadowIndex { get => -contactShadowIndex; set => contactShadowIndex = -value; }
 #endif
         public int     contactShadowIndex;      // negative if unused (TODO: 16 bit)
 

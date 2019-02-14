@@ -104,7 +104,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             public readonly GUIContent minFilterSize = new GUIContent("Minimal size of the filter");
             public readonly GUIContent areaLightShadowCone = new GUIContent("Shadow Cone", "Aperture of the cone used for shadowing the area light.");
 #if ENABLE_RAYTRACING
-            public readonly GUIContent useRasterizedShadow = new GUIContent("Use Rasterized shadows", "If selected, rasterized shadows are used in place of ray traced ones");
+            public readonly GUIContent useRayTracedShadows = new GUIContent("Use Ray traced shadows", "If selected, ray traced shadows are used in place of rasterized ones");
 #endif
 
             // Very high shadow settings
