@@ -39,30 +39,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         readonly HDRenderPipelineAsset m_Asset;
         public HDRenderPipelineAsset asset { get { return m_Asset; } }
 
-<<<<<<< HEAD
-        DiffusionProfileSettings m_InternalSSSAsset;
-        public DiffusionProfileSettings diffusionProfileSettings
-        {
-            get
-            {
-                // If no SSS asset is set, build / reuse an internal one for simplicity
-                var asset = m_Asset.diffusionProfileSettings;
-
-                if (asset == null)
-                {
-                    if (m_InternalSSSAsset == null)
-                        m_InternalSSSAsset = ScriptableObject.CreateInstance<DiffusionProfileSettings>();
-
-                    asset = m_InternalSSSAsset;
-                }
-
-                return asset;
-            }
-        }
         public RenderPipelineSettings currentPlatformRenderPipelineSettings { get { return m_Asset.currentPlatformRenderPipelineSettings; } }
-=======
-        public RenderPipelineSettings renderPipelineSettings { get { return m_Asset.renderPipelineSettings; } }
->>>>>>> 6cefdcabc1... Cleanup and flags management for diffusion profiles
 
         readonly RenderPipelineMaterial m_DeferredMaterial;
         readonly List<RenderPipelineMaterial> m_MaterialList = new List<RenderPipelineMaterial>();

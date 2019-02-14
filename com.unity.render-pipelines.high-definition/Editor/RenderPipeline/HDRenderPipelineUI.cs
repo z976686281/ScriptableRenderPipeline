@@ -121,7 +121,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                     k_ExpandedState.SetExpandedAreas(Expandable.RealtimeProbeFrameSettings, true);
                     break;
             }
-        }            
+        }
 
         static void Drawer_TitleDefaultFrameSettings(SerializedHDRenderPipelineAsset serialized, Editor owner)
         {
@@ -191,8 +191,6 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             EditorGUILayout.Space();
 
             // EditorGUILayout.PropertyField(serialized.allowShaderVariantStripping, enableShaderVariantStrippingContent);
-            diffusionProfileUI.drawElement = DrawDiffusionProfileElement;
-            diffusionProfileUI.OnGUI(serialized.diffusionProfileSettingsList);
 
             EditorGUILayout.PropertyField(serialized.renderPipelineSettings.lightLoopSettings.reflectionCacheCompressed, k_CompressProbeCacheContent);
             EditorGUILayout.PropertyField(serialized.renderPipelineSettings.lightLoopSettings.reflectionCubemapSize, k_CubemapSizeContent);
@@ -417,7 +415,8 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         {
             EditorGUILayout.PropertyField(serialized.renderPipelineSettings.supportDistortion, k_SupportDistortion);
 
-            EditorGUILayout.PropertyField(serialized.diffusionProfileSettings, k_DiffusionProfileSettingsContent);
+            diffusionProfileUI.drawElement = DrawDiffusionProfileElement;
+            diffusionProfileUI.OnGUI(serialized.diffusionProfileSettingsList);
 
             EditorGUILayout.PropertyField(serialized.renderPipelineSettings.supportSubsurfaceScattering, k_SupportedSSSContent);
             using (new EditorGUI.DisabledScope(!serialized.renderPipelineSettings.supportSubsurfaceScattering.boolValue))
