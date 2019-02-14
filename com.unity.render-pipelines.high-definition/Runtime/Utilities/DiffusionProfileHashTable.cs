@@ -57,7 +57,15 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                 if (profile == null)
                     continue;
 
+                // We upgrade from here to be able so the call to AssetDatabase.SaveAssets() does not stall
+                // the editor (apparently in some configuration when loading the editor calling SaveAssets()
+                // inside OnEnable() just break the editor)
+                profile.TryToUpgrade();
+
                 UpdateDiffusionProfileHashNow(profile);
+
+                profile.profile.Validate();
+                profile.UpdateCache();
             }
         }
 

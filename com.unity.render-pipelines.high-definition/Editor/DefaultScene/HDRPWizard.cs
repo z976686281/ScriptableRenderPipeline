@@ -238,6 +238,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                 hdrpAsset.name = "HDRenderPipelineAsset";
 
                 int index = 0;
+                hdrpAsset.diffusionProfileSettingsList = new DiffusionProfileSettings[hdrpAsset.renderPipelineEditorResources.defaultDiffusionProfileSettingsList.Length];
                 foreach (var defaultProfile in hdrpAsset.renderPipelineEditorResources.defaultDiffusionProfileSettingsList)
                 {
                     string defaultDiffusionProfileSettingsPath = "Assets/" + HDProjectSettings.projectSettingsFolderPath + "/" + defaultProfile.name + ".asset";

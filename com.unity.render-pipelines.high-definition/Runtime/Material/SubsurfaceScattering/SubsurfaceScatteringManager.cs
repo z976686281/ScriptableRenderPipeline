@@ -186,7 +186,17 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             transmissionTintsAndFresnel0[index] = settings.transmissionTintsAndFresnel0;
             disabledTransmissionTintsAndFresnel0[index] = settings.disabledTransmissionTintsAndFresnel0;
             worldScales[index] = settings.worldScales;
-            Array.Copy(settings.filterKernels, 0, filterKernels, index * DiffusionProfileConstants.SSS_N_SAMPLES_FAR_FIELD, DiffusionProfileConstants.SSS_N_SAMPLES_FAR_FIELD);
+            for (int j = 0, n = DiffusionProfileConstants.SSS_N_SAMPLES_NEAR_FIELD; j < n; j++)
+            {
+                filterKernels[n * index + j].x = settings.profile.filterKernelNearField[j].x;
+                filterKernels[n * index + j].y = settings.profile.filterKernelNearField[j].y;
+
+                if (j < DiffusionProfileConstants.SSS_N_SAMPLES_FAR_FIELD)
+                {
+                    filterKernels[n * index + j].z = settings.profile.filterKernelFarField[j].x;
+                    filterKernels[n * index + j].w = settings.profile.filterKernelFarField[j].y;
+                }
+            }
             diffusionProfileHashes[index] = HDShadowUtils.Asfloat(settings.profile.hash);
 
             // Erase previous value (This need to be done here individually as in the SSS editor we edit individual component)

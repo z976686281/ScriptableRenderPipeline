@@ -5,7 +5,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
     [GenerateHLSL]
     public class DiffusionProfileConstants
     {
-        public const int DIFFUSION_PROFILE_COUNT      = 17; // Max. number of profiles, including the slot taken by the neutral profile
+        public const int DIFFUSION_PROFILE_COUNT      = 16; // Max. number of profiles, including the slot taken by the neutral profile
         public const int DIFFUSION_PROFILE_NEUTRAL_ID = 0;  // Does not result in blurring
         public const int SSS_N_SAMPLES_NEAR_FIELD     = 55; // Used for extreme close ups; must be a Fibonacci number
         public const int SSS_N_SAMPLES_FAR_FIELD      = 21; // Used at a regular distance; must be a Fibonacci number
@@ -209,14 +209,12 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         [NonSerialized] public Vector4 transmissionTintsAndFresnel0; // RGB = color, A = fresnel0
         [NonSerialized] public Vector4 disabledTransmissionTintsAndFresnel0; // RGB = black, A = fresnel0 - For debug to remove the transmission
         [NonSerialized] public Vector4[] filterKernels;             // XY = near field, ZW = far field; 0 = radius, 1 = reciprocal of the PDF
+        [NonSerialized] public int updateCount;
         
         void OnEnable()
         {
             if (profile == null)
-                profile = new DiffusionProfile("Diffusion Profile ");
-
-            if (k_Migration.Migrate(this))
-                UnityEditor.AssetDatabase.SaveAssets();
+                profile = new DiffusionProfile("Diffusion Profile");
 
             profile.Validate();
             UpdateCache();
@@ -253,6 +251,12 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     filterKernels[n].w = profile.filterKernelFarField[n].y;
                 }
             }
+            updateCount++;
+        }
+
+        public bool HasChanged(int update)
+        {
+            return update == updateCount;
         }
 
         // Initialize the settings for the default diffusion  profile

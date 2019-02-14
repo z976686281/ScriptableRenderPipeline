@@ -159,5 +159,14 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 #endif
             return newDiffusionProfile;
         }
+
+        public void TryToUpgrade()
+        {
+            if (k_Migration.Migrate(this))
+            {
+                UnityEditor.EditorUtility.SetDirty(this);
+                UnityEditor.AssetDatabase.SaveAssets();
+            }
+        }
     }
 }

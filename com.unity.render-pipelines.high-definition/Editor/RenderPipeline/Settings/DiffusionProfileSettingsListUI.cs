@@ -46,6 +46,16 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                 if (drawElement != null)
                     drawElement(parameter.GetArrayElementAtIndex(index), rect, index);
             };
+
+            m_DiffusionProfileList.onAddCallback = (l) => {
+                if (parameter.arraySize >= DiffusionProfileConstants.DIFFUSION_PROFILE_COUNT - 1)
+                {
+                    Debug.LogError("Limit of 15 diffusion profiles reached.");
+                    return ;
+                }
+
+                parameter.InsertArrayElementAtIndex(parameter.arraySize);
+            };
         }
     }
 }
