@@ -6,11 +6,11 @@ platforms:
     image: package-ci/win10:latest
     flavor: m1.large
 projects:
-  - name: LWGraphicsTest
+  - name: ShaderGraph
   - name: VisualEffectGraph
+  - name: LWGraphicsTest
   - name: HDRP_Tests
   - name: PostProcessing
-  - name: ShaderGraph
 ---
 {% for editor in editors %}
 {% for platform in platforms %}
