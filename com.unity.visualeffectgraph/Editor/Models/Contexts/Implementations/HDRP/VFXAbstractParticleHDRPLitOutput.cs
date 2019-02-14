@@ -5,6 +5,8 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Experimental.VFX;
 
+using UnityEngine.Experimental.Rendering.HDPipeline;
+
 namespace UnityEditor.VFX
 {
     abstract class VFXAbstractParticleHDRPLitOutput : VFXAbstractParticleOutput
@@ -51,8 +53,8 @@ namespace UnityEditor.VFX
         [VFXSetting(VFXSettingAttribute.VisibleFlags.InInspector), SerializeField]
         protected bool onlyAmbientLighting = false;
 
-        [VFXSetting(VFXSettingAttribute.VisibleFlags.InInspector), SerializeField, Range(1, 15)]
-        protected uint diffusionProfile = 1;
+        [VFXSetting(VFXSettingAttribute.VisibleFlags.InInspector), SerializeField]
+        protected DiffusionProfileSettings diffusionProfileAsset;
 
         [VFXSetting(VFXSettingAttribute.VisibleFlags.InInspector), SerializeField]
         protected bool multiplyThicknessWithAlpha = false;
@@ -193,6 +195,7 @@ namespace UnityEditor.VFX
 
             yield return slotExpressions.First(o => o.name == "smoothness");
 
+            uint diffusionProfileHash;
             switch (materialType)
             {
                 case MaterialType.Standard:
@@ -207,7 +210,8 @@ namespace UnityEditor.VFX
                 case MaterialType.Translucent:
                 case MaterialType.SimpleLitTranslucent:
                     yield return slotExpressions.First(o => o.name == "thickness");
-                    yield return new VFXNamedExpression(VFXValue.Constant(diffusionProfile), "diffusionProfile");
+                    diffusionProfileHash = (diffusionProfileAsset?.profile != null) ? diffusionProfileAsset.profile.hash : 0;
+                    yield return new VFXNamedExpression(VFXValue.Constant(diffusionProfileHash), "diffusionProfileHash");
                     break;
 
                 default: break;
@@ -338,7 +342,7 @@ namespace UnityEditor.VFX
 
                 if (materialType != MaterialType.Translucent && materialType != MaterialType.SimpleLitTranslucent)
                 {
-                    yield return "diffusionProfile";
+                    yield return "diffusionProfileHash";
                     yield return "multiplyThicknessWithAlpha";
                 }
 
