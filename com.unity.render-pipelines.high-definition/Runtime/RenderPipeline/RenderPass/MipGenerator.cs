@@ -165,7 +165,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 m_PropertyBlock.SetTexture(HDShaderIDs._BlitTexture, source);
                 m_PropertyBlock.SetVector(HDShaderIDs._BlitScaleBias, new Vector4(1f, 1f, 0f,0f));
                 m_PropertyBlock.SetFloat(HDShaderIDs._BlitMipLevel, 0f);
-                cmd.SetRenderTarget(destination, 0, CubemapFace.Unknown, -1);
+                cmd.SetRenderTarget(destination, 0);
                 cmd.DrawProcedural(Matrix4x4.identity, HDUtils.GetBlitMaterial(cmd, source.dimension), 0, MeshTopology.Triangles, 3, 1, m_PropertyBlock);
 
                 // Note: smaller mips are excluded as we don't need them and the gaussian compute works
@@ -182,7 +182,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     m_PropertyBlock.SetTexture(HDShaderIDs._BlitTexture, destination);
                     m_PropertyBlock.SetVector(HDShaderIDs._BlitScaleBias, new Vector4(1f, 1f, 0f,0f));
                     m_PropertyBlock.SetFloat(HDShaderIDs._BlitMipLevel, srcMipLevel);
-                    cmd.SetRenderTarget(destination, srcMipLevel + 1, CubemapFace.Unknown, -1);
+                    cmd.SetRenderTarget(destination, srcMipLevel + 1);
                     cmd.DrawProcedural(Matrix4x4.identity, HDUtils.GetBlitMaterial(cmd, source.dimension), 1, MeshTopology.Triangles, 3, 1, m_PropertyBlock);
 
                     // Blur horizontal.
@@ -190,7 +190,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     m_PropertyBlock.SetVector(HDShaderIDs._SrcScaleBias, new Vector4(1f, 1f, 0f, 0f));
                     m_PropertyBlock.SetVector(HDShaderIDs._SrcUvLimits, new Vector4(1f, 1f, 1f / dstMipWidth, 0f));
                     m_PropertyBlock.SetFloat(HDShaderIDs._SourceMip, srcMipLevel + 1);
-                    cmd.SetRenderTarget(m_TempColorTargets[kernelIndex], 0, CubemapFace.Unknown, -1);
+                    cmd.SetRenderTarget(m_TempColorTargets[kernelIndex], 0);
                     cmd.SetViewport(new Rect(0, 0, dstMipWidth, dstMipHeight));
                     cmd.DrawProcedural(Matrix4x4.identity, m_ColorPyramidPSMat, 0, MeshTopology.Triangles, 3, 1, m_PropertyBlock);
 
@@ -199,7 +199,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     m_PropertyBlock.SetVector(HDShaderIDs._SrcScaleBias, new Vector4((float)dstMipWidth / tempTargetWidth, (float)dstMipHeight / tempTargetHeight, 0f, 0f));
                     m_PropertyBlock.SetVector(HDShaderIDs._SrcUvLimits, new Vector4((dstMipWidth - 0.5f) /  tempTargetWidth, (dstMipHeight - 0.5f) /  tempTargetHeight, 0f, 1f / tempTargetHeight));
                     m_PropertyBlock.SetFloat(HDShaderIDs._SourceMip, 0);
-                    cmd.SetRenderTarget(destination, srcMipLevel + 1, CubemapFace.Unknown, -1);
+                    cmd.SetRenderTarget(destination, srcMipLevel + 1);
                     cmd.DrawProcedural(Matrix4x4.identity, m_ColorPyramidPSMat, 0, MeshTopology.Triangles, 3, 1, m_PropertyBlock);
 
                     srcMipLevel++;
