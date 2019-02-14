@@ -7,7 +7,6 @@ platforms:
     flavor: m1.large
 projects:
   - name: LWGraphicsTest
-  - name: Canary
   - name: VisualEffectGraph
   - name: HDRP_Tests
   - name: PostProcessing
