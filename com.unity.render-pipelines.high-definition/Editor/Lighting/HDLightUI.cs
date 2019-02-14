@@ -584,13 +584,17 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                 serialized.settings.shadowsType.enumValueIndex = newShadowsEnabled ? (int)LightShadows.Hard : (int)LightShadows.None;
             }
 
-#if ENABLE_RAYTRACING
-            EditorGUILayout.PropertyField(serialized.serializedLightData.useRayTracedShadows, s_Styles.useRayTracedShadows);
-#endif
 
-            using (new EditorGUI.DisabledScope(!newShadowsEnabled || LightShape.Rectangle != serialized.editorLightShape))
+            using (new EditorGUI.DisabledScope(!newShadowsEnabled))
             {
-                if(!serialized.serializedLightData.useRayTracedShadows.boolValue)
+#if ENABLE_RAYTRACING
+                if(LightShape.Rectangle == serialized.editorLightShape)
+                {
+                    EditorGUILayout.PropertyField(serialized.serializedLightData.useRayTracedShadows, s_Styles.useRayTracedShadows);
+                }
+
+                if (!serialized.serializedLightData.useRayTracedShadows.boolValue || LightShape.Rectangle != serialized.editorLightShape)
+#endif
                 {
                     EditorGUILayout.DelayedIntField(serialized.serializedShadowData.resolution, s_Styles.shadowResolution);
                     EditorGUILayout.Slider(serialized.serializedLightData.shadowNearPlane, HDShadowUtils.k_MinShadowNearPlane, 10f, s_Styles.shadowNearPlane);

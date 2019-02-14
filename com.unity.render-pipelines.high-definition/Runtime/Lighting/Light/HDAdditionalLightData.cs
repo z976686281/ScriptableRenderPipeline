@@ -180,7 +180,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         public float areaLightShadowCone = 170.0f;
 
 #if ENABLE_RAYTRACING
-        public bool useRayTracedShadows = true;
+        public bool useRayTracedShadows = false;
 #endif
         // Duplication of HDLightEditor.k_MinAreaWidth, maybe do something about that
         const float k_MinAreaWidth = 0.01f; // Provide a small size of 1cm for line light
