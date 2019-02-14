@@ -1601,7 +1601,7 @@ DirectLighting EvaluateBSDF_Rect(   LightLoopContext lightLoopContext,
     // We are using the contact shadow index for area light shadow index in case of ray tracing.
     // This should be safe as contact shadows are disabled in area lights and contactShadowIndex
     int rayTracedAreaShadowIndex =  -lightData.contactShadowIndex;
-    if( (_RaytracedAreaShadow == 1 && rayTracedAreaShadowIndex != -1))
+    if( (_RaytracedAreaShadow == 1 && rayTracedAreaShadowIndex >= 0))
     {
         float areaShadow = LOAD_TEXTURE2D_ARRAY(_AreaShadowTexture, posInput.positionSS, rayTracedAreaShadowIndex).x;
         lighting.diffuse *= areaShadow;

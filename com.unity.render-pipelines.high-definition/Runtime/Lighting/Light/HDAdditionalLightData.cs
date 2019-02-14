@@ -265,7 +265,9 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             // If the shadow is too far away, we don't render it
             if (m_ShadowData != null)
                 m_WillRenderShadows &= m_Light.type == LightType.Directional || cameraDistance < (m_ShadowData.shadowFadeDistance);
-
+#if ENABLE_RAYTRACING
+            m_WillRenderShadows &= !(lightTypeExtent == LightTypeExtent.Rectangle && useRayTracedShadows);
+#endif
             if (!m_WillRenderShadows)
                 return;
             
