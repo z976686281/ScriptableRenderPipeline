@@ -30,12 +30,25 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         [Obsolete("Profiles are obsolete, only one diffusion profile per asset is allowed.")]
         public DiffusionProfile[] profiles;
 
+        [System.Serializable]
+        struct SerializableGUIDs
+        {
+            [SerializeField]
+            public string[] assetGUIDs;
+        }
+
         static readonly MigrationDescription<Version, DiffusionProfileSettings> k_Migration = MigrationDescription.New(
             MigrationStep.New(Version.DiffusionProfileRework, (DiffusionProfileSettings d) =>
             {
 #pragma warning disable 618
 #if UNITY_EDITOR
                 if (d.profiles == null)
+                    return;
+                
+                // If the asset importer for the asset we're upgrading is null, it means that the asset
+                // does not exists on the disk and we don't want to upgrade these assets
+                var importer = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(d));
+                if (importer == null)
                     return;
                 
                 var currentHDAsset = GraphicsSettings.renderPipelineAsset as HDRenderPipelineAsset;
@@ -47,6 +60,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 // Iterate over the diffusion profile settings and generate one new asset for each
                 // diffusion profile which have been modified
                 int index = 0;
+                // TODO: cleanup
                 var newProfiles = new Dictionary<int, DiffusionProfileSettings>();
                 Debug.Log("Upgrading asset: " + d);
                 foreach (var profile in d.profiles)
@@ -60,6 +74,21 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     }
                     index++;
                 }
+                
+                // We write in the main diffusion profile meta filethe list of created asset so we know where to look
+                // when we upgrade materials inside scenes (from the menu item)
+                SerializableGUIDs t;
+                // TODO: cleanup
+                t.assetGUIDs = new string[16];
+                foreach (var kp in newProfiles)
+                    t.assetGUIDs[kp.Key] = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(kp.Value));
+                importer.userData = JsonUtility.ToJson(t);
+
+                Debug.Log("Updated datas: ");
+                var dc = JsonUtility.FromJson<string[]>(importer.userData);
+                foreach (var s in dc)
+                    Debug.Log(s);
+
                 // Update the diffusion profiles references in all the hd assets where this profile was set
                 var hdAssetsGUIDs = AssetDatabase.FindAssets("t:HDRenderPipelineAsset");
                 foreach (var hdAssetGUID in hdAssetsGUIDs)
@@ -85,7 +114,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     foreach (var guid in materialGUIDs)
                     {
                         var mat = AssetDatabase.LoadAssetAtPath<Material>(AssetDatabase.GUIDToAssetPath(guid));
-                        UpgradeMaterial(mat, newProfiles);
+                        UpgradeMaterial(mat, d);
                     }
                 }
 #endif
@@ -94,17 +123,17 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         );
 
 #if UNITY_EDITOR
-        public static void UpgradeMaterial(Material mat, Dictionary<int, DiffusionProfileSettings> replacementProfiles)
+        public static void UpgradeMaterial(Material mat, DiffusionProfileSettings mainProfile)
         {
-            UpgradeMaterial(mat, replacementProfiles, "_DiffusionProfile", "_DiffusionProfileAsset", "_DiffusionProfileHash");
+            UpgradeMaterial(mat, mainProfile, "_DiffusionProfile", "_DiffusionProfileAsset", "_DiffusionProfileHash");
             // For layered material:
-            UpgradeMaterial(mat, replacementProfiles, "_DiffusionProfile0", "_DiffusionProfileAsset0", "_DiffusionProfileHash0");
-            UpgradeMaterial(mat, replacementProfiles, "_DiffusionProfile1", "_DiffusionProfileAsset1", "_DiffusionProfileHash1");
-            UpgradeMaterial(mat, replacementProfiles, "_DiffusionProfile2", "_DiffusionProfileAsset2", "_DiffusionProfileHash2");
-            UpgradeMaterial(mat, replacementProfiles, "_DiffusionProfile3", "_DiffusionProfileAsset3", "_DiffusionProfileHash3");
+            UpgradeMaterial(mat, mainProfile, "_DiffusionProfile0", "_DiffusionProfileAsset0", "_DiffusionProfileHash0");
+            UpgradeMaterial(mat, mainProfile, "_DiffusionProfile1", "_DiffusionProfileAsset1", "_DiffusionProfileHash1");
+            UpgradeMaterial(mat, mainProfile, "_DiffusionProfile2", "_DiffusionProfileAsset2", "_DiffusionProfileHash2");
+            UpgradeMaterial(mat, mainProfile, "_DiffusionProfile3", "_DiffusionProfileAsset3", "_DiffusionProfileHash3");
         }
 
-        static void UpgradeMaterial(Material mat, Dictionary<int, DiffusionProfileSettings> replacementProfiles, string diffusionProfile, string diffusionProfileAsset, string diffusionProfileHash)
+        static void UpgradeMaterial(Material mat, DiffusionProfileSettings mainProfile, string diffusionProfile, string diffusionProfileAsset, string diffusionProfileHash)
         {
             // if the material don't have a diffusion profile
             if (!mat.HasProperty(diffusionProfile) || !mat.HasProperty(diffusionProfileAsset) || !mat.HasProperty(diffusionProfileHash))
@@ -113,22 +142,20 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             // or if it already have been upgraded
             int index = mat.GetInt(diffusionProfile) - 1; // the index in the material is stored with +1 because 0 is none
             if (index < 0)
-            {
-                Debug.Log("Abort: Material already upgraded !");
                 return;
-            }
             mat.SetInt(diffusionProfile, -1);
+            
+            var importer = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(mainProfile));
+            SerializableGUIDs profiles = JsonUtility.FromJson<SerializableGUIDs>(importer.userData);
 
-            if (!replacementProfiles.ContainsKey(index))
+            if (String.IsNullOrEmpty(profiles.assetGUIDs?[index]))
             {
-                Debug.LogError("Could not upgrade diffusion profile reference in material " + mat + ": index " + index + " not found in HD asset");
-                foreach (var kp in replacementProfiles)
-                    Debug.Log(kp.Key + ": " + kp.Value);
+                Debug.LogError("Could not upgrade diffusion profile reference in material " + mat + ": index " + index + " not found in main diffusion profile");
                 return;
             }
 
-            var newProfile = replacementProfiles[index];
-            string diffusionProfileGUID = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(newProfile));
+            string diffusionProfileGUID = profiles.assetGUIDs[index];
+            var newProfile = AssetDatabase.LoadAssetAtPath<DiffusionProfileSettings>(AssetDatabase.GUIDToAssetPath(diffusionProfileGUID));
             mat.SetVector(diffusionProfileAsset, HDUtils.ConvertGUIDToVector4(diffusionProfileGUID));
             mat.SetFloat(diffusionProfileHash, HDShadowUtils.Asfloat(newProfile.profile.hash));
             if (newProfile.profile.hash == 0)
@@ -150,10 +177,12 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             var newDiffusionProfile = ScriptableObject.CreateInstance<DiffusionProfileSettings>();
             newDiffusionProfile.name = asset.name;
             newDiffusionProfile.profile = profile;
+            newDiffusionProfile.m_Version = Version.DiffusionProfileRework;
             profile.Validate();
             newDiffusionProfile.UpdateCache();
 
             var path = AssetDatabase.GetAssetPath(asset);
+            path = Path.GetDirectoryName(path) + "/" + Path.GetFileNameWithoutExtension(path) + "_" + profile.name + Path.GetExtension(path);
             path = AssetDatabase.GenerateUniqueAssetPath(path);
             AssetDatabase.CreateAsset(newDiffusionProfile, path);
 #endif
@@ -166,6 +195,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             {
                 UnityEditor.EditorUtility.SetDirty(this);
                 UnityEditor.AssetDatabase.SaveAssets();
+                UnityEditor.AssetDatabase.Refresh();
             }
         }
     }

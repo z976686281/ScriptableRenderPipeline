@@ -21,6 +21,11 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         [SerializeField]
         DiffusionProfileSettings m_DiffusionProfileAsset;
 
+        [SerializeField]
+        int m_Version;
+        
+        DiffusionProfileSlotControlView view;
+
         public DiffusionProfileSettings diffusionProfile
         {
             get { return m_DiffusionProfileAsset; }
@@ -29,26 +34,24 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
         public DiffusionProfileInputMaterialSlot()
         {
-            // We can't upgrade here because we need to access the current render pipeline asset which is not
-            // possible outside of unity context so we wait the next editor frame to do it
-            EditorApplication.update += UpgradeIfNeeded;
         }
 
         public DiffusionProfileInputMaterialSlot(int slotId, string displayName, string shaderOutputName,
                                           ShaderStageCapability stageCapability = ShaderStageCapability.All, bool hidden = false)
             : base(slotId, displayName, shaderOutputName, SlotType.Input, 0.0f, stageCapability, hidden: hidden)
         {
-            EditorApplication.update += UpgradeIfNeeded;
         }
 
         public override VisualElement InstantiateControl()
         {
-            return new DiffusionProfileSlotControlView(this);
+            view = new DiffusionProfileSlotControlView(this);
+            return view;
         }
 
+        AbstractMaterialNode matOwner;
         public override void AddDefaultProperty(PropertyCollector properties, GenerationMode generationMode)
         {
-            var matOwner = owner as AbstractMaterialNode;
+            matOwner = owner as AbstractMaterialNode;
             if (matOwner == null)
                 throw new Exception(string.Format("Slot {0} either has no owner, or the owner is not a {1}", this, typeof(AbstractMaterialNode)));
 
@@ -69,6 +72,10 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
             properties.AddShaderProperty(diffusionProfileHash);
             properties.AddShaderProperty(diffusionProfileAsset);
+
+            // We can't upgrade here because we need to access the current render pipeline asset which is not
+            // possible outside of unity context so we wait the next editor frame to do it
+            EditorApplication.update += UpgradeIfNeeded;
         }
 
         public override string GetDefaultValue(GenerationMode generationMode)
@@ -92,12 +99,18 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         void UpgradeIfNeeded()
         {
 #pragma warning disable 618
-            // Once the profile is upgraded, we set the selected entry to -1
-            if (m_DiffusionProfile.selectedEntry != -1)
+            // Once the profile is upgraded, we set the selected entry to 0 (which was previously none
+            // in the diffusion profile index so it's fine if we don't upgrade it
+            if (m_Version == 0 && m_DiffusionProfileAsset != null)
             {
                 var hdAsset = GraphicsSettings.renderPipelineAsset as HDRenderPipelineAsset;
-                diffusionProfile = hdAsset.diffusionProfileSettingsList[m_DiffusionProfile.selectedEntry];
-                m_DiffusionProfile.selectedEntry = -1;
+                // Can't reliably retrieve the slot value from here so we warn the user that we probably loose his diffusion profile reference
+                Debug.LogError("Failed to upgrade the diffusion profile slot value, reseting to default value: " + hdAsset.diffusionProfileSettingsList[m_DiffusionProfile.selectedEntry] + 
+                    "\nTo remove this message save the shader graph with the new diffusion profile reference");
+                m_DiffusionProfileAsset = hdAsset.diffusionProfileSettingsList[m_DiffusionProfile.selectedEntry];
+                m_Version = 1;
+                // Sometimes the view is created after we upgrade the slot so we need to update it's value
+                view?.UpdateSlotValue();
             }
 #pragma warning restore 618
             EditorApplication.update -= UpgradeIfNeeded;

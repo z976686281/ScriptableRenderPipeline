@@ -41,6 +41,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         Vector4[]                   worldScales;
         Vector4[]                   filterKernels;
         float[]                     diffusionProfileHashes;
+        int[]                       diffusionProfileUpdate;
+        DiffusionProfileSettings[]  setDiffusionProfiles;
         HDRenderPipelineAsset       hdAsset;
         DiffusionProfileSettings    defaultDiffusionProfile;
         int                         activeDiffusionProfileCount;
@@ -95,6 +97,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             worldScales = new Vector4[DiffusionProfileConstants.DIFFUSION_PROFILE_COUNT];
             filterKernels = new Vector4[DiffusionProfileConstants.DIFFUSION_PROFILE_COUNT * DiffusionProfileConstants.SSS_N_SAMPLES_NEAR_FIELD];
             diffusionProfileHashes = new float[DiffusionProfileConstants.DIFFUSION_PROFILE_COUNT];
+            diffusionProfileUpdate = new int[DiffusionProfileConstants.DIFFUSION_PROFILE_COUNT];
+            setDiffusionProfiles = new DiffusionProfileSettings[DiffusionProfileConstants.DIFFUSION_PROFILE_COUNT];
         }
 
         public RTHandleSystem.RTHandle GetSSSBuffer(int index)
@@ -179,8 +183,14 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
         void SetDiffusionProfileAtIndex(DiffusionProfileSettings settings, int index)
         {
-            // Debug.Log("Setup diffusion settings: " + settings + ":" + index);
-            // TODO: cache and watch for changes
+            // if the diffusion profile was already set and it haven't changed then there is nothing to upgrade
+            if (setDiffusionProfiles[index] == settings && diffusionProfileUpdate[index] == settings.updateCount)
+                return;
+            
+            // if the settings have not yet been initialized
+            if (settings.profile.filterKernelNearField == null)
+                return;
+
             thicknessRemaps[index] = settings.thicknessRemaps;
             shapeParams[index] = settings.shapeParams;
             transmissionTintsAndFresnel0[index] = settings.transmissionTintsAndFresnel0;
@@ -206,6 +216,9 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             
             texturingModeFlags |= (uint)settings.profile.texturingMode    << index;
             transmissionFlags  |= (uint)settings.profile.transmissionMode << index;
+
+            setDiffusionProfiles[index] = settings;
+            diffusionProfileUpdate[index] = settings.updateCount;
         }
 
         public void PushGlobalParams(HDCamera hdCamera, CommandBuffer cmd)

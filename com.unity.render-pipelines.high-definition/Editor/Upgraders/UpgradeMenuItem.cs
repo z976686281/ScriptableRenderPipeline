@@ -252,11 +252,14 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         // not serialized as an asset (i.e materials saved in scenes)
         static void UpgradeSceneMaterials()
         {
+#pragma warning disable 618
+            var hdAsset = GraphicsSettings.renderPipelineAsset as HDRenderPipelineAsset;
             // For each loaded materials
             foreach (var mat in Resources.FindObjectsOfTypeAll<Material>())
             {
-                // DiffusionProfileSettings.
+                DiffusionProfileSettings.UpgradeMaterial(mat, hdAsset.diffusionProfileSettings);
             }
+#pragma warning restore 618
         }
 
         [MenuItem("Edit/Render Pipeline/Upgrade all Materials to newer version", priority = CoreUtils.editMenuPriority3)]

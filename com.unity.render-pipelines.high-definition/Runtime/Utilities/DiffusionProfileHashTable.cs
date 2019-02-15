@@ -31,7 +31,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
             // only store the first 23 bits so when the hash is converted to float, it doesn't write into
             // the exponent part of the float (which avoids having NaNs, inf or precisions issues)
-            return (exponent << 23) | hash32;
+            return (exponent << 23) | mantissa;
         }
 
         static uint GenerateUniqueHash(DiffusionProfileSettings asset)

@@ -38,5 +38,10 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline.Drawing.Slots
                 m_Slot.owner.Dirty(ModificationScope.Graph);
             }
         }
+
+        public void UpdateSlotValue()
+        {
+            diffusionProfileField.value = m_Slot.diffusionProfile;
+        }
     }
 }
