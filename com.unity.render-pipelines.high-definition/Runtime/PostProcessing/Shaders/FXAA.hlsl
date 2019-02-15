@@ -50,10 +50,10 @@ void RunFXAA(TEXTURE2D_PARAM(_InputTexture, _InputTextureSampler), inout float3 
         dir = min((FXAA_SPAN_MAX).xx, max((-FXAA_SPAN_MAX).xx, dir * rcpDirMin)) * _ScreenSize.zw;
 
         // Blur
-        float3 rgb03 = Fetch(TEXTURE2D_PARAM(_InputTexture, _InputTextureSampler), positionNDC, dir * (0.0 / 3.0 - 0.5));
-        float3 rgb13 = Fetch(TEXTURE2D_PARAM(_InputTexture, _InputTextureSampler), positionNDC, dir * (1.0 / 3.0 - 0.5));
-        float3 rgb23 = Fetch(TEXTURE2D_PARAM(_InputTexture, _InputTextureSampler), positionNDC, dir * (2.0 / 3.0 - 0.5));
-        float3 rgb33 = Fetch(TEXTURE2D_PARAM(_InputTexture, _InputTextureSampler), positionNDC, dir * (3.0 / 3.0 - 0.5));
+        float3 rgb03 = Fetch(TEXTURE2D_ARGS(_InputTexture, _InputTextureSampler), positionNDC, dir * (0.0 / 3.0 - 0.5));
+        float3 rgb13 = Fetch(TEXTURE2D_ARGS(_InputTexture, _InputTextureSampler), positionNDC, dir * (1.0 / 3.0 - 0.5));
+        float3 rgb23 = Fetch(TEXTURE2D_ARGS(_InputTexture, _InputTextureSampler), positionNDC, dir * (2.0 / 3.0 - 0.5));
+        float3 rgb33 = Fetch(TEXTURE2D_ARGS(_InputTexture, _InputTextureSampler), positionNDC, dir * (3.0 / 3.0 - 0.5));
 
 #if FXAA_HDR_MAPUNMAP
         rgb03 = FastTonemap(rgb03);
