@@ -58,11 +58,9 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 var defaultProfile = new DiffusionProfile("");
 
                 // Iterate over the diffusion profile settings and generate one new asset for each
-                // diffusion profile which have been modified
+                // diffusion profile which have been modified, and store them into a dictionary to be able to upgrade materials
                 int index = 0;
-                // TODO: cleanup
                 var newProfiles = new Dictionary<int, DiffusionProfileSettings>();
-                Debug.Log("Upgrading asset: " + d);
                 foreach (var profile in d.profiles)
                 {
                     if (!profile.Equals(defaultProfile))
@@ -77,17 +75,11 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 
                 // We write in the main diffusion profile meta filethe list of created asset so we know where to look
                 // when we upgrade materials inside scenes (from the menu item)
-                SerializableGUIDs t;
-                // TODO: cleanup
-                t.assetGUIDs = new string[16];
+                SerializableGUIDs toJson;
+                toJson.assetGUIDs = new string[16];
                 foreach (var kp in newProfiles)
-                    t.assetGUIDs[kp.Key] = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(kp.Value));
-                importer.userData = JsonUtility.ToJson(t);
-
-                Debug.Log("Updated datas: ");
-                var dc = JsonUtility.FromJson<string[]>(importer.userData);
-                foreach (var s in dc)
-                    Debug.Log(s);
+                    toJson.assetGUIDs[kp.Key] = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(kp.Value));
+                importer.userData = JsonUtility.ToJson(toJson);
 
                 // Update the diffusion profiles references in all the hd assets where this profile was set
                 var hdAssetsGUIDs = AssetDatabase.FindAssets("t:HDRenderPipelineAsset");
@@ -110,7 +102,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 if (currentHDAsset.diffusionProfileSettings == d)
                 {
                     var materialGUIDs = AssetDatabase.FindAssets("t:Material");
-                    Debug.Log("Upgrade all materials: " + materialGUIDs.Length);
                     foreach (var guid in materialGUIDs)
                     {
                         var mat = AssetDatabase.LoadAssetAtPath<Material>(AssetDatabase.GUIDToAssetPath(guid));
@@ -160,13 +151,11 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             mat.SetFloat(diffusionProfileHash, HDShadowUtils.Asfloat(newProfile.profile.hash));
             if (newProfile.profile.hash == 0)
                 Debug.LogError("Diffusion profile hash of " + newProfile + " have not been initialized !");
-            Debug.Log("Material successfully upgraded !");
         }
 #endif
 
         static DiffusionProfileSettings CreateNewDiffusionProfile(DiffusionProfileSettings asset, DiffusionProfile profile, int index)
         {
-            Debug.Log("Create new diffusion profile at index: " + index + " from asset: " + asset);
             if (index == 0)
             {
                 asset.profile = profile;

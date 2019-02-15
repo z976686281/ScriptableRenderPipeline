@@ -6,12 +6,12 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
     [Serializable, VolumeComponentMenu("Diffusion Profile Override")]
     public sealed class DiffusionProfileOverride : VolumeComponent
     {
-        public BoolArrayParameter overrideStates = new BoolArrayParameter(new bool[16]); // TODO: constant
+        public BoolArrayParameter overrideStates = new BoolArrayParameter(new bool[DiffusionProfileConstants.DIFFUSION_PROFILE_COUNT]);
         [Tooltip("List of diffusion profiles used inside the volume.")]
         public DiffusionProfileSettingsParameter diffusionProfiles = new DiffusionProfileSettingsParameter(default(DiffusionProfileSettings[]));
 
         [NonSerialized]
-        DiffusionProfileSettings[] mergedDiffusionProfiles = new DiffusionProfileSettings[16]; // TODO: constan
+        DiffusionProfileSettings[] mergedDiffusionProfiles = new DiffusionProfileSettings[DiffusionProfileConstants.DIFFUSION_PROFILE_COUNT];
 
         public DiffusionProfileSettings[]   GetMergedDiffusionProfileSettings()
         {
@@ -20,7 +20,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             if (diffusionProfiles.value == null)
                 return hdAsset.diffusionProfileSettingsList;
 
-            for (int i = 0; i < 16; i++)
+            for (int i = 0; i < DiffusionProfileConstants.DIFFUSION_PROFILE_COUNT; i++)
             {
                 mergedDiffusionProfiles[i] = null;
 
