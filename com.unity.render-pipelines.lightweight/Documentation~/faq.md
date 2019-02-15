@@ -1,6 +1,5 @@
 # Frequently asked questions
-In this section, we’ve tried to answer some frequently asked questions about the Lightweight Render Pipeline (LWRP). These questions come from the [General Graphics](https://forum.unity.com/forums/general-graphics.76/) section on our forums, from the [Unity Discord](https://discord.gg/unity) channel, and from our support teams.
-We’ll do our best to update this with new questions as they arise.
+This section answers some frequently asked questions about the Lightweight Render Pipeline (LWRP). These questions come from the [General Graphics](https://forum.unity.com/forums/general-graphics.76/) section on our forums, from the [Unity Discord](https://discord.gg/unity) channel, and from our support teams.
 
 For information about the High Definition Render Pipeline (HDRP), please see the [HDRP documentation](https://github.com/Unity-Technologies/ScriptableRenderPipeline/wiki/High-Definition-Render-Pipeline-overview).
 
@@ -16,7 +15,7 @@ If you’ve added SRP code or Shader Graph manually via Github, make sure to upg
 
 ## Where has Dynamic Batching gone?
 
-The Dynamic Batching checkbox has moved from the __Player Settings__ to the __Lightweight Render Pipeline Asset__.
+The Dynamic Batching checkbox has moved from the __Player Settings__ to the [__Lightweight Render Pipeline Asset__](lwrp-asset.md).
 
 ## How do I enable Double Sided Global Illumination in the Editor?
 
@@ -28,19 +27,20 @@ Yes. The graphics quality and performance is scalable across platforms, so you c
 
 ## A certain feature from the Built-in render pipeline is not supported in LWRP. Will it be?
 
-To see which features from the Built-in render pipeline will be supported in LWRP, you can check this [feature table](https://docs.google.com/spreadsheets/d/1nlS8m1OXStUK4A6D7LTOyHr6aAxIaA2r3uaNf9FZRTI/edit). LWRP will not support features marked as `Not Supported` or `Deprecated`. We intend to support features that have an open check box. Next to those, you can see information about which version of Unity we’re aiming to support them in.
+To see which features LWRP currently supports, check the [comparison table](lwrp-builtin-feature-comparison.md). 
+To see which features from the Built-in render pipeline *will* be supported in LWRP, you can check this [feature table](https://docs.google.com/spreadsheets/d/1nlS8m1OXStUK4A6D7LTOyHr6aAxIaA2r3uaNf9FZRTI/edit). LWRP will not support features marked as `Not Supported`. We intend to support features that have an open check box. Next to those, you can see information about which version of Unity we’re aiming to support them in.
 
 If a feature is marked as `In Research`, we plan to support it but don’t have a target release yet.
 
 
 ## Does LWRP support a Deferred Renderer?
-Not yet. Our goal is to add support for a mobile-optimized deferred renderer in 2019.3.
+Not yet. Our goal is to add support for an optimized deferred renderer in 2019.3.
 ## Does LWRP have a public roadmap?
 Yes. You can [check it here](https://portal.productboard.com/8ufdwj59ehtmsvxenjumxo82/tabs/3-lightweight-render-pipeline). You can add suggestions as well. To do so, you’ll have to enter your email address, but you won’t have to make an account.
 
-## What’s LWRP state in the 2018 Long Term Service versions?
+## Will LWRP be in LTS for 2018.4? 
 
-LWRP is still in the preview state for Long Term Service (LTS) versions of 2018 releases. We are not planning to take LWRP out of preview for 2018 LTS versions. Preview packages are not stable or ready for production, so we don’t support them in LTS versions . Use 2018 versions at your own risk.
+LWRP is still in the preview state for Long Term Service (LTS) versions of 2018 releases. We are not planning to take LWRP out of preview for 2018 LTS versions. Preview packages are not stable or ready for production, so we don’t support them in LTS versions . Use 2018 versions of LWRP at your own risk.
 ## When is LWRP coming out of preview?
 LWRP will be released with 2019.1. This means we consider it stable, given the amount of features it supports, butt’s not yet feature complete. Before upgrading your project to LWRP, check our roadmap and [feature comparison table](https://docs.google.com/spreadsheets/d/1nlS8m1OXStUK4A6D7LTOyHr6aAxIaA2r3uaNf9FZRTI/edit) between LWRP and the Built-in render pipeline. 
 
@@ -80,4 +80,3 @@ For these reasons, we don’t allow camera stacking in LWRP. We are working on a
 
 This is not supported at the moment. We are looking into an approach to support it. 
 
-## 
