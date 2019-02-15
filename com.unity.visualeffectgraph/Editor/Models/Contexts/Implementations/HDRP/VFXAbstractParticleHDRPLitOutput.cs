@@ -5,8 +5,6 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Experimental.VFX;
 
-using UnityEngine.Experimental.Rendering.HDPipeline;
-
 namespace UnityEditor.VFX
 {
     abstract class VFXAbstractParticleHDRPLitOutput : VFXAbstractParticleOutput
@@ -53,8 +51,10 @@ namespace UnityEditor.VFX
         [VFXSetting(VFXSettingAttribute.VisibleFlags.InInspector), SerializeField]
         protected bool onlyAmbientLighting = false;
 
+#if VFX_HAS_HDRP
         [VFXSetting(VFXSettingAttribute.VisibleFlags.InInspector), SerializeField]
-        protected DiffusionProfileSettings diffusionProfileAsset;
+        protected UnityEngine.Experimental.Rendering.HDPipeline.DiffusionProfileSettings diffusionProfileAsset;
+#endif
 
         [VFXSetting(VFXSettingAttribute.VisibleFlags.InInspector), SerializeField]
         protected bool multiplyThicknessWithAlpha = false;
@@ -210,7 +210,11 @@ namespace UnityEditor.VFX
                 case MaterialType.Translucent:
                 case MaterialType.SimpleLitTranslucent:
                     yield return slotExpressions.First(o => o.name == "thickness");
+#if VFX_HAS_HDRP
                     diffusionProfileHash = (diffusionProfileAsset?.profile != null) ? diffusionProfileAsset.profile.hash : 0;
+#else
+                    diffusionProfileHash = 0;
+#endif
                     yield return new VFXNamedExpression(VFXValue.Constant(diffusionProfileHash), "diffusionProfileHash");
                     break;
 

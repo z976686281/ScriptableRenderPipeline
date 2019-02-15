@@ -16,7 +16,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
     class DiffusionProfileInputMaterialSlot : Vector1MaterialSlot
     {
         [SerializeField, Obsolete("Use m_DiffusionProfileAsset instead.")]
-        PopupList m_DiffusionProfile = new PopupList();
+        PopupList m_DiffusionProfile;
 
         [SerializeField]
         DiffusionProfileSettings m_DiffusionProfileAsset;
@@ -101,13 +101,13 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 #pragma warning disable 618
             // Once the profile is upgraded, we set the selected entry to 0 (which was previously none
             // in the diffusion profile index so it's fine if we don't upgrade it
-            if (m_Version == 0 && m_DiffusionProfileAsset != null)
+            if (m_Version == 0)
             {
-                var hdAsset = GraphicsSettings.renderPipelineAsset as HDRenderPipelineAsset;
-                // Can't reliably retrieve the slot value from here so we warn the user that we probably loose his diffusion profile reference
-                Debug.LogError("Failed to upgrade the diffusion profile slot value, reseting to default value: " + hdAsset.diffusionProfileSettingsList[m_DiffusionProfile.selectedEntry] + 
-                    "\nTo remove this message save the shader graph with the new diffusion profile reference");
-                m_DiffusionProfileAsset = hdAsset.diffusionProfileSettingsList[m_DiffusionProfile.selectedEntry];
+                // var hdAsset = GraphicsSettings.renderPipelineAsset as HDRenderPipelineAsset;
+                // // Can't reliably retrieve the slot value from here so we warn the user that we probably loose his diffusion profile reference
+                // Debug.LogError("Failed to upgrade the diffusion profile slot value, reseting to default value: " + hdAsset.diffusionProfileSettingsList[m_DiffusionProfile.selectedEntry] + 
+                //     "\nTo remove this message save the shader graph with the new diffusion profile reference");
+                // m_DiffusionProfileAsset = hdAsset.diffusionProfileSettingsList[m_DiffusionProfile.selectedEntry];
                 m_Version = 1;
                 // Sometimes the view is created after we upgrade the slot so we need to update it's value
                 view?.UpdateSlotValue();
