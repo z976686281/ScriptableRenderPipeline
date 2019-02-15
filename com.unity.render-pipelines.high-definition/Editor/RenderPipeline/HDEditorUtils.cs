@@ -189,4 +189,23 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             }
         }
     }
+
+    public static partial class SerializedPropertyExtention
+    {
+        /// <summary>
+        /// Helper to get an enum value from a SerializedProperty
+        /// </summary>
+        public static T GetEnumValue<T>(this SerializedProperty property)
+        {
+            return (T)System.Enum.GetValues(typeof(T)).GetValue(property.enumValueIndex);
+        }
+
+        /// <summary>
+        /// Helper to get an enum name from a SerializedProperty
+        /// </summary>
+        public static T GetEnumName<T>(this SerializedProperty property)
+        {
+            return (T)System.Enum.GetNames(typeof(T)).GetValue(property.enumValueIndex);
+        }
+    }
 }

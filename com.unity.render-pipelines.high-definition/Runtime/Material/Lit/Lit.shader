@@ -127,6 +127,8 @@ Shader "HDRP/Lit"
         _TransmittanceColor("Transmittance Color", Color) = (1.0, 1.0, 1.0)
         _TransmittanceColorMap("TransmittanceColorMap", 2D) = "white" {}
         _ATDistance("Transmittance Absorption Distance", Float) = 1.0
+        [ToggleUI] _TransparentWritingVelocity("_TransparentWritingVelocity", Float) = 0.0
+        [HideInInspector] _TransparentVelocityCMask("_ColorMaskTransparentVel", Int) = 15 // All
 
         // Stencil state
         [HideInInspector] _StencilRef("_StencilRef", Int) = 2 // StencilLightingUsage.RegularLighting  (fixed at compile time)
@@ -267,6 +269,7 @@ Shader "HDRP/Lit"
     #pragma shader_feature_local _ _BLENDMODE_ALPHA _BLENDMODE_ADD _BLENDMODE_PRE_MULTIPLY
     #pragma shader_feature_local _BLENDMODE_PRESERVE_SPECULAR_LIGHTING
     #pragma shader_feature_local _ENABLE_FOG_ON_TRANSPARENT
+    #pragma shader_feature_local _TRANSPARENT_WRITES_VELOCITY
 
     // MaterialFeature are used as shader feature to allow compiler to optimize properly
     #pragma shader_feature_local _MATERIAL_FEATURE_SUBSURFACE_SCATTERING
@@ -295,6 +298,9 @@ Shader "HDRP/Lit"
     #define OUTPUT_SPLIT_LIGHTING
     #endif
 
+    #if defined(_TRANSPARENT_WRITES_VELOCITY) && defined(_SURFACE_TYPE_TRANSPARENT)
+    #define _WRITE_TRANSPARENT_VELOCITY
+    #endif
     //-------------------------------------------------------------------------------------
     // Include
     //-------------------------------------------------------------------------------------
@@ -614,6 +620,7 @@ Shader "HDRP/Lit"
             Blend [_SrcBlend] [_DstBlend]
             ZWrite [_ZWrite]
             Cull Front
+            ColorMask [_ColorMaskTransparentVel] 1
 
             HLSLPROGRAM
 
@@ -680,6 +687,7 @@ Shader "HDRP/Lit"
             ZTest [_ZTestDepthEqualForOpaque]
             ZWrite [_ZWrite]
             Cull [_CullModeForward]
+            ColorMask [_ColorMaskTransparentVel] 1
 
             HLSLPROGRAM
 
@@ -774,6 +782,8 @@ Shader "HDRP/Lit"
             #pragma multi_compile _ DIRLIGHTMAP_COMBINED
             #pragma multi_compile _ DYNAMICLIGHTMAP_ON
             
+            #define SHADERPASS SHADERPASS_RAYTRACING_REFLECTION
+
              // We use the low shadow maps for raytracing
             #define SHADOW_LOW
 
