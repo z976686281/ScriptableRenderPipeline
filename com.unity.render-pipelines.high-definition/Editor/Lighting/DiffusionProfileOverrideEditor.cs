@@ -87,7 +87,6 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                     {
                         var profile = GetMaterialDiffusionProfile(mat);
 
-                        Debug.Log("Add profile: " + profile);
                         if (profile != null)
                             profiles.Add(profile);
                     }

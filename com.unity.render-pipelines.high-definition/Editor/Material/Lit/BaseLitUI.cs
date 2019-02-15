@@ -5,7 +5,6 @@ using UnityEngine.Rendering;
 
 namespace UnityEditor.Experimental.Rendering.HDPipeline
 {
-    // It would be really cool to set these enums outside of the Shader GUI so we don't have to duplicate them everywhere
     public enum MaterialId
     {
         LitSSS = 0,

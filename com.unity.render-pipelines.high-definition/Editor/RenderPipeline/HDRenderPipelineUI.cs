@@ -190,8 +190,6 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
             EditorGUILayout.Space();
 
-            // EditorGUILayout.PropertyField(serialized.allowShaderVariantStripping, enableShaderVariantStrippingContent);
-
             EditorGUILayout.PropertyField(serialized.renderPipelineSettings.lightLoopSettings.reflectionCacheCompressed, k_CompressProbeCacheContent);
             EditorGUILayout.PropertyField(serialized.renderPipelineSettings.lightLoopSettings.reflectionCubemapSize, k_CubemapSizeContent);
             EditorGUI.BeginChangeCheck();
