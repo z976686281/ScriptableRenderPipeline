@@ -15,7 +15,7 @@ Shader "HDRP/TerrainLit"
         // Following are builtin properties
 
         // Stencil state
-        [HideInInspector] _StencilRef("_StencilRef", Int) = 2 // StencilLightingUsage.RegularLighting
+        [HideInInspector] _StencilRef("_StencilRef", Int) = 2 // StencilLightingUsage.RegularLighting  (fixed at compile time)
         [HideInInspector] _StencilWriteMask("_StencilWriteMask", Int) = 7 // StencilMask.Lighting  (fixed at compile time)
         [HideInInspector] _StencilRefMV("_StencilRefMV", Int) = 128 // StencilLightingUsage.RegularLighting  (fixed at compile time)
         [HideInInspector] _StencilWriteMaskMV("_StencilWriteMaskMV", Int) = 128 // StencilMask.ObjectsVelocity  (fixed at compile time)
@@ -47,41 +47,25 @@ Shader "HDRP/TerrainLit"
     #pragma target 4.5
     #pragma only_renderers d3d11 ps4 xboxone vulkan metal switch
 
+    // Terrain builtin keywords
     #pragma shader_feature _TERRAIN_8_LAYERS
-    #pragma shader_feature _TERRAIN_BLEND_HEIGHT
     #pragma shader_feature _NORMALMAP
     #pragma shader_feature _MASKMAP
+
+    #pragma shader_feature_local _TERRAIN_BLEND_HEIGHT
     // Sample normal in pixel shader when doing instancing
-    #pragma shader_feature _TERRAIN_INSTANCED_PERPIXEL_NORMAL
+    #pragma shader_feature_local _TERRAIN_INSTANCED_PERPIXEL_NORMAL
 
     //#pragma shader_feature _ _LAYER_MAPPING_PLANAR0 _LAYER_MAPPING_TRIPLANAR0
     //#pragma shader_feature _ _LAYER_MAPPING_PLANAR1 _LAYER_MAPPING_TRIPLANAR1
     //#pragma shader_feature _ _LAYER_MAPPING_PLANAR2 _LAYER_MAPPING_TRIPLANAR2
     //#pragma shader_feature _ _LAYER_MAPPING_PLANAR3 _LAYER_MAPPING_TRIPLANAR3
 
-    #pragma shader_feature _DISABLE_DECALS
+    #pragma shader_feature_local _DISABLE_DECALS
 
     //enable GPU instancing support
     #pragma multi_compile_instancing
     #pragma instancing_options assumeuniformscaling nomatrices nolightprobe nolightmap
-
-    //-------------------------------------------------------------------------------------
-    // Define
-    //-------------------------------------------------------------------------------------
-
-    #define HAVE_MESH_MODIFICATION
-
-    //-------------------------------------------------------------------------------------
-    // Include
-    //-------------------------------------------------------------------------------------
-
-    #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
-    #include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/ShaderPass/FragInputs.hlsl"
-    #include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/ShaderPass/ShaderPass.cs.hlsl"
-
-    //-------------------------------------------------------------------------------------
-    // variable declaration
-    //-------------------------------------------------------------------------------------
 
     // All our shaders use same name for entry point
     #pragma vertex Vert
@@ -112,7 +96,7 @@ Shader "HDRP/TerrainLit"
             Tags { "LightMode" = "GBuffer" } // This will be only for opaque object based on the RenderQueue index
 
             Cull [_CullMode]
-            ZTest[_ZTestGBuffer]
+            ZTest [_ZTestGBuffer]
 
             Stencil
             {
@@ -133,22 +117,10 @@ Shader "HDRP/TerrainLit"
             #pragma multi_compile DECALS_OFF DECALS_3RT DECALS_4RT
             #pragma multi_compile _ LIGHT_LAYERS
 
-            #ifndef DEBUG_DISPLAY
-                // When we have alpha test, we will force a depth prepass so we always bypass the clip instruction in the GBuffer
-                // Don't do it with debug display mode as it is possible there is no depth prepass in this case
-                #define SHADERPASS_GBUFFER_BYPASS_ALPHA_TEST
-            #endif
-
             #define SHADERPASS SHADERPASS_GBUFFER
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
-            #ifdef DEBUG_DISPLAY
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Debug/DebugDisplay.hlsl"
-            #endif
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Material.hlsl"
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Lit/Lit.hlsl"
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/TerrainLit/TerrainLitSharePass.hlsl"
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/TerrainLit/TerrainLitData.hlsl"
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/ShaderPass/ShaderPassGBuffer.hlsl"
+            #include "TerrainLit_Splatmap.ShaderVariables.hlsl"
+            #include "TerrainLitTemplate.hlsl"
+            #include "TerrainLit_Splatmap.hlsl"
 
             ENDHLSL
         }
@@ -169,12 +141,9 @@ Shader "HDRP/TerrainLit"
             // both direct and indirect lighting) will hand up in the "regular" lightmap->LIGHTMAP_ON.
 
             #define SHADERPASS SHADERPASS_LIGHT_TRANSPORT
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Material.hlsl"
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Lit/Lit.hlsl"
-			#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/TerrainLit/TerrainLitSharePass.hlsl"
-			#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/TerrainLit/TerrainLitData.hlsl"
-			#include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/ShaderPass/ShaderPassLightTransport.hlsl"
+            #include "TerrainLit_Splatmap.ShaderVariables.hlsl"
+            #include "TerrainLitTemplate.hlsl"
+            #include "TerrainLit_Splatmap.hlsl"
 
             ENDHLSL
         }
@@ -195,13 +164,9 @@ Shader "HDRP/TerrainLit"
             HLSLPROGRAM
 
             #define SHADERPASS SHADERPASS_SHADOWS
-            #define USE_LEGACY_UNITY_MATRIX_VARIABLES
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Material.hlsl"
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Lit/Lit.hlsl"
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Lit/ShaderPass/LitDepthPass.hlsl"
-			#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/TerrainLit/TerrainLitData.hlsl"
-			#include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/ShaderPass/ShaderPassDepthOnly.hlsl"
+            #include "TerrainLit_Splatmap.ShaderVariables.hlsl"
+            #include "TerrainLitTemplate.hlsl"
+            #include "TerrainLit_Splatmap.hlsl"
 
             ENDHLSL
         }
@@ -232,26 +197,9 @@ Shader "HDRP/TerrainLit"
             #pragma multi_compile _ WRITE_MSAA_DEPTH
 
             #define SHADERPASS SHADERPASS_DEPTH_ONLY
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Material.hlsl"
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Lit/Lit.hlsl"
-
-            #ifdef WRITE_NORMAL_BUFFER // If enabled we need all regular interpolator
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Lit/ShaderPass/LitSharePass.hlsl"
-            #else
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Lit/ShaderPass/LitDepthPass.hlsl"
-            #endif
-
-            #ifdef WRITE_NORMAL_BUFFER
-                #if defined(_NORMALMAP)
-                    #define OVERRIDE_SAMPLER_NAME sampler_Normal0
-                #elif defined(_MASKMAP)
-                    #define OVERRIDE_SAMPLER_NAME sampler_Mask0
-                #endif
-            #endif
-
-			#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/TerrainLit/TerrainLitData.hlsl"
-			#include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/ShaderPass/ShaderPassDepthOnly.hlsl"
+            #include "TerrainLit_Splatmap.ShaderVariables.hlsl"
+            #include "TerrainLitTemplate.hlsl"
+            #include "TerrainLit_Splatmap.hlsl"
 
             ENDHLSL
         }
@@ -259,7 +207,7 @@ Shader "HDRP/TerrainLit"
         Pass
         {
             Name "Forward"
-            Tags{ "LightMode" = "Forward" } // This will be only for transparent object based on the RenderQueue index
+            Tags { "LightMode" = "Forward" } // This will be only for transparent object based on the RenderQueue index
 
             Stencil
             {
@@ -290,35 +238,9 @@ Shader "HDRP/TerrainLit"
             #pragma multi_compile USE_FPTL_LIGHTLIST USE_CLUSTERED_LIGHTLIST
 
             #define SHADERPASS SHADERPASS_FORWARD
-            // In case of opaque we don't want to perform the alpha test, it is done in depth prepass and we use depth equal for ztest (setup from UI)
-            // Don't do it with debug display mode as it is possible there is no depth prepass in this case
-            #if !defined(_SURFACE_TYPE_TRANSPARENT) && !defined(DEBUG_DISPLAY)
-                #define SHADERPASS_FORWARD_BYPASS_ALPHA_TEST
-            #endif
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/Lighting.hlsl"
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Material.hlsl"
-
-        #ifdef DEBUG_DISPLAY
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Debug/DebugDisplay.hlsl"
-        #endif
-
-            // The light loop (or lighting architecture) is in charge to:
-            // - Define light list
-            // - Define the light loop
-            // - Setup the constant/data
-            // - Do the reflection hierarchy
-            // - Provide sampling function for shadowmap, ies, cookie and reflection (depends on the specific use with the light loops like index array or atlas or single and texture format (cubemap/latlong))
-
-            #define HAS_LIGHTLOOP
-
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/LightLoop/LightLoopDef.hlsl"
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Lit/Lit.hlsl"
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/LightLoop/LightLoop.hlsl"
-
-			#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/TerrainLit/TerrainLitSharePass.hlsl"
-			#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/TerrainLit/TerrainLitData.hlsl"
-			#include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/ShaderPass/ShaderPassForward.hlsl"
+            #include "TerrainLit_Splatmap.ShaderVariables.hlsl"
+            #include "TerrainLitTemplate.hlsl"
+            #include "TerrainLit_Splatmap.hlsl"
 
             ENDHLSL
         }
