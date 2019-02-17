@@ -24,7 +24,7 @@ Shader "Hidden/HDRP/TerrainLit_Basemap_Gen"
         #pragma shader_feature _NORMALMAP
         #pragma shader_feature _MASKMAP
 
-        #pragma shader_feature_local _TERRAIN_BLEND_HEIGHT
+        #pragma shader_feature _TERRAIN_BLEND_HEIGHT
 
         #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/TerrainLit/TerrainLit_Splatmap.ShaderVariables.hlsl"
 

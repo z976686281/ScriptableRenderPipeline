@@ -52,16 +52,16 @@ Shader "HDRP/TerrainLit"
     #pragma shader_feature _NORMALMAP
     #pragma shader_feature _MASKMAP
 
-    #pragma shader_feature_local _TERRAIN_BLEND_HEIGHT
+    #pragma shader_feature _TERRAIN_BLEND_HEIGHT
     // Sample normal in pixel shader when doing instancing
-    #pragma shader_feature_local _TERRAIN_INSTANCED_PERPIXEL_NORMAL
+    #pragma shader_feature _TERRAIN_INSTANCED_PERPIXEL_NORMAL
 
     //#pragma shader_feature _ _LAYER_MAPPING_PLANAR0 _LAYER_MAPPING_TRIPLANAR0
     //#pragma shader_feature _ _LAYER_MAPPING_PLANAR1 _LAYER_MAPPING_TRIPLANAR1
     //#pragma shader_feature _ _LAYER_MAPPING_PLANAR2 _LAYER_MAPPING_TRIPLANAR2
     //#pragma shader_feature _ _LAYER_MAPPING_PLANAR3 _LAYER_MAPPING_TRIPLANAR3
 
-    #pragma shader_feature_local _DISABLE_DECALS
+    #pragma shader_feature _DISABLE_DECALS
 
     //enable GPU instancing support
     #pragma multi_compile_instancing
