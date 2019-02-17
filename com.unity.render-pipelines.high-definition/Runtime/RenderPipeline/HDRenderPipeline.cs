@@ -174,10 +174,12 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         public enum StencilBitMask
         {
             Clear                           = 0,    // 0x0
-            LightingMask                    = 7,    // 0x7  - 3 bit
+            LightingMask                    = 3,    // 0x7  - 2 bit
+            // Free slot 4
             Decals                          = 8,    // 0x8  - 1 bit
             DecalsForwardOutputNormalBuffer = 16,   // 0x10 - 1 bit
             DoesntReceiveSSR                = 32,   // 0x20 - 1 bit
+            // Free slot 64
             ObjectVelocity                  = 128,  // 0x80 - 1 bit
             All                             = 255   // 0xFF - 8 bit
         }

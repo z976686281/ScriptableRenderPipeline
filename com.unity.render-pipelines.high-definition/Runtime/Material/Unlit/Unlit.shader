@@ -58,7 +58,7 @@ Shader "HDRP/Unlit"
 
         // Stencil state
         [HideInInspector] _StencilRef("_StencilRef", Int) = 0 // StencilLightingUsage.NoLighting
-        [HideInInspector] _StencilWriteMask("_StencilWriteMask", Int) = 7 // StencilMask.Lighting
+        [HideInInspector] _StencilWriteMask("_StencilWriteMask", Int) = 3 // StencilMask.Lighting
         // Depth prepass
         [HideInInspector] _StencilRefDepth("_StencilRefDepth", Int) = 0 // Nothing
         [HideInInspector] _StencilWriteMaskDepth("_StencilWriteMaskDepth", Int) = 32 // DoesntReceiveSSR
