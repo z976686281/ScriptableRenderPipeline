@@ -9,6 +9,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
     {
         // External structures
         HDRenderPipelineAsset m_PipelineAsset = null;
+        RenderPipelineResources m_PipelineResources = null;
         SkyManager m_SkyManager = null;
         HDRaytracingManager m_RaytracingManager = null;
         SharedRTManager m_SharedRTManager = null;
@@ -19,9 +20,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         RTHandleSystem.RTHandle m_VarianceBuffer = null;
         RTHandleSystem.RTHandle m_MinBoundBuffer = null;
         RTHandleSystem.RTHandle m_MaxBoundBuffer = null;
-
-        // Light cluster structure
-        public HDRaytracingLightCluster m_LightCluster = null;
 
         // String values
         const string m_RayGenHalfResName = "RayGenHalfRes";
@@ -37,6 +35,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         {
             // Keep track of the pipeline asset
             m_PipelineAsset = asset;
+            m_PipelineResources = asset.renderPipelineResources;
 
             // Keep track of the sky manager
             m_SkyManager = skyManager;
@@ -52,10 +51,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             m_VarianceBuffer = RTHandles.Alloc(Vector2.one, filterMode: FilterMode.Point, colorFormat: GraphicsFormat.R16_SFloat, enableRandomWrite: true, useDynamicScale: true, useMipMap: false, name: "VarianceBuffer");
             m_MinBoundBuffer = RTHandles.Alloc(Vector2.one, filterMode: FilterMode.Point, colorFormat: GraphicsFormat.R16G16B16A16_SFloat, enableRandomWrite: true, useDynamicScale: true, useMipMap: false, name: "MinBoundBuffer");
             m_MaxBoundBuffer = RTHandles.Alloc(Vector2.one, filterMode: FilterMode.Point, colorFormat: GraphicsFormat.R16G16B16A16_SFloat, enableRandomWrite: true, useDynamicScale: true, useMipMap: false, name: "MaxBoundBuffer");
-
-            // Allocate the light cluster
-            m_LightCluster = new HDRaytracingLightCluster();
-            m_LightCluster.Initialize(asset, raytracingManager);
         }
 
        static RTHandleSystem.RTHandle ReflectionHistoryBufferAllocatorFunction(string viewName, int frameIndex, RTHandleSystem rtHandleSystem)
@@ -67,9 +62,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
         public void Release()
         {
-            m_LightCluster.ReleaseResources();
-            m_LightCluster = null;
-
             RTHandles.Release(m_MinBoundBuffer);
             RTHandles.Release(m_MaxBoundBuffer);
             RTHandles.Release(m_VarianceBuffer);
@@ -84,14 +76,15 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             BlueNoise blueNoise = m_RaytracingManager.GetBlueNoiseManager();
             ComputeShader bilateralFilter = m_PipelineAsset.renderPipelineResources.shaders.reflectionBilateralFilterCS;
             RaytracingShader reflectionShader = m_PipelineAsset.renderPipelineResources.shaders.reflectionRaytracing;
-            bool missingResources = rtEnvironement == null || blueNoise == null || bilateralFilter == null || reflectionShader == null;
+            bool missingResources = rtEnvironement == null || blueNoise == null || bilateralFilter == null || reflectionShader == null 
+                                    || m_PipelineResources.textures.owenScrambledTex == null || m_PipelineResources.textures.scramblingTex == null;
 
             // Try to grab the acceleration structure and the list of HD lights for the target camera
             RaytracingAccelerationStructure accelerationStructure = m_RaytracingManager.RequestAccelerationStructure(hdCamera);
-            List<HDAdditionalLightData> lightData = m_RaytracingManager.RequestHDLightList(hdCamera);
+            HDRaytracingLightCluster lightCluster = m_RaytracingManager.RequestLightCluster(hdCamera);
 
             // If no acceleration structure available, end it now
-            if (accelerationStructure == null || lightData == null || missingResources)
+            if (accelerationStructure == null || lightCluster == null || missingResources)
                 return;
 
             // Compute the actual resolution that is needed base on the quality
@@ -110,23 +103,17 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 break;
             }
 
-            // Evaluate the light cluster
-            // TODO: Do only this once per frame and share it between primary visibility and reflection (if any of them request it)
-            m_LightCluster.EvaluateLightClusters(cmd, hdCamera, lightData);
-
             // Define the shader pass to use for the reflection pass
             cmd.SetRaytracingShaderPass(reflectionShader, "ReflectionDXR");
 
             // Set the acceleration structure for the pass
             cmd.SetRaytracingAccelerationStructure(reflectionShader, HDShaderIDs._RaytracingAccelerationStructureName, accelerationStructure);
 
-            // Fetch the screen space coherent noise texture array
-            Texture2DArray rgCoherentNoise = blueNoise.textureArray128RGCoherent;
+            // Inject the ray-tracing sampling data
+            cmd.SetRaytracingTextureParam(reflectionShader, targetRayGen, HDShaderIDs._OwenScrambledTexture, m_PipelineResources.textures.owenScrambledTex);
+            cmd.SetRaytracingTextureParam(reflectionShader, targetRayGen, HDShaderIDs._ScramblingTexture, m_PipelineResources.textures.scramblingTex);
 
-            // Inject the ray-tracing noise data
-            cmd.SetRaytracingTextureParam(reflectionShader, targetRayGen, HDShaderIDs._RaytracingNoiseTexture, rgCoherentNoise);
-            cmd.SetRaytracingIntParams(reflectionShader, HDShaderIDs._RaytracingNoiseResolution, rgCoherentNoise.width);
-            cmd.SetRaytracingIntParams(reflectionShader, HDShaderIDs._RaytracingNumNoiseLayers, rgCoherentNoise.depth);
+            // Global reflection parameters
             cmd.SetRaytracingFloatParams(reflectionShader, HDShaderIDs._RaytracingIntensityClamp, rtEnvironement.reflClampValue);
             cmd.SetRaytracingFloatParams(reflectionShader, HDShaderIDs._RaytracingReflectionMinSmoothness, rtEnvironement.reflMinSmoothness);
             cmd.SetRaytracingFloatParams(reflectionShader, HDShaderIDs._RaytracingReflectionMaxDistance, rtEnvironement.reflBlendDistance);
@@ -152,17 +139,14 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             float pixelSpreadAngle = Mathf.Atan(2.0f * Mathf.Tan(hdCamera.camera.fieldOfView * Mathf.PI / 360.0f) / Mathf.Min(hdCamera.actualWidth, hdCamera.actualHeight));
             cmd.SetRaytracingFloatParam(reflectionShader, HDShaderIDs._RaytracingPixelSpreadAngle, pixelSpreadAngle);
 
-            if(lightData.Count != 0)
-            {
-                // LightLoop data
-                cmd.SetGlobalBuffer(HDShaderIDs._RaytracingLightCluster, m_LightCluster.GetCluster());
-                cmd.SetGlobalBuffer(HDShaderIDs._LightDatasRT, m_LightCluster.GetLightDatas());
-                cmd.SetGlobalVector(HDShaderIDs._MinClusterPos, m_LightCluster.GetMinClusterPos());
-                cmd.SetGlobalVector(HDShaderIDs._MaxClusterPos, m_LightCluster.GetMaxClusterPos());
-                cmd.SetGlobalInt(HDShaderIDs._LightPerCellCount, rtEnvironement.maxNumLightsPercell);
-                cmd.SetGlobalInt(HDShaderIDs._PunctualLightCountRT, m_LightCluster.GetPunctualLightCount());
-                cmd.SetGlobalInt(HDShaderIDs._AreaLightCountRT, m_LightCluster.GetAreaLightCount());
-            }
+            // LightLoop data
+            cmd.SetGlobalBuffer(HDShaderIDs._RaytracingLightCluster, lightCluster.GetCluster());
+            cmd.SetGlobalBuffer(HDShaderIDs._LightDatasRT, lightCluster.GetLightDatas());
+            cmd.SetGlobalVector(HDShaderIDs._MinClusterPos, lightCluster.GetMinClusterPos());
+            cmd.SetGlobalVector(HDShaderIDs._MaxClusterPos, lightCluster.GetMaxClusterPos());
+            cmd.SetGlobalInt(HDShaderIDs._LightPerCellCount, rtEnvironement.maxNumLightsPercell);
+            cmd.SetGlobalInt(HDShaderIDs._PunctualLightCountRT, lightCluster.GetPunctualLightCount());
+            cmd.SetGlobalInt(HDShaderIDs._AreaLightCountRT, lightCluster.GetAreaLightCount());
 
             // Set the data for the ray miss
             cmd.SetRaytracingTextureParam(reflectionShader, m_MissShaderName, HDShaderIDs._SkyTexture, m_SkyManager.skyReflection);
@@ -202,11 +186,13 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                         cmd.SetComputeTextureParam(bilateralFilter, currentKernel, HDShaderIDs._SsrHitPointTexture, m_HitPdfTexture);
                         cmd.SetComputeTextureParam(bilateralFilter, currentKernel, HDShaderIDs._DepthTexture, m_SharedRTManager.GetDepthStencilBuffer());
                         cmd.SetComputeTextureParam(bilateralFilter, currentKernel, HDShaderIDs._NormalBufferTexture, m_SharedRTManager.GetNormalBuffer());
-                        cmd.SetComputeTextureParam(bilateralFilter, currentKernel, "_NoiseTexture", blueNoise.textures16RGB[1]);
+                        cmd.SetComputeTextureParam(bilateralFilter, currentKernel, "_NoiseTexture", blueNoise.textureArray16RGB);
                         cmd.SetComputeTextureParam(bilateralFilter, currentKernel, "_VarianceTexture", m_VarianceBuffer);
                         cmd.SetComputeTextureParam(bilateralFilter, currentKernel, "_MinColorRangeTexture", m_MinBoundBuffer);
                         cmd.SetComputeTextureParam(bilateralFilter, currentKernel, "_MaxColorRangeTexture", m_MaxBoundBuffer);
                         cmd.SetComputeTextureParam(bilateralFilter, currentKernel, "_RaytracingReflectionTexture", outputTexture);
+                        cmd.SetComputeTextureParam(bilateralFilter, currentKernel, HDShaderIDs._ScramblingTexture, m_PipelineResources.textures.scramblingTex);
+                        cmd.SetComputeIntParam(bilateralFilter, HDShaderIDs._SpatialFilterRadius, rtEnvironement.reflSpatialFilterRadius);
 
                         // Texture dimensions
                         int texWidth = outputTexture.rt.width ;
