@@ -39,7 +39,7 @@
     float4 _Splat0_TexelSize;       \
     float4 _Splat0_MipInfo;         \
     float4 _Splat1_TexelSize;       \
-    float4 _Splat1_MipInfo;         \   
+    float4 _Splat1_MipInfo;         \
     float4 _Splat2_TexelSize;       \
     float4 _Splat2_MipInfo;         \
     float4 _Splat3_TexelSize;       \

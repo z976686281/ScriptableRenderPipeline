@@ -112,7 +112,7 @@ void ApplyVertexModification(AttributesMesh input, float3 normalWS, inout float3
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Lit/LitDecalData.hlsl"
 
 void TerrainLitShade(float2 uv, float3 tangentWS, float3 bitangentWS, out float3 outAlbedo, out float3 outNormalTS, out float outSmoothness, out float outMetallic, out float outAO);
-float3 TerrainLitDebug(float2 uv, float3 baseColor);
+void TerrainLitDebug(float2 uv, inout float3 baseColor);
 
 void GetSurfaceAndBuiltinData(inout FragInputs input, float3 V, inout PositionInputs posInput, out SurfaceData surfaceData, out BuiltinData builtinData)
 {
