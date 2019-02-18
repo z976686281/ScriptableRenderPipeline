@@ -199,6 +199,13 @@ Shader "HDRP/TerrainLit"
             #define SHADERPASS SHADERPASS_DEPTH_ONLY
             #include "TerrainLit_Splatmap.ShaderVariables.hlsl"
             #include "TerrainLitTemplate.hlsl"
+            #ifdef WRITE_NORMAL_BUFFER
+                #if defined(_NORMALMAP)
+                    #define OVERRIDE_SPLAT_SAMPLER_NAME sampler_Normal0
+                #elif defined(_MASKMAP)
+                    #define OVERRIDE_SPLAT_SAMPLER_NAME sampler_Mask0
+                #endif
+            #endif
             #include "TerrainLit_Splatmap.hlsl"
 
             ENDHLSL

@@ -67,17 +67,17 @@ AttributesMesh ApplyMeshModification(AttributesMesh input)
     input.positionOS.xz = sampleCoords * _TerrainHeightmapScale.xz;
     input.positionOS.y = height * _TerrainHeightmapScale.y;
 
-#ifdef ATTRIBUTES_NEED_NORMAL
-    input.normalOS = _TerrainNormalmapTexture.Load(int3(sampleCoords, 0)).rgb * 2 - 1;
-#endif
+    #ifdef ATTRIBUTES_NEED_NORMAL
+        input.normalOS = _TerrainNormalmapTexture.Load(int3(sampleCoords, 0)).rgb * 2 - 1;
+    #endif
 
-#if defined(VARYINGS_NEED_TEXCOORD0) || defined(VARYINGS_DS_NEED_TEXCOORD0)
-#ifdef ENABLE_TERRAIN_PERPIXEL_NORMAL
-    input.uv0 = sampleCoords;
-#else
-    input.uv0 = sampleCoords * _TerrainHeightmapRecipSize.zw;
-#endif
-#endif
+    #if defined(VARYINGS_NEED_TEXCOORD0) || defined(VARYINGS_DS_NEED_TEXCOORD0)
+        #ifdef ENABLE_TERRAIN_PERPIXEL_NORMAL
+            input.uv0 = sampleCoords;
+        #else
+            input.uv0 = sampleCoords * _TerrainHeightmapRecipSize.zw;
+        #endif
+    #endif
 #endif
 
 #ifdef ATTRIBUTES_NEED_TANGENT
@@ -91,10 +91,6 @@ AttributesMesh ApplyMeshModification(AttributesMesh input)
     input.tangentOS.w = -1;
 #endif
     return input;
-}
-
-void ApplyVertexModification(AttributesMesh input, float3 normalWS, inout float3 positionWS, float4 time)
-{
 }
 
 #endif // HAVE_MESH_MODIFICATION

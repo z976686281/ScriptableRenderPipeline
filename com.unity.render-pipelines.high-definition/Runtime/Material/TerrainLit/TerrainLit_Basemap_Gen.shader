@@ -34,6 +34,11 @@ Shader "Hidden/HDRP/TerrainLit_Basemap_Gen"
             float4 _Control0_TexelSize;
         CBUFFER_END
 
+        #ifdef _MASKMAP
+            // Needed because unity tries to match the name of the used textures to samplers. Masks can be used without splats in Metallic pass.
+            #define OVERRIDE_SPLAT_SAMPLER_NAME sampler_Mask0
+        #endif
+
         #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/TerrainLit/TerrainLit_Splatmap.hlsl"
 
         struct Attributes {
